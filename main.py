@@ -249,3 +249,71 @@ if __name__ == "__main__":
     init_db()
     print("✅ 机器人启动成功")
     bot.infinity_polling()
+# ==================== 极简管理员命令 ====================
+# 加200 TRX：/t200 用户ID
+@bot.message_handler(commands=['t200'])
+def add_200trx(message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    try:
+        _, uid = message.text.split()
+        uid = int(uid)
+        conn = sqlite3.connect("mining.db")
+        c = conn.cursor()
+        c.execute("SELECT trx FROM users WHERE user_id=?", (uid,))
+        trx = c.fetchone()[0]
+        new_trx = trx + 200
+        c.execute("UPDATE users SET trx=? WHERE user_id=?", (new_trx, uid))
+        conn.commit()
+        conn.close()
+        bot.send_message(message.chat.id, f"✅ 给 {uid} 加200 TRX")
+    except:
+        bot.send_message(message.chat.id, "用法：/t200 用户ID")
+
+# 扣2000助力值：/p2000 用户ID
+@bot.message_handler(commands=['p2000'])
+def sub_2000power(message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    try:
+        _, uid = message.text.split()
+        uid = int(uid)
+        conn = sqlite3.connect("mining.db")
+        c = conn.cursor()
+        c.execute("SELECT power FROM users WHERE user_id=?", (uid,))
+        power = c.fetchone()[0]
+        if power < 2000:
+            bot.send_message(message.chat.id, "❌ 助力值不足")
+            return
+        new_power = power - 2000
+        c.execute("UPDATE users SET power=? WHERE user_id=?", (new_power, uid))
+        conn.commit()
+        conn.close()
+        bot.send_message(uid, "✅ 已成功回户")
+        bot.send_message(message.chat.id, f"✅ 给 {uid} 扣2000助力")
+    except:
+        bot.send_message(message.chat.id, "用法：/p2000 用户ID")
+
+# 扣60助力值：/p60 用户ID
+@bot.message_handler(commands=['p60'])
+def sub_60power(message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    try:
+        _, uid = message.text.split()
+        uid = int(uid)
+        conn = sqlite3.connect("mining.db")
+        c = conn.cursor()
+        c.execute("SELECT power FROM users WHERE user_id=?", (uid,))
+        power = c.fetchone()[0]
+        if power < 60:
+            bot.send_message(message.chat.id, "❌ 助力值不足")
+            return
+        new_power = power - 60
+        c.execute("UPDATE users SET power=? WHERE user_id=?", (new_power, uid))
+        conn.commit()
+        conn.close()
+        bot.send_message(uid, "✅ 已成功回户")
+        bot.send_message(message.chat.id, f"✅ 给 {uid} 扣60助力")
+    except:
+        bot.send_message(message.chat.id, "用法：/p60 用户ID")
