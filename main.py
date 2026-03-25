@@ -4,7 +4,7 @@ import random
 from datetime import datetime, timedelta
 import threading
 import time
-import os
+import osma
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 ADMIN_ID = int(os.environ.get("ADMIN_ID", 8256055083))
@@ -50,7 +50,8 @@ def get_user(uid, username=None):
     return user
 
 def update_user(uid, field, value):
-    conn = sqlite3.
+    conn = sqlite3.connect('ip_mining.db')
+cursor = conn.cursor()
     text = f"""
   🚀 IP节点挖矿机器人
 🆔 矿工ID：{u[2]}
