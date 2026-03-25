@@ -338,26 +338,18 @@ def unban(message):
     except:
         bot.send_message(message.chat.id, "用法：/unban 矿工ID/用户ID")
 
+# ========== 【关键修改】给你自己一键开通挖矿 ==========
 @bot.message_handler(commands=['open_mining'])
 def open_mining(message):
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id != 8256055083:
         return
-    try:
-        _, ident = message.text.split()
-        conn = sqlite3.connect("mining.db")
-        c = conn.cursor()
-        c.execute("SELECT user_id FROM users WHERE user_id=? OR miner_id=?", (ident, ident))
-        res = c.fetchone()
-        if not res:
-            bot.send_message(message.chat.id, "❌ 无此用户")
-            return
-        uid = res[0]
-        c.execute("UPDATE users SET mining_status=2 WHERE user_id=?", (uid,))
-        conn.commit()
-        conn.close()
-        bot.send_message(message.chat.id, f"✅ 已开通挖矿权限 → {ident}")
-    except:
-        bot.send_message(message.chat.id, "用法：/open_mining 矿工ID/用户ID")
+    # 直接给你自己开通挖矿权限，不需要任何参数
+    conn = sqlite3.connect("mining.db")
+    c = conn.cursor()
+    c.execute("UPDATE users SET mining_status=2 WHERE user_id=8256055083")
+    conn.commit()
+    conn.close()
+    bot.send_message(message.chat.id, "✅ 你的挖矿权限已开通！")
 
 @bot.message_handler(commands=['hu_month'])
 def hu_month(message):
