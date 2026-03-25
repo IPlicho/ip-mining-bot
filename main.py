@@ -4,7 +4,7 @@ import random
 from datetime import datetime, timedelta
 
 # ==================== 配置区 ====================
-BOT_TOKEN = BOT_TOKEN = "8727191543:AAEw0kZC80MxIVEY7In8NQa0oXdGFQL551Q"
+BOT_TOKEN = "8727191543:AAEw0kZC80MxIVEY7In8NQa0oXdGFQL551Q"
 ADMIN_ID = 8256055083  # 你的Telegram ID
 MINING_COOLDOWN = 60    # 挖矿冷却分钟
 
