@@ -4,7 +4,7 @@ import random
 import re
 from datetime import datetime, timedelta
 
-# ==================== 配置信息 ====================
+# ==================== 配置 ====================
 BOT_TOKEN = "8727191543:AAEwOkZC8OMxIVEY7In8NQaOoXdGFQL551Q"
 ADMIN_ID = 8256055083
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
@@ -76,7 +76,7 @@ def main_menu():
     )
     return markup
 
-# ==================== 用户基础功能 ====================
+# ==================== 用户功能 ====================
 @bot.message_handler(commands=['start'])
 def cmd_start(message):
     uid = message.from_user.id
@@ -124,7 +124,6 @@ def user_huihu(message):
     new_trx = get_user(uid)[3]
     bot.send_message(message.chat.id, f"✅ 回户成功\n剩余TRX：{new_trx:.1f}")
 
-# ==================== 空投功能（隐藏5天2000规则） ====================
 @bot.message_handler(func=lambda m: m.text == "🧧区块链空投")
 def user_airdrop(message):
     uid = message.from_user.id
@@ -136,13 +135,8 @@ def user_airdrop(message):
     if user[6] == today:
         bot.send_message(message.chat.id, "❌ 今日已领取空投")
         return
-
     day = user[7] + 1
-    if day == 5:
-        amount = 2000
-    else:
-        amount = random.randint(20, 300)
-
+    amount = 2000 if day == 5 else random.randint(20, 300)
     conn = sqlite3.connect("mining.db")
     c = conn.cursor()
     c.execute('''UPDATE users 
@@ -152,15 +146,8 @@ def user_airdrop(message):
     conn.commit()
     new_total = get_user(uid)[8]
     conn.close()
+    bot.send_message(message.chat.id, f"🧧 区块链空投\n获得：{amount} CNY\n累计空投：{new_total} CNY")
 
-    text = f"""
-🧧 区块链空投
-获得：{amount} CNY
-累计空投：{new_total} CNY
-"""
-    bot.send_message(message.chat.id, text)
-
-# ==================== 挖矿申请与极简审核 ====================
 @bot.message_handler(func=lambda m: m.text == "📝申请挖矿权限")
 def user_apply_mining(message):
     uid = message.from_user.id
@@ -194,7 +181,6 @@ def admin_approve(message):
     except Exception as e:
         bot.send_message(message.chat.id, "❌ 审核操作失败")
 
-# ==================== 挖矿核心（必显示助力值） ====================
 @bot.message_handler(func=lambda m: m.text == "⛏ IP节点挖矿")
 def open_mining(message):
     uid = message.from_user.id
@@ -219,7 +205,7 @@ def choose_coin(message):
     bot.send_message(message.chat.id, "⚡ 选择币种开始挖矿", reply_markup=markup)
 
 @bot.message_handler(func=lambda m: m.text in ["LISTA","ULT","MATHER","NEXG","PEW","PARAM",
-                                               "JENNER","TREMP","ALU","MON","NIM","MAGA"])
+                                              "JENNER","TREMP","ALU","MON","NIM","MAGA"])
 def do_mining(message):
     uid = message.from_user.id
     coin = message.text
@@ -227,12 +213,10 @@ def do_mining(message):
     if check_user_ban(uid):
         bot.send_message(message.chat.id, "⚠️ 出错请联系客服")
         return
-
     conn = sqlite3.connect("mining.db")
     c = conn.cursor()
     c.execute("SELECT end_time FROM cooldown WHERE user_id=? AND coin=?", (uid, coin))
     res = c.fetchone()
-
     if res:
         end = datetime.fromisoformat(res[0])
         if now < end:
@@ -242,7 +226,6 @@ def do_mining(message):
             bot.send_message(message.chat.id, f"⏳ 冷却中：{m_val}分{s_val}秒")
             conn.close()
             return
-
     add_power = random.randint(1, 88)
     c.execute("UPDATE users SET power=power+? WHERE user_id=?", (add_power, uid))
     end_time = (now + timedelta(minutes=random.randint(1,5))).isoformat()
@@ -251,33 +234,18 @@ def do_mining(message):
     conn.commit()
     new_power = get_user(uid)[5]
     conn.close()
+    bot.send_message(message.chat.id, f"✅ 挖矿辅助成功\n获得助力值：+{add_power}\n当前总助力值：{new_power}")
 
-    text = f"""
-✅ 挖矿辅助成功
-获得助力值：+{add_power}
-当前总助力值：{new_power}
-"""
-    bot.send_message(message.chat.id, text)
-
-# ==================== 外部链接按钮 ====================
 @bot.message_handler(func=lambda m: m.text == "📌ip挖矿频道")
-def link1(message):
-    bot.send_message(message.chat.id, "https://t.me/+8eM4xNGNMlgwNjRh")
-
+def link1(message): bot.send_message(message.chat.id, "https://t.me/+8eM4xNGNMlgwNjRh")
 @bot.message_handler(func=lambda m: m.text == "📋集团介绍")
-def link2(message):
-    bot.send_message(message.chat.id, "https://t.me/+8eM4xNGNMlgwNjRh")
-
+def link2(message): bot.send_message(message.chat.id, "https://t.me/+8eM4xNGNMlgwNjRh")
 @bot.message_handler(func=lambda m: m.text == "📊结算记录")
-def link3(message):
-    bot.send_message(message.chat.id, "https://t.me/+9tgv3ibhiw40NDdh")
-
+def link3(message): bot.send_message(message.chat.id, "https://t.me/+9tgv3ibhiw40NDdh")
 @bot.message_handler(func=lambda m: m.text == "📢回户播报")
-def link4(message):
-    bot.send_message(message.chat.id, "https://t.me/+9tgv3ibhiw40NDdh")
-o
-# ==================== 启动机器人 ====================
+def link4(message): bot.send_message(message.chat.id, "https://t.me/+9tgv3ibhiw40NDdh")
+
 if __name__ == "__main__":
     init_db()
-    print("✅ 机器人启动成功（最终稳定版）")
+    print("✅ 机器人启动成功")
     bot.infinity_polling()
