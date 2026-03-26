@@ -109,19 +109,20 @@ def mining_cooldown(uid, coin):
     user_mining_counts[uid] = user_mining_counts.get(uid, 0) + 1
     return False, total_cool
 
-# ==================== 用户菜单（只新增申请按钮，其他完全不变） ====================
+# ==================== 用户菜单（已改为🔧服务办理按钮） ====================
 def main_menu():
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     markup.add(
         telebot.types.KeyboardButton("⛏️ IP节点挖矿"),
-        telebot.types.KeyboardButton("🚀 申请算力权限"),  # 仅新增这一个科幻按钮
+        telebot.types.KeyboardButton("🚀 申请算力权限"),
         telebot.types.KeyboardButton("🔄回户"),
         telebot.types.KeyboardButton("🧧区块链空投"),
-        telebot.types.KeyboardButton("👤个人中心")
+        telebot.types.KeyboardButton("👤个人中心"),
+        telebot.types.KeyboardButton("🔧服务办理")
     )
     return markup
 
-# ==================== 开始/注册（完全原样不动） ====================
+# ==================== 开始/注册 ====================
 @bot.message_handler(commands=['start'])
 def start(message):
     uid = message.from_user.id
@@ -136,7 +137,21 @@ def start(message):
         conn.close()
     bot.send_message(message.chat.id, "✅ 欢迎使用挖矿机器人", reply_markup=main_menu())
 
-# ==================== 新增：用户点击申请算力权限 ====================
+# ==================== 服务办理按钮逻辑（点击联系@fcff88） ====================
+@bot.message_handler(func=lambda m: m.text == "🔧服务办理")
+def service_handle(message):
+    uid = message.from_user.id
+    if check_ban(uid):
+        bot.send_message(message.chat.id, "⚠️ 已被封禁")
+        return
+    bot.send_message(
+        message.chat.id,
+        "🔧 业务办理请直接联系管理员\n"
+        "Telegram：@fcff88\n"
+        "⚠️ 请勿相信其他陌生人，谨防上当受骗！"
+    )
+
+# ==================== 申请算力权限 ====================
 @bot.message_handler(func=lambda m: m.text == "🚀 申请算力权限")
 def apply_mining_permission(message):
     uid = message.from_user.id
@@ -145,14 +160,12 @@ def apply_mining_permission(message):
         return
     user = get_user(uid)
     miner_id = user[2]
-    # 发给管理员的科幻风格申请文案
     bot.send_message(ADMIN_ID,
         f"⚡ 新节点接入申请！\n矿工ID：{miner_id}\n用户ID：{uid}\n回复「通过 {miner_id}」激活算力权限")
-    # 用户端科幻提示文案
     bot.send_message(message.chat.id,
         "🚀 算力权限申请已提交！\n你的节点正在排队接入主网...\n请等待管理员审核通过后，即可启动挖矿！")
 
-# ==================== 新增：管理员审批「通过 矿工ID」 ====================
+# ==================== 管理员审批 ====================
 @bot.message_handler(func=lambda m: m.from_user.id == ADMIN_ID and m.text.startswith("通过 "))
 def admin_approve_mining(message):
     try:
@@ -166,19 +179,16 @@ def admin_approve_mining(message):
             conn.close()
             return
         target_uid = res[0]
-        # 开通权限（mining_status=2 为你原有开通标准）
         c.execute("UPDATE users SET mining_status=2 WHERE miner_id=?", (miner_id,))
         conn.commit()
         conn.close()
-        # 管理员成功文案
         bot.send_message(message.chat.id, f"✅ 节点 {miner_id} 已接入主网，算力权限激活成功！")
-        # 用户通过通知文案
         bot.send_message(target_uid,
             f"✅ 算力权限已激活！\n矿工ID：{miner_id}\n你已成功接入IP节点网络，现在可以启动挖矿，获取算力收益！")
     except:
         bot.send_message(message.chat.id, "❌ 格式错误，请使用：通过 矿工ID")
 
-# ==================== 个人中心（完全原样不动） ====================
+# ==================== 个人中心 ====================
 @bot.message_handler(func=lambda m: m.text == "👤个人中心")
 def profile(message):
     uid = message.from_user.id
@@ -195,7 +205,7 @@ def profile(message):
             f"挖矿权限：{status}")
     bot.send_message(message.chat.id, text)
 
-# ==================== 挖矿（完全原样不动） ====================
+# ==================== 挖矿 ====================
 @bot.message_handler(func=lambda m: m.text == "⛏️ IP节点挖矿")
 def mining_page(message):
     uid = message.from_user.id
@@ -235,7 +245,7 @@ def do_mine(message):
     update_user_field(uid, "power", new_p)
     bot.send_message(message.chat.id, f"✅ 挖矿成功\n币种：{coin}\n获得助力值：+{add_p}\n当前：{new_p}\n⏳ 下次可挖：{rem} 分钟后")
 
-# ==================== 回户（完全原样不动） ====================
+# ==================== 回户 ====================
 @bot.message_handler(func=lambda m: m.text == "🔄回户")
 def huihu(message):
     uid = message.from_user.id
@@ -258,7 +268,7 @@ def huihu(message):
     conn.close()
     bot.send_message(message.chat.id, f"✅ 回户成功\n剩余TRX：{new_trx}")
 
-# ==================== 空投（完全原样不动） ====================
+# ==================== 空投 ====================
 @bot.message_handler(func=lambda m: m.text == "🧧区块链空投")
 def airdrop(message):
     uid = message.from_user.id
@@ -281,7 +291,7 @@ def airdrop(message):
     update_user_field(uid, "last_air", today)
     bot.send_message(message.chat.id, f"🧧 领取成功 +{add} CNY\n累计：{new_total}")
 
-# ==================== 管理员命令（全部原样不动） ====================
+# ==================== 管理员命令 ====================
 @bot.message_handler(commands=['t200'])
 def t200(message):
     if message.from_user.id != ADMIN_ID:
@@ -468,5 +478,5 @@ def hu_month(message):
     except:
         bot.send_message(message.chat.id, "用法：/hu_month 矿工ID/用户ID")
 
-# ==================== 启动机器人（完全原样不动） ====================
+# ==================== 启动机器人 ====================
 bot.infinity_polling()
