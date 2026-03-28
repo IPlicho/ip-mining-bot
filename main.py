@@ -34,13 +34,6 @@ def init_db():
         is_banned INTEGER DEFAULT 0
     )''')
 
-    c.execute('''CREATE TABLE IF NOT EXISTS apply_records (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        apply_type TEXT,
-        status TEXT DEFAULT 'pending'
-    )''')
-
     conn.commit()
     conn.close()
 
@@ -68,7 +61,7 @@ def gen_miner_id():
 
 def check_ban(uid):
     u = get_user(uid)
-    return u and (u[11] == 1 or u[10] == 1)
+    return u and (u[12] == 1 or u[11] == 1)
 
 # ==================== 豪華交易所風格選單 ====================
 def main_menu():
@@ -185,6 +178,7 @@ def callback_handle(call):
         u = get_user(uid)
         status = "已開通" if u[9] == 2 else "未開通/審核中"
         pause = "已暫停" if u[10] == 1 else "正常"
+        ban = "是" if u[12] == 1 else "否"
         info = (
             "👤 個人資產總覽\n\n"
             f"🆔 礦工ID：`{u[2]}`\n"
@@ -197,7 +191,8 @@ def callback_handle(call):
             f"🔁 助力累計回戶：`{u[9]}`\n"
             f"💸 累計消耗TRX：`{u[10]:.2f}`\n"
             f"🔓 挖礦權限：`{status}`\n"
-            f"🚦 挖礦狀態：`{pause}`"
+            f"🚦 挖礦狀態：`{pause}`\n"
+            f"🚫 封禁狀態：`{ban}`"
         )
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("🔙 返回主選單", callback_data="back_main"))
@@ -268,7 +263,7 @@ def start(message):
     welcome = "🏧 IP節點挖礦系統｜專業交易所版\n\n歡迎使用，請以下方按鈕操作"
     bot.send_message(message.chat.id, welcome, reply_markup=main_menu())
 
-# ==================== 管理員指令 ====================
+# ==================== 管理員指令 (已修復) ====================
 @bot.message_handler(commands=['agree'])
 def agree_user(message):
     if message.from_user.id != ADMIN_ID:
@@ -276,11 +271,16 @@ def agree_user(message):
     try:
         _, uid = message.text.split()
         uid = int(uid)
-        update_user(uid, "mining_status", 2)
-        bot.send_message(uid, "✅ 您的挖礦權限申請已通過")
-        bot.reply_to(message, "✅ 審核通過")
-    except:
-        bot.reply_to(message, "格式：/agree 用戶ID")
+        # 強制更新為已開通狀態
+        conn = sqlite3.connect("mining_pro.db")
+        c = conn.cursor()
+        c.execute("UPDATE users SET mining_status = 2 WHERE user_id = ?", (uid,))
+        conn.commit()
+        conn.close()
+        bot.send_message(uid, "✅ 您的挖礦權限申請已通過（強制開通）")
+        bot.reply_to(message, "✅ 審核通過（已強制更新數據庫）")
+    except Exception as e:
+        bot.reply_to(message, f"格式：/agree 用戶ID\n錯誤：{e}")
 
 @bot.message_handler(commands=['refuse'])
 def refuse_user(message):
@@ -349,6 +349,9 @@ def user_info(message):
         if not u:
             bot.reply_to(message, "❌ 查無此用戶")
             return
+        status = "開通" if u[9]==2 else "未開通"
+        pause = "是" if u[10]==1 else "否"
+        ban = "是" if u[12]==1 else "否"
         info = (
             "👤 用戶完整資料\n"
             f"用戶ID：{u[0]}\n"
@@ -357,9 +360,9 @@ def user_info(message):
             f"目前助力：{u[4]}\n"
             f"累計助力：{u[5]}\n"
             f"累計空投：{u[7]}\n"
-            f"挖礦狀態：{'開通' if u[9]==2 else '未開通'}\n"
-            f"單人暫停：{'是' if u[10]==1 else '否'}\n"
-            f"封禁狀態：{'是' if u[11]==1 else '否'}"
+            f"挖礦狀態：{status}\n"
+            f"單人暫停：{pause}\n"
+            f"封禁狀態：{ban}"
         )
         bot.reply_to(message, info)
     except:
