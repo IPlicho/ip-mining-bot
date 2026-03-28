@@ -12,7 +12,7 @@ CUSTOMER_SERVICE = "@fcff88"
 # 全域挖礦開關 (管理員專用)
 GLOBAL_MINING_ENABLED = True
 
-# ==================== 資料庫初始化 (全新欄位) ====================
+# ==================== 資料庫初始化 ====================
 def init_db():
     conn = sqlite3.connect("mining_pro.db")
     c = conn.cursor()
@@ -63,7 +63,7 @@ def check_ban(uid):
     u = get_user(uid)
     return u and (u[12] == 1 or u[11] == 1)
 
-# ==================== 豪華交易所風格選單 ====================
+# ==================== 主選單 ====================
 def main_menu():
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
@@ -77,7 +77,7 @@ def main_menu():
     )
     return markup
 
-# ==================== 4頁項目資料包 (繁體完整內容) ====================
+# ==================== 項目說明書 ====================
 def get_doc_page(page):
     docs = {
         1: (
@@ -137,7 +137,7 @@ def doc_nav_markup(current):
     markup.add(types.InlineKeyboardButton("🔙 返回主選單", callback_data="back_main"))
     return markup
 
-# ==================== 回覆按鈕處理 ====================
+# ==================== 按鈕回調 ====================
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handle(call):
     uid = call.from_user.id
@@ -148,18 +148,15 @@ def callback_handle(call):
         bot.answer_callback_query(call.id, "⚠️ 您已被限制使用", show_alert=True)
         return
 
-    # 返回主選單
     if call.data == "back_main":
         text = "🏧 IP節點挖礦系統｜專業交易所版\n\n請選擇功能項目"
         bot.edit_message_text(chat_id=cid, message_id=mid, text=text, reply_markup=main_menu(), parse_mode="Markdown")
 
-    # 文件翻頁
     elif call.data.startswith("doc_"):
         page = int(call.data.split("_")[1])
         text = get_doc_page(page)
         bot.edit_message_text(chat_id=cid, message_id=mid, text=text, reply_markup=doc_nav_markup(page))
 
-    # 客服專區
     elif call.data == "service":
         text = (
             "💬 線上客服專區\n\n"
@@ -173,7 +170,6 @@ def callback_handle(call):
         markup.add(types.InlineKeyboardButton("🔙 返回主選單", callback_data="back_main"))
         bot.edit_message_text(chat_id=cid, message_id=mid, text=text, reply_markup=markup, parse_mode="Markdown")
 
-    # 個人資產
     elif call.data == "profile":
         u = get_user(uid)
         status = "已開通" if u[9] == 2 else "未開通/審核中"
@@ -198,7 +194,6 @@ def callback_handle(call):
         markup.add(types.InlineKeyboardButton("🔙 返回主選單", callback_data="back_main"))
         bot.edit_message_text(chat_id=cid, message_id=mid, text=info, reply_markup=markup, parse_mode="Markdown")
 
-    # 申請挖礦權限
     elif call.data == "apply_mining":
         u = get_user(uid)
         if u[9] == 2:
@@ -208,7 +203,6 @@ def callback_handle(call):
         bot.send_message(ADMIN_ID, f"🔔 挖礦權限申請\n礦工ID：{u[2]}\n用戶ID：{uid}\n請回覆：/agree {uid} 或 /refuse {uid}")
         bot.answer_callback_query(call.id, "✅ 申請已提交，等待管理員審核", show_alert=True)
 
-    # 開始挖礦
     elif call.data == "start_mine":
         global GLOBAL_MINING_ENABLED
         u = get_user(uid)
@@ -228,13 +222,11 @@ def callback_handle(call):
         update_user(uid, "total_power", total_p)
         bot.answer_callback_query(call.id, f"✅ 挖礦成功｜助力值 +{add}", show_alert=True)
 
-    # 申請回戶
     elif call.data == "apply_hu":
         u = get_user(uid)
         bot.send_message(ADMIN_ID, f"🔔 回戶申請\n礦工ID：{u[2]}\n用戶ID：{uid}")
         bot.answer_callback_query(call.id, "✅ 回戶申請已提交，等待管理員處理", show_alert=True)
 
-    # 每日空投
     elif call.data == "daily_air":
         u = get_user(uid)
         today = datetime.now().strftime("%Y-%m-%d")
@@ -248,7 +240,7 @@ def callback_handle(call):
         update_user(uid, "air_total", new_total)
         bot.answer_callback_query(call.id, f"🧧 領取成功 +{add_air} 空投", show_alert=True)
 
-# ==================== 開始指令 ====================
+# ==================== /start 指令 ====================
 @bot.message_handler(commands=['start'])
 def start(message):
     uid = message.from_user.id
@@ -263,7 +255,7 @@ def start(message):
     welcome = "🏧 IP節點挖礦系統｜專業交易所版\n\n歡迎使用，請以下方按鈕操作"
     bot.send_message(message.chat.id, welcome, reply_markup=main_menu())
 
-# ==================== 管理員指令 (已修復) ====================
+# ==================== 管理員指令 ====================
 @bot.message_handler(commands=['agree'])
 def agree_user(message):
     if message.from_user.id != ADMIN_ID:
@@ -271,13 +263,15 @@ def agree_user(message):
     try:
         _, uid = message.text.split()
         uid = int(uid)
-        # 強制更新為已開通狀態
         conn = sqlite3.connect("mining_pro.db")
         c = conn.cursor()
         c.execute("UPDATE users SET mining_status = 2 WHERE user_id = ?", (uid,))
         conn.commit()
         conn.close()
-        bot.send_message(uid, "✅ 您的挖礦權限申請已通過（強制開通）")
+        try:
+            bot.send_message(uid, "✅ 您的挖礦權限申請已通過（強制開通）")
+        except Exception:
+            pass
         bot.reply_to(message, "✅ 審核通過（已強制更新數據庫）")
     except Exception as e:
         bot.reply_to(message, f"格式：/agree 用戶ID\n錯誤：{e}")
@@ -290,7 +284,10 @@ def refuse_user(message):
         _, uid = message.text.split()
         uid = int(uid)
         update_user(uid, "mining_status", 0)
-        bot.send_message(uid, "❌ 您的挖礦權限申請被駁回")
+        try:
+            bot.send_message(uid, "❌ 您的挖礦權限申請被駁回")
+        except Exception:
+            pass
         bot.reply_to(message, "✅ 已駁回")
     except:
         bot.reply_to(message, "格式：/refuse 用戶ID")
@@ -451,7 +448,25 @@ def unban_user(message):
     except:
         bot.reply_to(message, "格式：/unban 礦工ID")
 
-# 無效文字導向選單
+# ==================== 強制挖礦指令（解決按鈕問題） ====================
+@bot.message_handler(commands=['mine'])
+def force_mine(message):
+    uid = message.from_user.id
+    u = get_user(uid)
+    if not u:
+        bot.reply_to(message, "❌ 請先 /start")
+        return
+    if u[9] != 2:
+        bot.reply_to(message, "❌ 請先申請並通過挖礦權限審核")
+        return
+    add = random.randint(1, 88)
+    new_p = u[4] + add
+    total_p = u[5] + add
+    update_user(uid, "power", new_p)
+    update_user(uid, "total_power", total_p)
+    bot.reply_to(message, f"✅ 挖礦成功｜助力值 +{add}")
+
+# ==================== 預設訊息 ====================
 @bot.message_handler(func=lambda msg: True)
 def any_msg(message):
     bot.send_message(message.chat.id, "🔹 請使用按鈕操作，勿直接輸入文字", reply_markup=main_menu())
