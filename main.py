@@ -19,7 +19,7 @@ user_data = defaultdict(lambda: {
     "total_withdraw_boost": 0,
     "banned": False,
     "airdrop_claimed": False,
-    "mining_today_locked": False # 新增：今日挖矿是否被管理员停止
+    "mining_today_locked": False
 })
 
 # 12个挖矿币种
@@ -151,12 +151,11 @@ def show_asset(call):
         f"🪙 TRX 餘額：{user_data[uid]['trx']} TRX\n"
         f"✅ 挖礦權限：{mining_status}\n"
         f"📊 ID積分：{user_data[uid]['points']}\n"
-        f"📈 累計回戶助力值：{user_data[uid]['total_withdraw_boost']}\n"
-        f"🔄 今日狀態：{lock_status}"
+        f"📈 累計回戶助力值：{user_data[uid]['total_withdraw_boost']}"
     )
     bot.send_message(call.message.chat.id, info)
 
-# ====================== 項目資格說明書（精简版） ======================
+# ====================== 項目資格說明書 ======================
 @bot.callback_query_handler(func=lambda call: call.data == "project_rules")
 def project_rules(call):
     text = """📜 項目資格說明書
@@ -208,7 +207,7 @@ def refuse_mining(message):
     except:
         bot.send_message(message.chat.id, "格式：/refuse [用戶ID]")
 
-# ====================== 你指定的管理員指令 ======================
+# ====================== 管理員指令 ======================
 @bot.message_handler(commands=['miners'])
 def show_all_miners(message):
     if not is_admin(message.from_user.id):
@@ -285,4 +284,63 @@ def reduce_trx(message):
         target_uid = int(target_uid)
         amount = float(amount)
         user_data[target_uid]["trx"] = max(0, user_data[target_uid]["trx"] - amount)
-       bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {amount} TRX")
+        bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {amount} TRX")
+        bot.send_message(target_uid, f"⚠️ 你的TRX被管理員扣除 {amount}，當前餘額：{user_data[target_uid]['trx']} TRX")
+    except:
+        bot.send_message(message.chat.id, "格式：/reduce_trx [用戶ID] [數量]")
+
+@bot.message_handler(commands=['reduce_boost'])
+def reduce_boost(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        _, target_uid, val = message.text.split()
+        target_uid = int(target_uid)
+        val = int(val)
+        user_data[target_uid]["boost"] = max(0, user_data[target_uid]["boost"] - val)
+        bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {val} 點助力值")
+        bot.send_message(target_uid, f"⚠️ 你的助力值被管理員扣除 {val} 點，當前總助力值：{user_data[target_uid]['boost']}")
+    except:
+        bot.send_message(message.chat.id, "格式：/reduce_boost [用戶ID] [數值]")
+
+@bot.message_handler(commands=['reduce_point'])
+def reduce_point(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        _, target_uid, val = message.text.split()
+        target_uid = int(target_uid)
+        val = int(val)
+        user_data[target_uid]["points"] = max(0, user_data[target_uid]["points"] - val)
+        bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {val} 點積分")
+        bot.send_message(target_uid, f"⚠️ 你的積分被管理員扣除 {val} 點，當前總積分：{user_data[target_uid]['points']}")
+    except:
+        bot.send_message(message.chat.id, "格式：/reduce_point [用戶ID] [數值]")
+
+@bot.message_handler(commands=['stop_mining'])
+def stop_mining(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        target_uid = int(message.text.split()[1])
+        user_data[target_uid]["mining_today_locked"] = True
+        bot.send_message(message.chat.id, f"✅ 已停止用戶 {target_uid} 今日挖礦")
+        bot.send_message(target_uid, "⚠️ 今日挖礦已結束，暫時無法繼續助力")
+    except:
+        bot.send_message(message.chat.id, "格式：/stop_mining [用戶ID]")
+
+@bot.message_handler(commands=['resume_mining'])
+def resume_mining(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        target_uid = int(message.text.split()[1])
+        user_data[target_uid]["mining_today_locked"] = False
+        bot.send_message(message.chat.id, f"✅ 已恢復用戶 {target_uid} 今日挖礦權限")
+        bot.send_message(target_uid, "✅ 今日挖礦權限已恢復，可繼續助力")
+    except:
+        bot.send_message(message.chat.id, "格式：/resume_mining [用戶ID]")
+
+# ====================== 啟動機器人 ======================
+if __name__ == "__main__":
+    bot.polling(none_stop=True)
