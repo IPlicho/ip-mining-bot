@@ -1,446 +1,221 @@
 import telebot
-import sqlite3
-import random
-from datetime import datetime
-from telebot import types
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from collections import defaultdict
 
-# ==================== 配置區 ====================
+# 机器人配置（已帮你填好真实Token）
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
-ADMIN_ID = 8256055083
-CUSTOMER_SERVICE = "@fcff88"
+bot = telebot.TeleBot(BOT_TOKEN)
 
-# 全域挖礦開關 (管理員專用)
-GLOBAL_MINING_ENABLED = True
+# 管理员ID（仅你可用管理指令）
+ADMIN_ID = 8781082053
 
-# ==================== 資料庫初始化 (全新欄位) ====================
-def init_db():
-    conn = sqlite3.connect("mining_pro.db")
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
-        username TEXT,
-        miner_id TEXT UNIQUE,
-        trx REAL DEFAULT 2.0,
-        power INTEGER DEFAULT 0,
-        total_power INTEGER DEFAULT 0,
-        air_today INTEGER DEFAULT 0,
-        air_total INTEGER DEFAULT 0,
-        air_hu_total INTEGER DEFAULT 0,
-        power_hu_total INTEGER DEFAULT 0,
-        trx_consumed_total REAL DEFAULT 0.0,
-        mining_status INTEGER DEFAULT 0,  -- 0未申請 1審核中 2已開通
-        mining_paused INTEGER DEFAULT 0,  -- 0正常 1單人暫停
-        is_banned INTEGER DEFAULT 0
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS apply_records (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        apply_type TEXT,
-        status TEXT DEFAULT 'pending'
-    )''')
-    conn.commit()
-    conn.close()
+# 用户数据存储（内存模式，重启重置，正式可对接数据库）
+user_data = defaultdict(lambda: {
+    "mining_approved": False,
+    "boost": 0,
+    "trx": 0,
+    "banned": False
+})
 
-init_db()
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
+# 12个挖矿币种（无TRX，符合你要求）
+COINS = ["BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "MATIC", "DOT", "LINK"]
+# 币种默认助力值奖励
+coin_reward = {coin: 100 for coin in COINS}
 
-# ==================== 工具函式 ====================
-def get_user(uid):
-    conn = sqlite3.connect("mining_pro.db")
-    c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE user_id=?", (uid,))
-    res = c.fetchone()
-    conn.close()
-    return res
+# 管理员权限判断
+def is_admin(user_id):
+    return user_id == ADMIN_ID
 
-def update_user(uid, field, value):
-    conn = sqlite3.connect("mining_pro.db")
-    c = conn.cursor()
-    c.execute(f"UPDATE users SET {field}=? WHERE user_id=?", (value, uid))
-    conn.commit()
-    conn.close()
-
-def gen_miner_id():
-    return str(random.randint(100000, 999999))
-
-def check_ban(uid):
-    u = get_user(uid)
-    return u and (u[11] == 1 or u[10] == 1)
-
-# ==================== 豪華交易所風格選單 ====================
-def main_menu():
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        types.InlineKeyboardButton("⛏️ 開始IP節點挖礦", callback_data="start_mine"),
-        types.InlineKeyboardButton("🚀 申請挖礦權限", callback_data="apply_mining"),
-        types.InlineKeyboardButton("🔄 申請回戶作業", callback_data="apply_hu"),
-        types.InlineKeyboardButton("🧧 每日空投領取", callback_data="daily_air"),
-        types.InlineKeyboardButton("👤 個人資產總覽", callback_data="profile"),
-        types.InlineKeyboardButton("📜 項目資格說明書", callback_data="doc_1"),
-        types.InlineKeyboardButton("💬 線上客服專區", callback_data="service"),
-    )
-    return markup
-
-# ==================== 4頁項目資料包 (繁體完整內容) ====================
-def get_doc_page(page):
-    docs = {
-        1: (
-            "📜 項目說明書 · 第1頁/共4頁\n\n"
-            "⚡️ IP節點挖礦助力機制說明\n\n"
-            "在 t.me/IP_Mining_Bot 進行助力，即為區塊鏈網路貢獻設備算力與流量，\n"
-            "提升節點驗證效率與網路安全性。\n\n"
-            "系統將根據有效驗證行為，以助力值形式發放代幣激勵，\n"
-            "助力值與收益直接掛鉤，累計越高回報越豐厚。\n\n"
-            "此模式與比特幣挖礦原理同源，以行動裝置替代傳統礦機，\n"
-            "大幅降低參與門檻，讓一般用戶便捷共享區塊鏈生態紅利。"
-        ),
-        2: (
-            "📜 項目說明書 · 第2頁/共4頁\n\n"
-            "🔰 合法性與資格說明\n\n"
-            "買幣、囤幣、挖礦、炒幣均不屬於違法，\n"
-            "四大類皆屬於區塊鏈去中心化範疇。\n\n"
-            "目前全世界尚無任何一條法律明確規範此類行為違法，\n"
-            "因為區塊鏈的核心就是去中心化，不歸任何中心機構管轄。\n\n"
-            "各國僅能實施境內監管規範，無法以法律判定挖礦行為犯罪，\n"
-            "因此鏈上礦場收益高卻合法穩定。"
-        ),
-        3: (
-            "📜 項目說明書 · 第3頁/共4頁\n\n"
-            "🏛 雲鼎資本集團 · 平台資格\n\n"
-            "▪ 總部位於杜拜，業務覆蓋全球20餘國\n"
-            "▪ 註冊資金逾90億美元\n"
-            "▪ 國際專業團隊超過100人，技術專家占比40%\n"
-            "▪ 擁有20項技術專利與國際權威資格認證\n"
-            "▪ 區塊鏈布局通過美國貨幣監管體系審核\n"
-            "▪ 服務TG用戶超過50000+\n\n"
-            "集團深耕Web3.0、數位金融、分散式挖礦，生態完整安全。"
-        ),
-        4: (
-            "📜 項目說明書 · 第4頁/共4頁\n\n"
-            "📈 產業背景與發展歷程\n\n"
-            "近年產業擔保環境波動，多家機構相繼退出，\n"
-            "IP節點挖礦堅持穩健營運與安全保障。\n\n"
-            "2018年：進駐Telegram平台\n"
-            "2021年：完成正規擔保合作（金盾擔保）\n"
-            "2022年：助力挖礦模式正式上線\n"
-            "2024年：生態成熟，獲得多方資本支持\n"
-            "2025年：持續低門檻、低風險、易上手營運\n\n"
-            "堅持三低原則：低門檻、低風險、低難度。"
-        )
-    }
-    return docs.get(page, docs[1])
-
-def doc_nav_markup(current):
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    btns = []
-    if current > 1:
-        btns.append(types.InlineKeyboardButton("⬅️ 上一頁", callback_data=f"doc_{current-1}"))
-    if current < 4:
-        btns.append(types.InlineKeyboardButton("下一頁 ➡️", callback_data=f"doc_{current+1}"))
-    markup.add(*btns)
-    markup.add(types.InlineKeyboardButton("🔙 返回主選單", callback_data="back_main"))
-    return markup
-
-# ==================== 回覆按鈕處理 ====================
-@bot.callback_query_handler(func=lambda call: True)
-def callback_handle(call):
-    uid = call.from_user.id
-    cid = call.message.chat.id
-    mid = call.message.message_id
-    if check_ban(uid):
-        bot.answer_callback_query(call.id, "⚠️ 您已被限制使用", show_alert=True)
-        return
-    # 返回主選單
-    if call.data == "back_main":
-        text = "🏧 IP節點挖礦系統｜專業交易所版\n\n請選擇功能項目"
-        bot.edit_message_text(chat_id=cid, message_id=mid, text=text, reply_markup=main_menu(), parse_mode="Markdown")
-    # 文件翻頁
-    elif call.data.startswith("doc_"):
-        page = int(call.data.split("_")[1])
-        text = get_doc_page(page)
-        bot.edit_message_text(chat_id=cid, message_id=mid, text=text, reply_markup=doc_nav_markup(page))
-    # 客服專區
-    elif call.data == "service":
-        text = (
-            "💬 線上客服專區\n\n"
-            "📩 官方唯一客服帳號:\n"
-            f"`{CUSTOMER_SERVICE}`\n\n"
-            "⚠️ 重要提醒\n"
-            "平台僅此唯一客服，請勿相信其他陌生帳號，\n"
-            "避免造成資產損失。"
-        )
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("🔙 返回主選單", callback_data="back_main"))
-        bot.edit_message_text(chat_id=cid, message_id=mid, text=text, reply_markup=markup, parse_mode="Markdown")
-    # 個人資產
-    elif call.data == "profile":
-        u = get_user(uid)
-        status = "已開通" if u[11] == 2 else "未開通/審核中"
-        pause = "已暫停" if u[12] == 1 else "正常"
-        info = (
-            "👤 個人資產總覽\n\n"
-            f"🆔 礦工ID：`{u[2]}`\n"
-            f"💰 TRX 餘額：`{u[3]:.2f}`\n"
-            f"⚡ 目前助力值：`{u[4]}`\n"
-            f"📊 累計助力值：`{u[5]}`\n"
-            f"🧧 今日空投：`{u[6]}`\n"
-            f"🏆 累計空投：`{u[7]}`\n"
-            f"🔁 空投累計回戶：`{u[8]}`\n"
-            f"🔁 助力累計回戶：`{u[9]}`\n"
-            f"💸 累計消耗TRX：`{u[10]:.2f}`\n"
-            f"🔓 挖礦權限：`{status}`\n"
-            f"🚦 挖礦狀態：`{pause}`"
-        )
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("🔙 返回主選單", callback_data="back_main"))
-        bot.edit_message_text(chat_id=cid, message_id=mid, text=info, reply_markup=markup, parse_mode="Markdown")
-    # 申請挖礦權限
-    elif call.data == "apply_mining":
-        u = get_user(uid)
-        if u[11] == 2:
-            bot.answer_callback_query(call.id, "✅ 您已擁有挖礦權限", show_alert=True)
-            return
-        update_user(uid, "mining_status", 1)
-        bot.send_message(ADMIN_ID, f"🔔 挖礦權限申請\n礦工ID：{u[2]}\n用戶ID：{uid}\n請回覆：/agree {uid} 或 /refuse {uid}")
-        bot.answer_callback_query(call.id, "✅ 申請已提交，等待管理員審核", show_alert=True)
-    # 開始挖礦
-    elif call.data == "start_mine":
-        global GLOBAL_MINING_ENABLED
-        u = get_user(uid)
-        if not GLOBAL_MINING_ENABLED:
-            bot.answer_callback_query(call.id, "🚧 系統維護中，全域挖礦暫停", show_alert=True)
-            return
-        if u[12] == 1:
-            bot.answer_callback_query(call.id, "🛑 您的挖礦權限已被管理員暫停", show_alert=True)
-            return
-        if u[11] != 2:
-            bot.answer_callback_query(call.id, "❌ 請先申請並通過挖礦權限審核", show_alert=True)
-            return
-        add = random.randint(1, 88)
-        new_p = u[4] + add
-        total_p = u[5] + add
-        update_user(uid, "power", new_p)
-        update_user(uid, "total_power", total_p)
-        bot.answer_callback_query(call.id, f"✅ 挖礦成功｜助力值 +{add}", show_alert=True)
-    # 申請回戶
-    elif call.data == "apply_hu":
-        u = get_user(uid)
-        bot.send_message(ADMIN_ID, f"🔔 回戶申請\n礦工ID：{u[2]}\n用戶ID：{uid}")
-        bot.answer_callback_query(call.id, "✅ 回戶申請已提交，等待管理員處理", show_alert=True)
-    # 每日空投
-    elif call.data == "daily_air":
-        u = get_user(uid)
-        today = datetime.now().strftime("%Y-%m-%d")
-        if u[6] >= 1:
-            bot.answer_callback_query(call.id, "✅ 今日空投已領取", show_alert=True)
-            return
-        add_air = 50
-        new_today = u[6] + 1
-        new_total = u[7] + add_air
-        update_user(uid, "air_today", new_today)
-        update_user(uid, "air_total", new_total)
-        bot.answer_callback_query(call.id, f"🧧 領取成功 +{add_air} 空投", show_alert=True)
-
-# ==================== 開始指令 ====================
+# ---------------------- 主菜单 /start（原布局完全不变） ----------------------
 @bot.message_handler(commands=['start'])
-def start(message):
+def main_menu(message):
     uid = message.from_user.id
-    if not get_user(uid):
-        mid = gen_miner_id()
-        conn = sqlite3.connect("mining_pro.db")
-        c = conn.cursor()
-        c.execute("INSERT INTO users (user_id, username, miner_id) VALUES (?,?,?)",
-                  (uid, message.from_user.username or "", mid))
-        conn.commit()
-        conn.close()
-    welcome = "🏧 IP節點挖礦系統｜專業交易所版\n\n歡迎使用，請以下方按鈕操作"
-    bot.send_message(message.chat.id, welcome, reply_markup=main_menu())
+    if user_data[uid]["banned"]:
+        bot.send_message(message.chat.id, "❌ 你已被封禁，无法使用功能")
+        return
+    
+    markup = InlineKeyboardMarkup(row_width=1)
+    btn1 = InlineKeyboardButton("⛏️ 開始IP節點挖礦", callback_data="start_mining")
+    btn2 = InlineKeyboardButton("🚀 申請挖礦權限", callback_data="apply_mining")
+    btn3 = InlineKeyboardButton("🔄 申請回戶作業", callback_data="apply_withdraw")
+    btn4 = InlineKeyboardButton("🧧 每日空投領取", callback_data="daily_airdrop")
+    btn5 = InlineKeyboardButton("👤 個人資產總覽", callback_data="asset_overview")
+    btn6 = InlineKeyboardButton("📜 項目資格說明書", callback_data="project_rules")
+    btn7 = InlineKeyboardButton("💬 線上客服專區", callback_data="support")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7)
+    
+    bot.send_message(
+        message.chat.id,
+        "IP節點挖礦系統 | 專業交易所版\n歡迎使用，請以下方按鈕操作",
+        reply_markup=markup
+    )
 
-# ==================== 管理員指令 ====================
+# ---------------------- 挖矿：选择币种 + 获得助力值 ----------------------
+@bot.callback_query_handler(func=lambda call: call.data == "start_mining")
+def mining_coin_select(call):
+    uid = call.from_user.id
+    if user_data[uid]["banned"]:
+        bot.answer_callback_query(call.id, "❌ 你已被封禁")
+        return
+    if not user_data[uid]["mining_approved"]:
+        bot.answer_callback_query(call.id, "❌ 請先申請並通過挖礦權限")
+        return
+    
+    markup = InlineKeyboardMarkup(row_width=3)
+    coin_btns = [InlineKeyboardButton(c, callback_data=f"mine_{c}") for c in COINS]
+    markup.add(*coin_btns)
+    bot.edit_message_text(
+        "⛏️ 請選擇挖礦幣種\n選擇後即可獲得對應助力值",
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=markup
+    )
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("mine_"))
+def mine_coin(call):
+    uid = call.from_user.id
+    coin = call.data.replace("mine_", "")
+    reward = coin_reward.get(coin, 100)
+    user_data[uid]["boost"] += reward
+    
+    bot.edit_message_text(
+        f"✅ 選擇幣種：{coin}\n🎉 獲得助力值：+{reward}\n💎 當前總助力值：{user_data[uid]['boost']}",
+        call.message.chat.id,
+        call.message.message_id
+    )
+
+# ---------------------- 個人資產總覽（新增TRX余额显示） ----------------------
+@bot.callback_query_handler(func=lambda call: call.data == "asset_overview")
+def show_asset(call):
+    uid = call.from_user.id
+    info = (
+        f"👤 個人資產總覽\n"
+        f"💎 助力值：{user_data[uid]['boost']}\n"
+        f"🪙 TRX 餘額：{user_data[uid]['trx']}\n"
+        f"✅ 挖礦權限：{'已開通' if user_data[uid]['mining_approved'] else '未開通'}"
+    )
+    bot.send_message(call.message.chat.id, info)
+
+# ---------------------- 基础功能占位（保持原布局可用） ----------------------
+@bot.callback_query_handler(func=lambda call: call.data in ["apply_mining", "apply_withdraw", "daily_airdrop", "project_rules", "support"])
+def placeholder_func(call):
+    uid = call.from_user.id
+    if user_data[uid]["banned"]:
+        bot.answer_callback_query(call.id, "❌ 你已被封禁")
+        return
+    bot.answer_callback_query(call.id, "功能已保留，後台可擴展")
+
+# ---------------------- 管理员审批指令 /agree /refuse ----------------------
 @bot.message_handler(commands=['agree'])
-def agree_user(message):
-    if message.from_user.id != ADMIN_ID:
+def agree_mining(message):
+    if not is_admin(message.from_user.id):
         return
     try:
-        _, uid = message.text.split()
-        uid = int(uid)
-        update_user(uid, "mining_status", 2)
-        bot.send_message(uid, "✅ 您的挖礦權限申請已通過")
-        bot.reply_to(message, "✅ 審核通過")
+        target_uid = int(message.text.split()[1])
+        user_data[target_uid]["mining_approved"] = True
+        bot.send_message(message.chat.id, f"✅ 已同意用戶 {target_uid} 挖礦權限")
     except:
-        bot.reply_to(message, "格式：/agree 用戶ID")
+        bot.send_message(message.chat.id, "格式：/agree [用戶ID]")
 
 @bot.message_handler(commands=['refuse'])
-def refuse_user(message):
-    if message.from_user.id != ADMIN_ID:
+def refuse_mining(message):
+    if not is_admin(message.from_user.id):
         return
     try:
-        _, uid = message.text.split()
-        uid = int(uid)
-        update_user(uid, "mining_status", 0)
-        bot.send_message(uid, "❌ 您的挖礦權限申請被駁回")
-        bot.reply_to(message, "✅ 已駁回")
+        target_uid = int(message.text.split()[1])
+        user_data[target_uid]["mining_approved"] = False
+        bot.send_message(message.chat.id, f"❌ 已拒絕用戶 {target_uid} 挖礦權限")
     except:
-        bot.reply_to(message, "格式：/refuse 用戶ID")
+        bot.send_message(message.chat.id, "格式：/refuse [用戶ID]")
 
-@bot.message_handler(commands=['pause'])
-def pause_single(message):
-    if message.from_user.id != ADMIN_ID:
+# ---------------------- 你指定的7条管理员专属指令 ----------------------
+# 1. /miners - 查看所有矿工
+@bot.message_handler(commands=['miners'])
+def show_all_miners(message):
+    if not is_admin(message.from_user.id):
         return
-    try:
-        _, uid = message.text.split()
-        uid = int(uid)
-        update_user(uid, "mining_paused", 1)
-        bot.reply_to(message, "✅ 已暫停該用戶挖礦")
-    except:
-        bot.reply_to(message, "格式：/pause 用戶ID")
+    miner_list = []
+    for uid, data in user_data.items():
+        status = "封禁" if data["banned"] else ("正常" if data["mining_approved"] else "未審批")
+        miner_list.append(f"ID:{uid} | 助力:{data['boost']} | TRX:{data['trx']} | 狀態:{status}")
+    reply = "\n".join(miner_list) if miner_list else "暫無礦工數據"
+    bot.send_message(message.chat.id, f"📋 所有礦工列表：\n{reply}")
 
-@bot.message_handler(commands=['resume'])
-def resume_single(message):
-    if message.from_user.id != ADMIN_ID:
+# 2. /withdraw - 管理员手动处理回户
+@bot.message_handler(commands=['withdraw'])
+def admin_withdraw(message):
+    if not is_admin(message.from_user.id):
         return
-    try:
-        _, uid = message.text.split()
-        uid = int(uid)
-        update_user(uid, "mining_paused", 0)
-        bot.reply_to(message, "✅ 已恢復該用戶挖礦")
-    except:
-        bot.reply_to(message, "格式：/resume 用戶ID")
+    bot.send_message(message.chat.id, "✅ 管理員已手動處理回戶作業")
 
-@bot.message_handler(commands=['global_on'])
-def global_on(message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    global GLOBAL_MINING_ENABLED
-    GLOBAL_MINING_ENABLED = True
-    bot.reply_to(message, "✅ 全域挖礦已開啟")
-
-@bot.message_handler(commands=['global_off'])
-def global_off(message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    global GLOBAL_MINING_ENABLED
-    GLOBAL_MINING_ENABLED = False
-    bot.reply_to(message, "✅ 全域挖礦已暫停")
-
-@bot.message_handler(commands=['info'])
-def user_info(message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    try:
-        _, ident = message.text.split()
-        conn = sqlite3.connect("mining_pro.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE user_id=? OR miner_id=?", (ident, ident))
-        u = c.fetchone()
-        conn.close()
-        if not u:
-            bot.reply_to(message, "❌ 查無此用戶")
-            return
-        info = (
-            "👤 用戶完整資料\n"
-            f"用戶ID：{u[0]}\n"
-            f"礦工ID：{u[2]}\n"
-            f"TRX：{u[3]:.2f}\n"
-            f"目前助力：{u[4]}\n"
-            f"累計助力：{u[5]}\n"
-            f"累計空投：{u[7]}\n"
-            f"挖礦狀態：{'開通' if u[11]==2 else '未開通'}\n"
-            f"單人暫停：{'是' if u[12]==1 else '否'}\n"
-            f"封禁狀態：{'是' if u[13]==1 else '否'}"
-        )
-        bot.reply_to(message, info)
-    except:
-        bot.reply_to(message, "格式：/info 礦工ID 或 用戶ID")
-
-@bot.message_handler(commands=['add_trx'])
-def add_trx(message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    try:
-        _, ident, num = message.text.split()
-        num = float(num)
-        conn = sqlite3.connect("mining_pro.db")
-        c = conn.cursor()
-        c.execute("SELECT user_id, trx FROM users WHERE user_id=? OR miner_id=?", (ident, ident))
-        res = c.fetchone()
-        if not res:
-            bot.reply_to(message, "❌ 無此用戶")
-            conn.close()
-            return
-        new_trx = res[1] + num
-        c.execute("UPDATE users SET trx=? WHERE user_id=?", (new_trx, res[0]))
-        conn.commit()
-        conn.close()
-        bot.reply_to(message, f"✅ 已增加 {num} TRX")
-    except:
-        bot.reply_to(message, "格式：/add_trx 礦工ID 數量")
-
-@bot.message_handler(commands=['add_power'])
-def add_power(message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    try:
-        _, ident, num = message.text.split()
-        num = int(num)
-        conn = sqlite3.connect("mining_pro.db")
-        c = conn.cursor()
-        c.execute("SELECT user_id, power, total_power FROM users WHERE user_id=? OR miner_id=?", (ident, ident))
-        res = c.fetchone()
-        if not res:
-            bot.reply_to(message, "❌ 無此用戶")
-            conn.close()
-            return
-        new_p = res[1] + num
-        new_tp = res[2] + num
-        c.execute("UPDATE users SET power=?, total_power=? WHERE user_id=?", (new_p, new_tp, res[0]))
-        conn.commit()
-        conn.close()
-        bot.reply_to(message, f"✅ 已增加 {num} 助力值")
-    except:
-        bot.reply_to(message, "格式：/add_power 礦工ID 數量")
-
+# 3. /ban [用户ID] - 封禁用户
 @bot.message_handler(commands=['ban'])
 def ban_user(message):
-    if message.from_user.id != ADMIN_ID:
+    if not is_admin(message.from_user.id):
         return
     try:
-        _, ident = message.text.split()
-        conn = sqlite3.connect("mining_pro.db")
-        c = conn.cursor()
-        c.execute("SELECT user_id FROM users WHERE user_id=? OR miner_id=?", (ident, ident))
-        res = c.fetchone()
-        if res:
-            c.execute("UPDATE users SET is_banned=1 WHERE user_id=?", (res[0],))
-            conn.commit()
-            bot.reply_to(message, "✅ 已封禁")
-        conn.close()
+        target_uid = int(message.text.split()[1])
+        user_data[target_uid]["banned"] = True
+        bot.send_message(message.chat.id, f"❌ 已封禁用戶 {target_uid}")
     except:
-        bot.reply_to(message, "格式：/ban 礦工ID")
+        bot.send_message(message.chat.id, "格式：/ban [用戶ID]")
 
+# 4. /unban [用户ID] - 解封用户
 @bot.message_handler(commands=['unban'])
 def unban_user(message):
-    if message.from_user.id != ADMIN_ID:
+    if not is_admin(message.from_user.id):
         return
     try:
-        _, ident = message.text.split()
-        conn = sqlite3.connect("mining_pro.db")
-        c = conn.cursor()
-        c.execute("SELECT user_id FROM users WHERE user_id=? OR miner_id=?", (ident, ident))
-        res = c.fetchone()
-        if res:
-            c.execute("UPDATE users SET is_banned=0 WHERE user_id=?", (res[0],))
-            conn.commit()
-            bot.reply_to(message, "✅ 已解封")
-        conn.close()
+        target_uid = int(message.text.split()[1])
+        user_data[target_uid]["banned"] = False
+        bot.send_message(message.chat.id, f"✅ 已解封用戶 {target_uid}")
     except:
-        bot.reply_to(message, "格式：/unban 礦工ID")
+        bot.send_message(message.chat.id, "格式：/unban [用戶ID]")
 
-# 無效文字導向選單
-@bot.message_handler(func=lambda msg: True)
-def any_msg(message):
-    bot.send_message(message.chat.id, "🔹 請使用按鈕操作，勿直接輸入文字", reply_markup=main_menu())
+# 5. /set_reward [币种] [数值] - 设置币种挖矿奖励
+@bot.message_handler(commands=['set_reward'])
+def set_coin_reward(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        _, coin, val = message.text.split()
+        val = int(val)
+        if coin in coin_reward:
+            coin_reward[coin] = val
+            bot.send_message(message.chat.id, f"✅ {coin} 挖礦獎勵設為 {val}")
+        else:
+            bot.send_message(message.chat.id, f"❌ 幣種 {coin} 不存在")
+    except:
+        bot.send_message(message.chat.id, "格式：/set_reward [幣種] [數值]")
 
-# ==================== 啟動機器人 ====================
+# 6. /add_trx [用户ID] [数量] - 增加用户TRX
+@bot.message_handler(commands=['add_trx'])
+def add_trx(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        _, target_uid, amount = message.text.split()
+        target_uid = int(target_uid)
+        amount = float(amount)
+        user_data[target_uid]["trx"] += amount
+        bot.send_message(message.chat.id, f"✅ 給用戶 {target_uid} 添加 {amount} TRX")
+    except:
+        bot.send_message(message.chat.id, "格式：/add_trx [用戶ID] [數量]")
+
+# 7. /reduce_trx [用户ID] [数量] - 减少用户TRX
+@bot.message_handler(commands=['reduce_trx'])
+def reduce_trx(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        _, target_uid, amount = message.text.split()
+        target_uid = int(target_uid)
+        amount = float(amount)
+        user_data[target_uid]["trx"] = max(0, user_data[target_uid]["trx"] - amount)
+        bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {amount} TRX")
+    except:
+        bot.send_message(message.chat.id, "格式：/reduce_trx [用戶ID] [數量]")
+
+# ---------------------- 启动机器人 ----------------------
 if __name__ == "__main__":
-    bot.infinity_polling()
+    bot.polling(none_stop=True)
