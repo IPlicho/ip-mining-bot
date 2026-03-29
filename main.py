@@ -18,7 +18,8 @@ user_data = defaultdict(lambda: {
     "points": 0,
     "total_withdraw_boost": 0,
     "banned": False,
-    "airdrop_claimed": False
+    "airdrop_claimed": False,
+    "mining_today_locked": False # 新增：今日挖矿是否被管理员停止
 })
 
 # 12个挖矿币种
@@ -53,7 +54,7 @@ def main_menu(message):
         reply_markup=markup
     )
 
-# ====================== 開始IP節點挖礦（菜单不消失） ======================
+# ====================== 開始IP節點挖礦（菜单不消失 + 停止判断） ======================
 @bot.callback_query_handler(func=lambda call: call.data == "start_mining")
 def mining_coin_select(call):
     uid = call.from_user.id
@@ -62,6 +63,9 @@ def mining_coin_select(call):
         return
     if not user_data[uid]["mining_approved"]:
         bot.answer_callback_query(call.id, "❌ 請先申請並通過挖礦權限")
+        return
+    if user_data[uid]["mining_today_locked"]:
+        bot.answer_callback_query(call.id, "❌ 今日挖礦已結束，暫時無法繼續助力", show_alert=True)
         return
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -77,6 +81,10 @@ def mining_coin_select(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("mine_"))
 def mine_coin(call):
     uid = call.from_user.id
+    if user_data[uid]["mining_today_locked"]:
+        bot.answer_callback_query(call.id, "❌ 今日挖礦已結束，無法獲得助力", show_alert=True)
+        return
+        
     coin = call.data.replace("mine_", "")
     reward = coin_reward.get(coin, 100)
     user_data[uid]["boost"] += reward
@@ -134,13 +142,17 @@ def daily_airdrop(call):
 @bot.callback_query_handler(func=lambda call: call.data == "asset_overview")
 def show_asset(call):
     uid = call.from_user.id
+    mining_status = "已開通" if user_data[uid]["mining_approved"] else "待開通"
+    lock_status = "🔴 暫停中" if user_data[uid]["mining_today_locked"] else "🟢 正常"
+    
     info = (
         f"👤 個人資產總覽\n"
         f"💎 助力值：{user_data[uid]['boost']}\n"
         f"🪙 TRX 餘額：{user_data[uid]['trx']} TRX\n"
-        f"✅ 挖礦權限：{'已開通' if user_data[uid]['mining_approved'] else '待開通'}\n"
+        f"✅ 挖礦權限：{mining_status}\n"
         f"📊 ID積分：{user_data[uid]['points']}\n"
-        f"📈 累計回戶助力值：{user_data[uid]['total_withdraw_boost']}"
+        f"📈 累計回戶助力值：{user_data[uid]['total_withdraw_boost']}\n"
+        f"🔄 今日狀態：{lock_status}"
     )
     bot.send_message(call.message.chat.id, info)
 
@@ -273,39 +285,4 @@ def reduce_trx(message):
         target_uid = int(target_uid)
         amount = float(amount)
         user_data[target_uid]["trx"] = max(0, user_data[target_uid]["trx"] - amount)
-        bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {amount} TRX")
-    except:
-        bot.send_message(message.chat.id, "格式：/reduce_trx [用戶ID] [數量]")
-
-# ====================== 新增扣除助力值/積分指令 ======================
-@bot.message_handler(commands=['reduce_boost'])
-def reduce_boost(message):
-    if not is_admin(message.from_user.id):
-        return
-    try:
-        _, target_uid, val = message.text.split()
-        target_uid = int(target_uid)
-        val = int(val)
-        user_data[target_uid]["boost"] = max(0, user_data[target_uid]["boost"] - val)
-        bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {val} 點助力值")
-        bot.send_message(target_uid, f"⚠️ 你的助力值被管理員扣除 {val} 點，當前總助力值：{user_data[target_uid]['boost']}")
-    except:
-        bot.send_message(message.chat.id, "格式：/reduce_boost [用戶ID] [數值]")
-
-@bot.message_handler(commands=['reduce_point'])
-def reduce_point(message):
-    if not is_admin(message.from_user.id):
-        return
-    try:
-        _, target_uid, val = message.text.split()
-        target_uid = int(target_uid)
-        val = int(val)
-        user_data[target_uid]["points"] = max(0, user_data[target_uid]["points"] - val)
-        bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {val} 點積分")
-        bot.send_message(target_uid, f"⚠️ 你的積分被管理員扣除 {val} 點，當前總積分：{user_data[target_uid]['points']}")
-    except:
-        bot.send_message(message.chat.id, "格式：/reduce_point [用戶ID] [數值]")
-
-# ====================== 啟動機器人 ======================
-if __name__ == "__main__":
-    bot.polling(none_stop=True)
+       bot.send_message(message.chat.id, f"✅ 扣減用戶 {target_uid} {amount} TRX")
