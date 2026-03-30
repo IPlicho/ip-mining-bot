@@ -1,14 +1,20 @@
 import telebot
 import time
+import threading
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
-from datetime import datetime
+from telebot import apihelper
 
-# 机器人配置
+# 配置 API 重试，解决 Railway 网络问题
+apihelper.RETRY_ON_ERROR = True
+apihelper.CONNECT_TIMEOUT = 30
+apihelper.READ_TIMEOUT = 300
+
+# 机器人配置（已替换为你的正确 Token）
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 双管理员ID
+# 双管理员ID（请确认你的ID在此列表中，否则管理指令无效）
 ADMIN_IDS = [8256055083, 810821053]
 
 # 用户数据存储
@@ -58,7 +64,6 @@ def main_menu(message):
 
     markup = InlineKeyboardMarkup(row_width=1)
     btn1 = InlineKeyboardButton("⛏️ 開始IP節點挖礦", callback_data="start_mining")
-    # 只改这里：申请挖矿权限 → 申请绑定IP节点
     btn2 = InlineKeyboardButton("🚀 申請綁定IP節點", callback_data="apply_mining")
     btn3 = InlineKeyboardButton("🔄 申請回戶作業", callback_data="apply_withdraw")
     btn4 = InlineKeyboardButton("🧧 每日空投領取", callback_data="daily_airdrop")
@@ -100,6 +105,19 @@ def mining_coin_select(call):
         reply_markup=markup
     )
 
+# 异步挖矿线程（修复阻塞问题）
+def mining_thread(call, coin, delay, reward):
+    uid = call.from_user.id
+    u = user_data[uid]
+    time.sleep(delay)
+    u["boost"] += reward
+    u["mine_count_today"] += 1
+    bot.send_message(
+        call.message.chat.id,
+        f"✅ 挖礦完成：{coin}\nLv.{u['level']} 節點\n🎉 獲得助力值：+{reward}\n💎 當前總助力值：{u['boost']}"
+    )
+    main_menu(call.message)
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith("mine_"))
 def mine_coin(call):
     uid = call.from_user.id
@@ -116,16 +134,8 @@ def mine_coin(call):
     delay, reward = LEVEL_CONFIG.get(level, (8, 100))
 
     bot.answer_callback_query(call.id, f"⏳ 正在挖礦 {coin}，節點驗證中…", show_alert=True)
-    time.sleep(delay)
-
-    u["boost"] += reward
-    u["mine_count_today"] += 1
-
-    bot.send_message(
-        call.message.chat.id,
-        f"✅ 挖礦完成：{coin}\nLv.{level} 節點\n🎉 獲得助力值：+{reward}\n💎 當前總助力值：{u['boost']}"
-    )
-    main_menu(call.message)
+    # 放到独立线程执行，不阻塞主线程
+    threading.Thread(target=mining_thread, args=(call, coin, delay, reward), daemon=True).start()
 
 # ====================== 申請綁定IP節點 ======================
 @bot.callback_query_handler(func=lambda call: call.data == "apply_mining")
@@ -396,7 +406,6 @@ def set_airdrop(message):
     except:
         bot.send_message(message.chat.id, "格式：/set_airdrop 數值")
 
-# ====================== 本次新增：等級與挖礦次數指令 ======================
 @bot.message_handler(commands=['setlevel'])
 def set_level(message):
     if not is_admin(message.from_user.id):
