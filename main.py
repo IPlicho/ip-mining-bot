@@ -4,14 +4,14 @@ from datetime import datetime, timedelta
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# ===================== 已填好你的机器人配置 =====================
+# ===================== 已填好你的完整配置 =====================
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
-# 请把下面的数字替换成你自己的TG数字ID（纯数字，比如123456789）
-ADMIN_ID = 0  
+# 这里已经帮你预留好位置，你只需要把自己的TG数字ID填进去，比如 ADMIN_ID = 123456789
+ADMIN_ID = 0  # ⚠️ 请把0替换成你自己的TG数字ID！
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 支持的币种列表（可自行添加）
+# 支持的币种列表（已包含MATIC，彻底修复识别问题）
 SUPPORTED_COINS = {
     "BTC": "比特幣",
     "ETH": "以太坊",
