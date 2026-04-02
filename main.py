@@ -83,7 +83,8 @@ lang = {
         "status_running": "🟢 正常",
         "status_stopped": "🔴 暫停中",
         "support_msg": "✅ 聯繫客服請 @fcff88，請稍候回覆",
-        "lang_switch": "✅ 語言已切換"
+        "lang_switched_zh": "✅ 語言已切換為中文",
+        "lang_switched_en": "✅ Language switched to English"
     },
     "en": {
         "start_title": "IP Node Mining System | Pro Exchange Version\nWelcome, use the buttons below.",
@@ -119,12 +120,13 @@ lang = {
         "status_running": "🟢 Active",
         "status_stopped": "🔴 Stopped",
         "support_msg": "✅ Contact support @fcff88",
-        "lang_switch": "✅ Language switched"
+        "lang_switched_zh": "✅ 語言已切換為中文",
+        "lang_switched_en": "✅ Language switched to English"
     }
 }
 
-def t(uid, key):
-    return lang[user_lang[uid]].get(key, key)
+def get_text(uid, key):
+    return lang[user_lang[uid]][key]
 
 # 管理员判断
 def is_admin(user_id):
@@ -134,29 +136,36 @@ def is_admin(user_id):
 @bot.message_handler(commands=['lang'])
 def switch_lang(message):
     uid = message.from_user.id
-    user_lang[uid] = "en" if user_lang[uid] == "zh" else "zh"
-    bot.send_message(message.chat.id, t(uid, "lang_switch"))
-    main_menu(message)
+    if user_lang[uid] == "zh":
+        user_lang[uid] = "en"
+        msg = get_text(uid, "lang_switched_en")
+    else:
+        user_lang[uid] = "zh"
+        msg = get_text(uid, "lang_switched_zh")
+    bot.send_message(message.chat.id, msg)
+    show_main_menu(message.chat.id, uid)
 
 # ====================== 主菜单 ======================
-@bot.message_handler(commands=['start'])
-def main_menu(message):
-    uid = message.from_user.id
+def show_main_menu(chat_id, uid):
     if user_data[uid]["banned"]:
-        bot.send_message(message.chat.id, t(uid, "banned"))
+        bot.send_message(chat_id, get_text(uid, "banned"))
         return
 
     markup = InlineKeyboardMarkup(row_width=1)
-    btn1 = InlineKeyboardButton(t(uid, "btn_start_mine"), callback_data="start_mining")
-    btn2 = InlineKeyboardButton(t(uid, "btn_apply_ip"), callback_data="apply_mining")
-    btn3 = InlineKeyboardButton(t(uid, "btn_withdraw"), callback_data="apply_withdraw")
-    btn4 = InlineKeyboardButton(t(uid, "btn_airdrop"), callback_data="daily_airdrop")
-    btn5 = InlineKeyboardButton(t(uid, "btn_asset"), callback_data="asset_overview")
-    btn6 = InlineKeyboardButton(t(uid, "btn_rules"), callback_data="project_rules")
-    btn7 = InlineKeyboardButton(t(uid, "btn_support"), callback_data="support")
+    btn1 = InlineKeyboardButton(get_text(uid, "btn_start_mine"), callback_data="start_mining")
+    btn2 = InlineKeyboardButton(get_text(uid, "btn_apply_ip"), callback_data="apply_mining")
+    btn3 = InlineKeyboardButton(get_text(uid, "btn_withdraw"), callback_data="apply_withdraw")
+    btn4 = InlineKeyboardButton(get_text(uid, "btn_airdrop"), callback_data="daily_airdrop")
+    btn5 = InlineKeyboardButton(get_text(uid, "btn_asset"), callback_data="asset_overview")
+    btn6 = InlineKeyboardButton(get_text(uid, "btn_rules"), callback_data="project_rules")
+    btn7 = InlineKeyboardButton(get_text(uid, "btn_support"), callback_data="support")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7)
 
-    bot.send_message(message.chat.id, t(uid, "start_title"), reply_markup=markup)
+    bot.send_message(chat_id, get_text(uid, "start_title"), reply_markup=markup)
+
+@bot.message_handler(commands=['start'])
+def main_menu(message):
+    show_main_menu(message.chat.id, message.from_user.id)
 
 # ====================== 挖矿 ======================
 @bot.callback_query_handler(func=lambda call: call.data == "start_mining")
@@ -164,22 +173,22 @@ def mining_coin_select(call):
     uid = call.from_user.id
     u = user_data[uid]
     if u["banned"]:
-        bot.answer_callback_query(call.id, t(uid, "banned"))
+        bot.answer_callback_query(call.id, get_text(uid, "banned"))
         return
     if not u["mining_approved"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_no_perm"))
+        bot.answer_callback_query(call.id, get_text(uid, "mine_no_perm"))
         return
     if u["mining_today_locked"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_locked"), show_alert=True)
+        bot.answer_callback_query(call.id, get_text(uid, "mine_locked"), show_alert=True)
         return
     if u["mine_count_today"] >= u["max_mine_per_day"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_max"), show_alert=True)
+        bot.answer_callback_query(call.id, get_text(uid, "mine_max"), show_alert=True)
         return
 
     markup = InlineKeyboardMarkup(row_width=3)
     coin_btns = [InlineKeyboardButton(c, callback_data=f"mine_{c}") for c in COINS]
     markup.add(*coin_btns)
-    bot.edit_message_text(t(uid, "mine_select"), call.message.chat.id, call.message.message_id, reply_markup=markup)
+    bot.edit_message_text(get_text(uid, "mine_select"), call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("mine_"))
 def mine_coin(call):
@@ -189,7 +198,7 @@ def mine_coin(call):
     if u["banned"] or not u["mining_approved"] or u["mining_today_locked"]:
         return
     if u["mine_count_today"] >= u["max_mine_per_day"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_max"), show_alert=True)
+        bot.answer_callback_query(call.id, get_text(uid, "mine_max"), show_alert=True)
         return
 
     coin = call.data.replace("mine_", "")
@@ -197,26 +206,24 @@ def mine_coin(call):
     delay, _ = LEVEL_CONFIG.get(level, (8, 100))
     reward = coin_reward.get(coin, 100)
 
-    bot.answer_callback_query(call.id, t(uid, "mining_process").format(coin), show_alert=True)
+    bot.answer_callback_query(call.id, get_text(uid, "mining_process").format(coin), show_alert=True)
     time.sleep(delay)
 
     u["boost"] += reward
     u["mine_count_today"] += 1
 
-    bot.send_message(call.message.chat.id, t(uid, "mine_success").format(coin, level, reward, u['boost']))
-    
-    # 关键修复：挖矿后重新发送当前语言的菜单
-    main_menu(call.message)
+    bot.send_message(call.message.chat.id, get_text(uid, "mine_success").format(coin, level, reward, u['boost']))
+    show_main_menu(call.message.chat.id, uid)
 
 # ====================== 申请绑定 ======================
 @bot.callback_query_handler(func=lambda call: call.data == "apply_mining")
 def apply_mining(call):
     uid = call.from_user.id
     if user_data[uid]["banned"]:
-        bot.answer_callback_query(call.id, t(uid, "banned"))
+        bot.answer_callback_query(call.id, get_text(uid, "banned"))
         return
     if user_data[uid]["mining_approved"]:
-        bot.answer_callback_query(call.id, t(uid, "already_approved"))
+        bot.answer_callback_query(call.id, get_text(uid, "already_approved"))
         return
 
     for admin_id in ADMIN_IDS:
@@ -224,16 +231,16 @@ def apply_mining(call):
             admin_id,
             f"🔔 New Mining Application\nUser ID: {uid}\nReply:\n/agree {uid}  Approve\n/refuse {uid}  Reject"
         )
-    bot.send_message(call.message.chat.id, t(uid, "apply_sent"))
+    bot.send_message(call.message.chat.id, get_text(uid, "apply_sent"))
 
 # ====================== 申请回户 ======================
 @bot.callback_query_handler(func=lambda call: call.data == "apply_withdraw")
 def apply_withdraw(call):
     uid = call.from_user.id
     if user_data[uid]["banned"]:
-        bot.answer_callback_query(call.id, t(uid, "banned"))
+        bot.answer_callback_query(call.id, get_text(uid, "banned"))
         return
-    bot.send_message(call.message.chat.id, t(uid, "withdraw_tip"))
+    bot.send_message(call.message.chat.id, get_text(uid, "withdraw_tip"))
 
 # ====================== 每日空投 ======================
 @bot.callback_query_handler(func=lambda call: call.data == "daily_airdrop")
@@ -241,16 +248,16 @@ def daily_airdrop(call):
     uid = call.from_user.id
     u = user_data[uid]
     if u["banned"]:
-        bot.answer_callback_query(call.id, t(uid, "banned"))
+        bot.answer_callback_query(call.id, get_text(uid, "banned"))
         return
     if u["airdrop_claimed"]:
-        bot.answer_callback_query(call.id, t(uid, "airdrop_today_claimed"))
+        bot.answer_callback_query(call.id, get_text(uid, "airdrop_today_claimed"))
         return
 
     points = AIRDROP_CONFIG["daily_points"]
     u["points"] += points
     u["airdrop_claimed"] = True
-    bot.send_message(call.message.chat.id, t(uid, "airdrop_done").format(points, u["points"]))
+    bot.send_message(call.message.chat.id, get_text(uid, "airdrop_done").format(points, u["points"]))
 
 # ====================== 资产总览 ======================
 @bot.callback_query_handler(func=lambda call: call.data == "asset_overview")
@@ -258,18 +265,18 @@ def show_asset(call):
     uid = call.from_user.id
     u = user_data[uid]
 
-    mining_status = t(uid, "status_on") if u["mining_approved"] else t(uid, "status_off")
-    lock_status = t(uid, "status_stopped") if u["mining_today_locked"] else t(uid, "status_running")
+    mining_status = get_text(uid, "status_on") if u["mining_approved"] else get_text(uid, "status_off")
+    lock_status = get_text(uid, "status_stopped") if u["mining_today_locked"] else get_text(uid, "status_running")
 
     info = (
-        f"{t(uid, 'asset_title')}\n"
-        f"{t(uid, 'level').format(u['level'])}\n"
-        f"{t(uid, 'mine_today').format(u['mine_count_today'], u['max_mine_per_day'])}\n"
-        f"{t(uid, 'boost')}{u['boost']}\n"
-        f"{t(uid, 'trx_balance')}{u['trx']}\n"
-        f"{t(uid, 'mine_status')}{mining_status}\n"
-        f"{t(uid, 'points')}{u['points']}\n"
-        f"{t(uid, 'total_withdraw')}{u['total_withdraw_boost']}"
+        f"{get_text(uid, 'asset_title')}\n"
+        f"{get_text(uid, 'level').format(u['level'])}\n"
+        f"{get_text(uid, 'mine_today').format(u['mine_count_today'], u['max_mine_per_day'])}\n"
+        f"{get_text(uid, 'boost')}{u['boost']}\n"
+        f"{get_text(uid, 'trx_balance')}{u['trx']}\n"
+        f"{get_text(uid, 'mine_status')}{mining_status}\n"
+        f"{get_text(uid, 'points')}{u['points']}\n"
+        f"{get_text(uid, 'total_withdraw')}{u['total_withdraw_boost']}"
     )
     bot.send_message(call.message.chat.id, info)
 
@@ -301,10 +308,8 @@ By participating in mining through this bot, you contribute computing power and 
 The system distributes boost rewards based on your node activity — higher boost means higher returns.
 
 🔹 Why IP Node Mining is High-Yield & LEGAL
-Buying, holding, mining, and trading crypto are all decentralized blockchain behaviors.
-There is currently no unified global law that classifies these actions as illegal.
-Most countries only implement regulatory frameworks, not criminal penalties for mining.
-Decentralized projects are not controlled by any single authority.
+Buying, holding, mining, and trading crypto are decentralized blockchain behaviors.
+There is no global law banning these activities. Most countries only regulate, not criminalize.
 
 🏢 Yunding Capital Group
 Headquartered in Dubai, operating in over 20 countries.
@@ -315,11 +320,11 @@ Approved by US financial regulatory systems.
 Serving 50,000+ Telegram users.
 
 🌍 Project History
-• 2018: Officially launched on Telegram
-• 2021: Partnered with guarantee institutions for compliant operation
-• 2022: IP Node Mining officially released
-• 2024: Ecosystem matured with multiple capital supports
-• 2025: Continuous optimization — low threshold, low risk, easy to use, for long-term wealth growth"""
+• 2018: Launched on Telegram
+• 2021: Partnered for compliance
+• 2022: IP Node Mining released
+• 2024: Ecosystem matured
+• 2025: Continuous optimization"""
 
     bot.send_message(call.message.chat.id, text)
 
@@ -327,7 +332,7 @@ Serving 50,000+ Telegram users.
 @bot.callback_query_handler(func=lambda call: call.data == "support")
 def support(call):
     uid = call.from_user.id
-    bot.send_message(call.message.chat.id, t(uid, "support_msg"))
+    bot.send_message(call.message.chat.id, get_text(uid, "support_msg"))
 
 # ====================== 管理员审批 ======================
 @bot.message_handler(commands=['agree'])
