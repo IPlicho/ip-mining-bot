@@ -4,7 +4,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 
 # 机器人配置
-BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
+BOT_TOKEN = "8256055083:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # 管理员ID
@@ -60,7 +60,7 @@ lang = {
         "mine_max": "❌ 今日挖礦次數已達上限",
         "mining_process": "⏳ 正在挖礦 {}，節點驗證中…",
         "mine_success": "✅ 挖礦完成：{}\nLv.{} 節點\n🎉 助力值 +{}\n💎 總助力：{}",
-        "apply_sent": "✅ 申請已提交，等待管理員審批",
+        "apply_sent": "✅ 申請已提交，管理員將盡快審核",
         "already_approved": "✅ 你已經擁有挖礦權限",
         "withdraw_tip": "✅ 請把回戶數值+ID發送客服 @fcff88",
         "airdrop_done": "🧧 空投領取成功！積分 +{}",
@@ -79,7 +79,8 @@ lang = {
         "status_stopped": "🔴 暫停",
         "support_msg": "✅ 聯繫客服 @fcff88",
         "lang_switched": "✅ 語言切換成功",
-        "project_rules_text": "📜 項目資格說明書\n1. 本系統為IP節點挖礦，僅限授權用戶使用\n2. 每日挖礦次數依等級設有上限\n3. 助力值可用於兌換與提現\n4. 嚴禁作弊、惡意刷號，違規封禁\n5. 平台保留最終解釋權"
+        "project_rules_text": "📜 項目資格說明書\n1. 本系統為IP節點挖礦，僅限授權用戶使用\n2. 每日挖礦次數依等級設有上限\n3. 助力值可用於兌換與提現\n4. 嚴禁作弊、惡意刷號，違規封禁\n5. 平台保留最終解釋權",
+        "approved_notify": "✅ 恭喜！你的挖礦申請已通過，可開始挖礦"
     },
     "en": {
         "start_title": "IP Node Mining System\nWelcome! Use the buttons below.",
@@ -97,9 +98,9 @@ lang = {
         "mine_max": "❌ Daily limit reached.",
         "mining_process": "⏳ Mining {}...",
         "mine_success": "✅ Mined: {}\nLv.{} Node\n🎉 Boost +{}\n💎 Total: {}",
-        "apply_sent": "✅ Application sent, waiting admin approval.",
-        "already_approved": "✅ You already have access.",
-        "withdraw_tip": "✅ Contact support @fcff88",
+        "apply_sent": "✅ Application sent, admin will review soon.",
+        "already_approved": "✅ You already have mining access.",
+        "withdraw_tip": "✅ Contact support @fcff88 with your UID.",
         "airdrop_done": "🧧 Airdrop claimed! Points +{}",
         "airdrop_today_claimed": "❌ Already claimed today.",
         "asset_title": "👤 My Assets",
@@ -116,7 +117,8 @@ lang = {
         "status_stopped": "🔴 Stopped",
         "support_msg": "✅ Support @fcff88",
         "lang_switched": "✅ Language switched",
-        "project_rules_text": "📜 Project Rules\n1. This system is for IP node mining, authorized users only\n2. Daily mining limits based on level\n3. Boost points can be used for exchange & withdrawal\n4. Cheating & multi-account abuse will be banned\n5. Platform reserves all rights of final interpretation"
+        "project_rules_text": "📜 Project Rules\n1. This system is for IP node mining, authorized users only\n2. Daily mining limits based on level\n3. Boost points can be used for exchange & withdrawal\n4. Cheating & multi-account abuse will be banned\n5. Platform reserves all rights of final interpretation",
+        "approved_notify": "✅ Your mining application has been approved!"
     }
 }
 
@@ -160,20 +162,22 @@ def cb_start_mining(call):
     uid = call.from_user.id
     u = user_data[uid]
     if u["banned"]:
+        bot.answer_callback_query(call.id, t(uid, "banned"), show_alert=True)
         return
     if not u["mining_approved"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_no_perm"))
+        bot.answer_callback_query(call.id, t(uid, "mine_no_perm"), show_alert=True)
         return
     if u["mining_today_locked"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_locked"))
+        bot.answer_callback_query(call.id, t(uid, "mine_locked"), show_alert=True)
         return
     if u["mine_count_today"] >= u["max_mine_per_day"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_max"))
+        bot.answer_callback_query(call.id, t(uid, "mine_max"), show_alert=True)
         return
     mk = InlineKeyboardMarkup(row_width=3)
     btns = [InlineKeyboardButton(c, callback_data=f"mine_{c}") for c in COINS]
     mk.add(*btns)
     bot.edit_message_text(t(uid, "mine_select"), call.message.chat.id, call.message.id, reply_markup=mk)
+    bot.answer_callback_query(call.id)
 
 # 执行挖矿
 @bot.callback_query_handler(func=lambda c: c.data.startswith("mine_"))
@@ -181,9 +185,10 @@ def cb_mine(call):
     uid = call.from_user.id
     u = user_data[uid]
     if u["banned"] or not u["mining_approved"] or u["mining_today_locked"]:
+        bot.answer_callback_query(call.id)
         return
     if u["mine_count_today"] >= u["max_mine_per_day"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_max"))
+        bot.answer_callback_query(call.id, t(uid, "mine_max"), show_alert=True)
         return
 
     coin = call.data.split("_")[1]
@@ -205,19 +210,22 @@ def cb_mine(call):
 def cb_apply(call):
     uid = call.from_user.id
     if user_data[uid]["banned"]:
+        bot.answer_callback_query(call.id)
         return
     if user_data[uid]["mining_approved"]:
-        bot.answer_callback_query(call.id, t(uid, "already_approved"))
+        bot.answer_callback_query(call.id, t(uid, "already_approved"), show_alert=True)
         return
     for a in ADMIN_IDS:
         bot.send_message(a, f"🔔 New apply\nUID: {uid}\n/agree {uid}  /refuse {uid}")
     bot.send_message(call.message.chat.id, t(uid, "apply_sent"))
+    bot.answer_callback_query(call.id)
 
 # 提现
 @bot.callback_query_handler(func=lambda c: c.data == "apply_withdraw")
 def cb_withdraw(call):
     uid = call.from_user.id
     bot.send_message(call.message.chat.id, t(uid, "withdraw_tip"))
+    bot.answer_callback_query(call.id)
 
 # 空投
 @bot.callback_query_handler(func=lambda c: c.data == "daily_airdrop")
@@ -225,13 +233,15 @@ def cb_airdrop(call):
     uid = call.from_user.id
     u = user_data[uid]
     if u["banned"]:
+        bot.answer_callback_query(call.id)
         return
     if u["airdrop_claimed"]:
-        bot.answer_callback_query(call.id, t(uid, "airdrop_today_claimed"))
+        bot.answer_callback_query(call.id, t(uid, "airdrop_today_claimed"), show_alert=True)
         return
     u["airdrop_claimed"] = True
     u["points"] += 10
     bot.send_message(call.message.chat.id, t(uid, "airdrop_done").format(10))
+    bot.answer_callback_query(call.id)
 
 # 资产
 @bot.callback_query_handler(func=lambda c: c.data == "asset_overview")
@@ -251,18 +261,21 @@ def cb_asset(call):
         f"{t(uid, 'total_withdraw')}{u['total_withdraw_boost']}"
     )
     bot.send_message(call.message.chat.id, txt)
+    bot.answer_callback_query(call.id)
 
 # 项目规则
 @bot.callback_query_handler(func=lambda c: c.data == "project_rules")
 def cb_rules(call):
     uid = call.from_user.id
     bot.send_message(call.message.chat.id, t(uid, "project_rules_text"))
+    bot.answer_callback_query(call.id)
 
 # 客服
 @bot.callback_query_handler(func=lambda c: c.data == "support")
 def cb_support(call):
     uid = call.from_user.id
     bot.send_message(call.message.chat.id, t(uid, "support_msg"))
+    bot.answer_callback_query(call.id)
 
 # 管理员审批
 @bot.message_handler(commands=['agree'])
@@ -271,8 +284,10 @@ def cmd_agree(msg):
         return
     try:
         _, uid = msg.text.split()
-        user_data[int(uid)]["mining_approved"] = True
+        uid = int(uid)
+        user_data[uid]["mining_approved"] = True
         bot.send_message(msg.chat.id, f"✅ Approved {uid}")
+        bot.send_message(uid, t(uid, "approved_notify"))
     except:
         bot.send_message(msg.chat.id, "Usage: /agree UID")
 
