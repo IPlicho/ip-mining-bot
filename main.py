@@ -58,7 +58,7 @@ lang = {
         "mine_no_perm": "❌ 請先申請並通過挖礦權限",
         "mine_locked": "❌ 今日挖礦已結束",
         "mine_max": "❌ 今日挖礦次數已達上限",
-        "mining_process": "⏳ 正在挖礦 {}，節點驗證中…",
+        "mining_process": "正在挖矿请等待…",
         "mine_success": "✅ 挖礦完成：{}\nLv.{} 節點\n🎉 助力值 +{}\n💎 總助力：{}",
         "apply_sent": "✅ 申請已提交，管理員將盡快審核",
         "already_approved": "✅ 你已經擁有挖礦權限",
@@ -96,7 +96,7 @@ lang = {
         "mine_no_perm": "❌ Please apply for mining access first.",
         "mine_locked": "❌ Mining closed today.",
         "mine_max": "❌ Daily limit reached.",
-        "mining_process": "⏳ Mining {}...",
+        "mining_process": "Mining, please wait...",
         "mine_success": "✅ Mined: {}\nLv.{} Node\n🎉 Boost +{}\n💎 Total: {}",
         "apply_sent": "✅ Application sent, admin will review soon.",
         "already_approved": "✅ You already have mining access.",
@@ -196,7 +196,8 @@ def cb_mine(call):
     reward = coin_reward.get(coin, 100)
     delay = coin_delay.get(coin, 8)
 
-    bot.answer_callback_query(call.id, t(uid, "mining_process").format(coin))
+    # 这里只改了弹窗文字，其他完全不动
+    bot.answer_callback_query(call.id, t(uid, "mining_process"), show_alert=True)
     time.sleep(delay)
 
     u["boost"] += reward
@@ -455,7 +456,7 @@ def cmd_setreward(msg):
     except:
         bot.send_message(msg.chat.id, "/set_reward BTC 200")
 
-# 设置挖矿延迟时间（你要的指令）
+# 设置挖矿延迟时间
 @bot.message_handler(commands=['set_delay'])
 def cmd_setdelay(msg):
     if not is_admin(msg.from_user.id):
