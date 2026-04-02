@@ -384,20 +384,6 @@ def set_level(message):
     except:
         bot.send_message(message.chat.id, "Usage: /setlevel user_id level")
 
-# ====================== 【新增】设置挖矿次数 ======================
-@bot.message_handler(commands=['setminetimes'])
-def set_mine_times(message):
-    if not is_admin(message.from_user.id):
-        return
-    try:
-        _, target_uid, times = message.text.split()
-        target_uid = int(target_uid)
-        times = int(times)
-        user_data[target_uid]["max_mine_per_day"] = times
-        bot.send_message(message.chat.id, f"✅ Success! Set to {times} times/day")
-    except:
-        bot.send_message(message.chat.id, "Usage: /setminetimes user_id times")
-
 @bot.message_handler(commands=['stop_mining'])
 def stop_mining(message):
     if not is_admin(message.from_user.id):
@@ -419,6 +405,37 @@ def resume_mining(message):
         bot.send_message(message.chat.id, "✅ Mining resumed")
     except:
         bot.send_message(message.chat.id, "Usage: /resume_mining user_id")
+
+# ====================== 新增：设置每日挖矿次数（不动原有功能） ======================
+@bot.message_handler(commands=['setminetimes'])
+def set_mine_times(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        _, target_uid, times = message.text.split()
+        target_uid = int(target_uid)
+        times = int(times)
+        user_data[target_uid]["max_mine_per_day"] = times
+        bot.send_message(message.chat.id, f"✅ 成功設置每日挖礦次數：{times} 次")
+    except:
+        bot.send_message(message.chat.id, "用法：/setminetimes 用户ID 次數")
+
+# ====================== 新增：设置单个币种奖励（不动原有功能） ======================
+@bot.message_handler(commands=['set_reward'])
+def set_coin_reward(message):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        _, coin, value = message.text.split()
+        coin = coin.upper()
+        value = int(value)
+        if coin in coin_reward:
+            coin_reward[coin] = value
+            bot.send_message(message.chat.id, f"✅ {coin} 挖礦獎勵已設置為 {value}")
+        else:
+            bot.send_message(message.chat.id, "❌ 幣種不存在")
+    except:
+        bot.send_message(message.chat.id, "用法：/set_reward BTC 200")
 
 # ====================== 启动机器人 ======================
 if __name__ == "__main__":
