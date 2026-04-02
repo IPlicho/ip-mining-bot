@@ -32,6 +32,7 @@ user_lang = defaultdict(lambda: "zh")
 COINS = ["BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "MATIC", "DOT", "LINK"]
 coin_reward = {c: 100 for c in COINS}
 coin_delay = {c: 8 for c in COINS}
+AIRDROP_REWARD = 10
 
 # 等级配置
 LEVEL_CONFIG = {
@@ -196,7 +197,6 @@ def cb_mine(call):
     reward = coin_reward.get(coin, 100)
     delay = coin_delay.get(coin, 8)
 
-    # 这里只改了弹窗文字，其他完全不动
     bot.answer_callback_query(call.id, t(uid, "mining_process"), show_alert=True)
     time.sleep(delay)
 
@@ -240,8 +240,8 @@ def cb_airdrop(call):
         bot.answer_callback_query(call.id, t(uid, "airdrop_today_claimed"), show_alert=True)
         return
     u["airdrop_claimed"] = True
-    u["points"] += 10
-    bot.send_message(call.message.chat.id, t(uid, "airdrop_done").format(10))
+    u["points"] += AIRDROP_REWARD
+    bot.send_message(call.message.chat.id, t(uid, "airdrop_done").format(AIRDROP_REWARD))
     bot.answer_callback_query(call.id)
 
 # 资产
@@ -418,9 +418,9 @@ def cmd_rpoint(msg):
     try:
         _, uid, v = msg.text.split()
         user_data[int(uid)]["points"] = max(0, user_data[int(uid)]["points"] - int(v))
-        bot.send_message(msg.chat.id, f"✅ -{v} points")
+        bot.send_message(msg.chat.id, f"✅ 已扣除用户 {uid} 积分：{v}")
     except:
-        bot.send_message(msg.chat.id, "/reduce_point UID val")
+        bot.send_message(msg.chat.id, "用法：/reduce_point UID 数值")
 
 @bot.message_handler(commands=['withdraw'])
 def cmd_withdraw(msg):
@@ -472,6 +472,19 @@ def cmd_setdelay(msg):
             bot.send_message(msg.chat.id, "❌ 币种不存在")
     except:
         bot.send_message(msg.chat.id, "用法：/set_delay BTC 10")
+
+# 设置空投金额
+@bot.message_handler(commands=['set_airdrop'])
+def cmd_set_airdrop(msg):
+    if not is_admin(msg.from_user.id):
+        return
+    try:
+        _, amount = msg.text.split()
+        global AIRDROP_REWARD
+        AIRDROP_REWARD = int(amount)
+        bot.send_message(msg.chat.id, f"✅ 空投红包已设置为：{amount} 积分")
+    except:
+        bot.send_message(msg.chat.id, "用法：/set_airdrop 88")
 
 # 启动
 if __name__ == "__main__":
