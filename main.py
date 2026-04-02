@@ -31,10 +31,9 @@ user_lang = defaultdict(lambda: "zh")
 # 币种与奖励
 COINS = ["BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "MATIC", "DOT", "LINK"]
 coin_reward = {c: 100 for c in COINS}
-# 新增：币种挖矿延迟秒数（默认统一8秒）
 coin_delay = {c: 8 for c in COINS}
 
-# 等级配置（只影响基础倍率，不影响延迟）
+# 等级配置
 LEVEL_CONFIG = {
     1: (8, 100),
     2: (12, 120),
@@ -106,7 +105,7 @@ lang = {
         "level": "Level: Lv.{}",
         "mine_today": "Today: {}/{}",
         "boost": "💎 Boost: {}",
-        "trx_balance": "🪙 TRX:",
+        "trx_balance": "🪙 TRX: {}",
         "mine_status": "✅ Mining: {}",
         "points": "📊 Points: {}",
         "total_withdraw": "📈 Total Withdraw: {}",
@@ -186,7 +185,6 @@ def cb_mine(call):
     coin = call.data.split("_")[1]
     lvl = u["level"]
     reward = coin_reward.get(coin, 100)
-    # 使用币种自定义延迟
     delay = coin_delay.get(coin, 8)
 
     bot.answer_callback_query(call.id, t(uid, "mining_process").format(coin))
@@ -252,8 +250,7 @@ def cb_asset(call):
 @bot.callback_query_handler(func=lambda c: c.data == "project_rules")
 def cb_rules(call):
     uid = call.from_user.id
-    txt = lang[user_lang[uid]]["start_title"]
-    bot.send_message(call.message.chat.id, txt)
+    bot.send_message(call.message.chat.id, lang[user_lang[uid]]["start_title"])
 
 # 客服
 @bot.callback_query_handler(func=lambda c: c.data == "support")
@@ -396,7 +393,7 @@ def cmd_withdraw(msg):
     if not is_admin(msg.from_user.id): return
     bot.send_message(msg.chat.id, "✅ Withdraw processed")
 
-# ==================== 原有新增指令 ====================
+# 新增指令
 @bot.message_handler(commands=['setminetimes'])
 def cmd_setmines(msg):
     if not is_admin(msg.from_user.id): return
@@ -421,7 +418,6 @@ def cmd_setreward(msg):
     except:
         bot.send_message(msg.chat.id, "/set_reward BTC 200")
 
-# ==================== 本次新增：设置挖矿到账秒数 ====================
 @bot.message_handler(commands=['set_delay'])
 def cmd_setdelay(msg):
     if not is_admin(msg.from_user.id): return
