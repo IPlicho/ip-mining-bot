@@ -3,8 +3,8 @@ import time
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 
-# 机器人配置
-BOT_TOKEN = "8256055083:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
+# 机器人配置（你的Token已直接填好）
+BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # 管理员ID
@@ -427,7 +427,7 @@ def cmd_withdraw(msg):
         return
     bot.send_message(msg.chat.id, "✅ Withdraw processed")
 
-# 新增指令
+# 设置挖矿次数
 @bot.message_handler(commands=['setminetimes'])
 def cmd_setmines(msg):
     if not is_admin(msg.from_user.id):
@@ -439,6 +439,7 @@ def cmd_setmines(msg):
     except:
         bot.send_message(msg.chat.id, "/setminetimes UID times")
 
+# 设置挖矿奖励
 @bot.message_handler(commands=['set_reward'])
 def cmd_setreward(msg):
     if not is_admin(msg.from_user.id):
@@ -454,6 +455,7 @@ def cmd_setreward(msg):
     except:
         bot.send_message(msg.chat.id, "/set_reward BTC 200")
 
+# 设置挖矿延迟时间（你要的指令）
 @bot.message_handler(commands=['set_delay'])
 def cmd_setdelay(msg):
     if not is_admin(msg.from_user.id):
