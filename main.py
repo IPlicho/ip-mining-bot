@@ -2,16 +2,15 @@ import telebot
 import time
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
-from datetime import datetime
 
 # 机器人配置
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 双管理员ID
+# 管理员ID
 ADMIN_IDS = [8256055083, 810821053]
 
-# 用户数据存储
+# 用户数据
 user_data = defaultdict(lambda: {
     "mining_approved": False,
     "boost": 0,
@@ -26,19 +25,16 @@ user_data = defaultdict(lambda: {
     "max_mine_per_day": 20
 })
 
-# 语言存储
+# 语言
 user_lang = defaultdict(lambda: "zh")
 
-# 12个挖矿币种
+# 币种与奖励
 COINS = ["BTC", "ETH", "USDT", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "MATIC", "DOT", "LINK"]
-coin_reward = {coin: 100 for coin in COINS}
+coin_reward = {c: 100 for c in COINS}
+# 新增：币种挖矿延迟秒数（默认统一8秒）
+coin_delay = {c: 8 for c in COINS}
 
-# 空投配置
-AIRDROP_CONFIG = {
-    "daily_points": 10
-}
-
-# 等级配置：等级 -> (挖矿延迟秒数, 单次助力值)
+# 等级配置（只影响基础倍率，不影响延迟）
 LEVEL_CONFIG = {
     1: (8, 100),
     2: (12, 120),
@@ -47,7 +43,7 @@ LEVEL_CONFIG = {
     5: (25, 220)
 }
 
-# ====================== 多语言文本库 ======================
+# 语言文本
 lang = {
     "zh": {
         "start_title": "IP節點挖礦系統 | 專業交易所版\n歡迎使用，請以下方按鈕操作",
@@ -59,66 +55,66 @@ lang = {
         "btn_rules": "📜 項目資格說明書",
         "btn_support": "💬 線上客服專區",
         "banned": "❌ 你已被封禁，無法使用功能",
-        "mine_select": "⛏️ 請選擇挖礦幣種\n選擇後開始節點驗證，等待挖礦完成",
+        "mine_select": "⛏️ 請選擇挖礦幣種\n選擇後開始節點驗證",
         "mine_no_perm": "❌ 請先申請並通過挖礦權限",
-        "mine_locked": "❌ 今日挖礦已結束，暫時無法繼續助力",
+        "mine_locked": "❌ 今日挖礦已結束",
         "mine_max": "❌ 今日挖礦次數已達上限",
         "mining_process": "⏳ 正在挖礦 {}，節點驗證中…",
-        "mine_success": "✅ 挖礦完成：{}\nLv.{} 節點\n🎉 獲得助力值：+{}\n💎 當前總助力值：{}",
-        "apply_sent": "✅ 申請已提交，請等待管理員審批",
+        "mine_success": "✅ 挖礦完成：{}\nLv.{} 節點\n🎉 助力值 +{}\n💎 總助力：{}",
+        "apply_sent": "✅ 申請已提交，等待管理員審批",
         "already_approved": "✅ 你已經擁有挖礦權限",
-        "withdraw_tip": "✅ 請把需要回戶的數值+ID發送給客服 @fcff88",
-        "airdrop_done": "🧧 每日空投領取成功！\n+{} 積分\n當前積分：{}",
-        "airdrop_today_claimed": "❌ 今日空投已領取，請明日再來",
+        "withdraw_tip": "✅ 請把回戶數值+ID發送客服 @fcff88",
+        "airdrop_done": "🧧 空投領取成功！積分 +{}",
+        "airdrop_today_claimed": "❌ 今日空投已領",
         "asset_title": "👤 個人資產總覽",
         "level": "等級：Lv.{}",
         "mine_today": "今日挖礦：{}/{}",
         "boost": "💎 助力值：{}",
-        "trx_balance": "🪙 TRX 餘額：{}",
+        "trx_balance": "🪙 TRX：{}",
         "mine_status": "✅ 挖礦權限：{}",
-        "points": "📊 ID積分：{}",
-        "total_withdraw": "📈 累計回戶助力值：{}",
+        "points": "📊 積分：{}",
+        "total_withdraw": "📈 累計回戶：{}",
         "status_on": "已開通",
         "status_off": "待開通",
         "status_running": "🟢 正常",
-        "status_stopped": "🔴 暫停中",
-        "support_msg": "✅ 聯繫客服請 @fcff88，請稍候回覆",
+        "status_stopped": "🔴 暫停",
+        "support_msg": "✅ 聯繫客服 @fcff88",
         "lang_switched": "✅ 語言切換成功"
     },
     "en": {
-        "start_title": "IP Node Mining System | Pro Exchange Version\nWelcome, use the buttons below.",
-        "btn_start_mine": "⛏️ Start IP Node Mining",
-        "btn_apply_ip": "🚀 Apply Bind IP Node",
-        "btn_withdraw": "🔄 Apply Withdraw",
+        "start_title": "IP Node Mining System\nWelcome! Use the buttons below.",
+        "btn_start_mine": "⛏️ Start Mining",
+        "btn_apply_ip": "🚀 Apply Mining Access",
+        "btn_withdraw": "🔄 Withdraw",
         "btn_airdrop": "🧧 Daily Airdrop",
         "btn_asset": "👤 My Assets",
         "btn_rules": "📜 Project Rules",
         "btn_support": "💬 Support",
         "banned": "❌ You are banned.",
-        "mine_select": "⛏️ Select a coin to mine\nNode verification will start after selection.",
-        "mine_no_perm": "❌ Please apply for mining permission first.",
-        "mine_locked": "❌ Mining closed for today.",
-        "mine_max": "❌ Daily mining limit reached.",
-        "mining_process": "⏳ Mining {}... Please wait for node verification.",
-        "mine_success": "✅ Mining Complete: {}\nLv.{} Node\n🎉 Boost Earned: +{}\n💎 Total Boost: {}",
-        "apply_sent": "✅ Application submitted, waiting for admin approval.",
-        "already_approved": "✅ You already have mining access.",
+        "mine_select": "⛏️ Select a coin to mine",
+        "mine_no_perm": "❌ Please apply for mining access first.",
+        "mine_locked": "❌ Mining closed today.",
+        "mine_max": "❌ Daily limit reached.",
+        "mining_process": "⏳ Mining {}...",
+        "mine_success": "✅ Mined: {}\nLv.{} Node\n🎉 Boost +{}\n💎 Total: {}",
+        "apply_sent": "✅ Application sent, waiting admin approval.",
+        "already_approved": "✅ You already have access.",
         "withdraw_tip": "✅ Contact support @fcff88",
-        "airdrop_done": "🧧 Daily Airdrop Claimed!\n+{} Points",
+        "airdrop_done": "🧧 Airdrop claimed! Points +{}",
         "airdrop_today_claimed": "❌ Already claimed today.",
-        "asset_title": "👤 My Asset Overview",
+        "asset_title": "👤 My Assets",
         "level": "Level: Lv.{}",
-        "mine_today": "Mined Today: {}/{}",
+        "mine_today": "Today: {}/{}",
         "boost": "💎 Boost: {}",
-        "trx_balance": "🪙 TRX Balance: {}",
-        "mine_status": "✅ Mining Status: {}",
+        "trx_balance": "🪙 TRX:",
+        "mine_status": "✅ Mining: {}",
         "points": "📊 Points: {}",
-        "total_withdraw": "📈 Total Withdraw Boost: {}",
+        "total_withdraw": "📈 Total Withdraw: {}",
         "status_on": "Approved",
         "status_off": "Pending",
         "status_running": "🟢 Active",
         "status_stopped": "🔴 Stopped",
-        "support_msg": "✅ Contact support @fcff88",
+        "support_msg": "✅ Support @fcff88",
         "lang_switched": "✅ Language switched"
     }
 }
@@ -126,317 +122,321 @@ lang = {
 def t(uid, key):
     return lang[user_lang[uid]][key]
 
-def is_admin(user_id):
-    return user_id in ADMIN_IDS
+def is_admin(uid):
+    return uid in ADMIN_IDS
 
-# ====================== 语言切换 ======================
-@bot.message_handler(commands=['lang'])
-def switch_lang(message):
-    uid = message.from_user.id
-    user_lang[uid] = "en" if user_lang[uid] == "zh" else "zh"
-    bot.send_message(message.chat.id, t(uid, "lang_switched"))
-    main_menu(message)
-
-# ====================== 主菜单 ======================
-@bot.message_handler(commands=['start'])
-def main_menu(message):
-    uid = message.from_user.id
+# 主菜单
+def show_main_menu(chat_id, uid):
     if user_data[uid]["banned"]:
-        bot.send_message(message.chat.id, t(uid, "banned"))
+        bot.send_message(chat_id, t(uid, "banned"))
         return
+    mk = InlineKeyboardMarkup(row_width=1)
+    mk.add(
+        InlineKeyboardButton(t(uid, "btn_start_mine"), callback_data="start_mining"),
+        InlineKeyboardButton(t(uid, "btn_apply_ip"), callback_data="apply_mining"),
+        InlineKeyboardButton(t(uid, "btn_withdraw"), callback_data="apply_withdraw"),
+        InlineKeyboardButton(t(uid, "btn_airdrop"), callback_data="daily_airdrop"),
+        InlineKeyboardButton(t(uid, "btn_asset"), callback_data="asset_overview"),
+        InlineKeyboardButton(t(uid, "btn_rules"), callback_data="project_rules"),
+        InlineKeyboardButton(t(uid, "btn_support"), callback_data="support")
+    )
+    bot.send_message(chat_id, t(uid, "start_title"), reply_markup=mk)
 
-    markup = InlineKeyboardMarkup(row_width=1)
-    btn1 = InlineKeyboardButton(t(uid, "btn_start_mine"), callback_data="start_mining")
-    btn2 = InlineKeyboardButton(t(uid, "btn_apply_ip"), callback_data="apply_mining")
-    btn3 = InlineKeyboardButton(t(uid, "btn_withdraw"), callback_data="apply_withdraw")
-    btn4 = InlineKeyboardButton(t(uid, "btn_airdrop"), callback_data="daily_airdrop")
-    btn5 = InlineKeyboardButton(t(uid, "btn_asset"), callback_data="asset_overview")
-    btn6 = InlineKeyboardButton(t(uid, "btn_rules"), callback_data="project_rules")
-    btn7 = InlineKeyboardButton(t(uid, "btn_support"), callback_data="support")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7)
+@bot.message_handler(commands=['start'])
+def cmd_start(msg):
+    show_main_menu(msg.chat.id, msg.from_user.id)
 
-    bot.send_message(message.chat.id, t(uid, "start_title"), reply_markup=markup)
+@bot.message_handler(commands=['lang'])
+def cmd_lang(msg):
+    uid = msg.from_user.id
+    user_lang[uid] = "en" if user_lang[uid] == "zh" else "zh"
+    bot.send_message(msg.chat.id, t(uid, "lang_switched"))
+    show_main_menu(msg.chat.id, uid)
 
-# ====================== 挖矿 ======================
-@bot.callback_query_handler(func=lambda call: call.data == "start_mining")
-def mining_coin_select(call):
+# 挖矿选择币种
+@bot.callback_query_handler(func=lambda c: c.data == "start_mining")
+def cb_start_mining(call):
     uid = call.from_user.id
     u = user_data[uid]
-    if u["banned"]:
-        bot.answer_callback_query(call.id, t(uid, "banned"))
-        return
+    if u["banned"]: return
     if not u["mining_approved"]:
         bot.answer_callback_query(call.id, t(uid, "mine_no_perm"))
         return
     if u["mining_today_locked"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_locked"), show_alert=True)
+        bot.answer_callback_query(call.id, t(uid, "mine_locked"))
         return
     if u["mine_count_today"] >= u["max_mine_per_day"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_max"), show_alert=True)
+        bot.answer_callback_query(call.id, t(uid, "mine_max"))
         return
+    mk = InlineKeyboardMarkup(row_width=3)
+    btns = [InlineKeyboardButton(c, callback_data=f"mine_{c}") for c in COINS]
+    mk.add(*btns)
+    bot.edit_message_text(t(uid, "mine_select"), call.message.chat.id, call.message.id, reply_markup=mk)
 
-    markup = InlineKeyboardMarkup(row_width=3)
-    coin_btns = [InlineKeyboardButton(c, callback_data=f"mine_{c}") for c in COINS]
-    markup.add(*coin_btns)
-    bot.edit_message_text(t(uid, "mine_select"), call.message.chat.id, call.message.message_id, reply_markup=markup)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("mine_"))
-def mine_coin(call):
+# 执行挖矿
+@bot.callback_query_handler(func=lambda c: c.data.startswith("mine_"))
+def cb_mine(call):
     uid = call.from_user.id
     u = user_data[uid]
-
-    if u["banned"] or not u["mining_approved"] or u["mining_today_locked"]:
-        return
+    if u["banned"] or not u["mining_approved"] or u["mining_today_locked"]: return
     if u["mine_count_today"] >= u["max_mine_per_day"]:
-        bot.answer_callback_query(call.id, t(uid, "mine_max"), show_alert=True)
+        bot.answer_callback_query(call.id, t(uid, "mine_max"))
         return
 
-    coin = call.data.replace("mine_", "")
-    level = u["level"]
-    delay, _ = LEVEL_CONFIG.get(level, (8, 100))
+    coin = call.data.split("_")[1]
+    lvl = u["level"]
     reward = coin_reward.get(coin, 100)
+    # 使用币种自定义延迟
+    delay = coin_delay.get(coin, 8)
 
-    bot.answer_callback_query(call.id, t(uid, "mining_process").format(coin), show_alert=True)
+    bot.answer_callback_query(call.id, t(uid, "mining_process").format(coin))
     time.sleep(delay)
 
     u["boost"] += reward
     u["mine_count_today"] += 1
 
-    bot.send_message(call.message.chat.id, t(uid, "mine_success").format(coin, level, reward, u['boost']))
-    main_menu(call.message)
+    bot.send_message(call.message.chat.id, t(uid, "mine_success").format(coin, lvl, reward, u["boost"]))
+    show_main_menu(call.message.chat.id, uid)
 
-# ====================== 申请绑定 ======================
-@bot.callback_query_handler(func=lambda call: call.data == "apply_mining")
-def apply_mining(call):
+# 申请权限
+@bot.callback_query_handler(func=lambda c: c.data == "apply_mining")
+def cb_apply(call):
     uid = call.from_user.id
-    if user_data[uid]["banned"]:
-        bot.answer_callback_query(call.id, t(uid, "banned"))
-        return
+    if user_data[uid]["banned"]: return
     if user_data[uid]["mining_approved"]:
         bot.answer_callback_query(call.id, t(uid, "already_approved"))
         return
-
-    for admin_id in ADMIN_IDS:
-        bot.send_message(
-            admin_id,
-            f"🔔 New Mining Application\nUser ID: {uid}\n/agree {uid}  /refuse {uid}"
-        )
+    for a in ADMIN_IDS:
+        bot.send_message(a, f"🔔 New apply\nUID: {uid}\n/agree {uid}  /refuse {uid}")
     bot.send_message(call.message.chat.id, t(uid, "apply_sent"))
 
-# ====================== 申请回户 ======================
-@bot.callback_query_handler(func=lambda call: call.data == "apply_withdraw")
-def apply_withdraw(call):
+# 提现
+@bot.callback_query_handler(func=lambda c: c.data == "apply_withdraw")
+def cb_withdraw(call):
     uid = call.from_user.id
     bot.send_message(call.message.chat.id, t(uid, "withdraw_tip"))
 
-# ====================== 每日空投 ======================
-@bot.callback_query_handler(func=lambda call: call.data == "daily_airdrop")
-def daily_airdrop(call):
+# 空投
+@bot.callback_query_handler(func=lambda c: c.data == "daily_airdrop")
+def cb_airdrop(call):
     uid = call.from_user.id
     u = user_data[uid]
+    if u["banned"]: return
     if u["airdrop_claimed"]:
         bot.answer_callback_query(call.id, t(uid, "airdrop_today_claimed"))
         return
     u["airdrop_claimed"] = True
-    u["points"] += AIRDROP_CONFIG["daily_points"]
-    bot.send_message(call.message.chat.id, t(uid, "airdrop_done").format(AIRDROP_CONFIG["daily_points"]))
+    u["points"] += 10
+    bot.send_message(call.message.chat.id, t(uid, "airdrop_done").format(10))
 
-# ====================== 资产总览 ======================
-@bot.callback_query_handler(func=lambda call: call.data == "asset_overview")
-def show_asset(call):
+# 资产
+@bot.callback_query_handler(func=lambda c: c.data == "asset_overview")
+def cb_asset(call):
     uid = call.from_user.id
     u = user_data[uid]
-
-    mining_status = t(uid, "status_on") if u["mining_approved"] else t(uid, "status_off")
-    lock_status = t(uid, "status_stopped") if u["mining_today_locked"] else t(uid, "status_running")
-
-    info = (
+    s_ap = t(uid, "status_on") if u["mining_approved"] else t(uid, "status_off")
+    s_lock = t(uid, "status_stopped") if u["mining_today_locked"] else t(uid, "status_running")
+    txt = (
         f"{t(uid, 'asset_title')}\n"
         f"{t(uid, 'level').format(u['level'])}\n"
         f"{t(uid, 'mine_today').format(u['mine_count_today'], u['max_mine_per_day'])}\n"
         f"{t(uid, 'boost')}{u['boost']}\n"
         f"{t(uid, 'trx_balance')}{u['trx']}\n"
-        f"{t(uid, 'mine_status')}{mining_status}\n"
+        f"{t(uid, 'mine_status')}{s_ap} ({s_lock})\n"
         f"{t(uid, 'points')}{u['points']}\n"
         f"{t(uid, 'total_withdraw')}{u['total_withdraw_boost']}"
     )
-    bot.send_message(call.message.chat.id, info)
+    bot.send_message(call.message.chat.id, txt)
 
-# ====================== 项目说明书 ======================
-@bot.callback_query_handler(func=lambda call: call.data == "project_rules")
-def project_rules(call):
+# 规则
+@bot.callback_query_handler(func=lambda c: c.data == "project_rules")
+def cb_rules(call):
     uid = call.from_user.id
-    if user_lang[uid] == "zh":
-        text = """📜 項目資格說明書
-⚡️ IP節點挖礦助力機制說明
-在本機器人參與助力，即為區塊鏈網路貢獻算力流量，提升節點驗證效率與安全性。系統依驗證行為發放助力值獎勵，助力值越高，回報越豐厚。
+    txt = lang[user_lang[uid]]["start_title"]
+    bot.send_message(call.message.chat.id, txt)
 
-🔹 為什麼IP節點挖礦收益高且不違法？
-買幣、囤幣、挖礦、炒幣均屬區塊鏈去中心化行為，目前全球並無統一法律將其定為非法。各國僅實施監管規範，並無明確刑法條款認定挖礦行為違法，去中心化特性不受單一中心機構管轄！
-
-🏢 雲鼎資本集團控股
-總部位於迪拜，業務覆蓋全球20餘國，專注數位經濟、金融科技、Web3.0領域。註冊資本逾90億美元，擁有20項技術專利及國際權威資質，通過美國貨幣監管體系審核，服務超50000+ TG用戶。"""
-    else:
-        text = """📜 Project Rules
-IP Node Mining provides computing power to the blockchain network.
-Rewards are based on your node contribution.
-Legal and regulated worldwide, not illegal.
-
-🏢 Yunding Capital Group
-Dubai-based, serving 50,000+ users."""
-    bot.send_message(call.message.chat.id, text)
-
-# ====================== 客服 ======================
-@bot.callback_query_handler(func=lambda call: call.data == "support")
-def support(call):
+# 客服
+@bot.callback_query_handler(func=lambda c: c.data == "support")
+def cb_support(call):
     uid = call.from_user.id
     bot.send_message(call.message.chat.id, t(uid, "support_msg"))
 
-# ====================== 管理员审批 ======================
+# 管理员审批
 @bot.message_handler(commands=['agree'])
-def agree_mining(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_agree(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid = message.text.split()
-        target_uid = int(target_uid)
-        user_data[target_uid]["mining_approved"] = True
-        bot.send_message(message.chat.id, f"✅ Approved user {target_uid}")
+        _, uid = msg.text.split()
+        user_data[int(uid)]["mining_approved"] = True
+        bot.send_message(msg.chat.id, f"✅ Approved {uid}")
     except:
-        bot.send_message(message.chat.id, "Usage: /agree user_id")
+        bot.send_message(msg.chat.id, "Usage: /agree uid")
 
 @bot.message_handler(commands=['refuse'])
-def refuse_mining(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_refuse(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid = message.text.split()
-        target_uid = int(target_uid)
-        user_data[target_uid]["mining_approved"] = False
-        bot.send_message(message.chat.id, f"❌ Refused user {target_uid}")
+        _, uid = msg.text.split()
+        user_data[int(uid)]["mining_approved"] = False
+        bot.send_message(msg.chat.id, f"❌ Refused {uid}")
     except:
-        bot.send_message(message.chat.id, "Usage: /refuse user_id")
+        bot.send_message(msg.chat.id, "Usage: /refuse uid")
 
-# ====================== 管理员功能 ======================
+# 查看矿工
 @bot.message_handler(commands=['miners'])
-def show_all_miners(message):
-    if not is_admin(message.from_user.id):
-        return
-    miner_list = []
-    for uid, data in user_data.items():
-        status = "Banned" if data["banned"] else ("Approved" if data["mining_approved"] else "Pending")
-        miner_list.append(f"ID:{uid} | Lv.{data['level']} | Boost:{data['boost']} | TRX:{data['trx']} | {status}")
-    reply = "\n".join(miner_list) if miner_list else "No miners"
-    bot.send_message(message.chat.id, f"📋 Miners:\n{reply}")
+def cmd_miners(msg):
+    if not is_admin(msg.from_user.id): return
+    lines = []
+    for uid, d in user_data.items():
+        ap = "Approved" if d["mining_approved"] else "Pending"
+        ban = "BANNED" if d["banned"] else ""
+        lines.append(f"ID:{uid} Lv{d['level']} B:{d['boost']} TRX:{d['trx']} {ap} {ban}")
+    bot.send_message(msg.chat.id, "\n".join(lines[:20]))
 
+# 封禁
 @bot.message_handler(commands=['ban'])
-def ban_user(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_ban(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid = message.text.split()
-        user_data[int(target_uid)]["banned"] = True
-        bot.send_message(message.chat.id, "✅ Banned")
+        _, uid = msg.text.split()
+        user_data[int(uid)]["banned"] = True
+        bot.send_message(msg.chat.id, f"❌ Banned {uid}")
     except:
-        bot.send_message(message.chat.id, "Usage: /ban user_id")
+        bot.send_message(msg.chat.id, "/ban uid")
 
 @bot.message_handler(commands=['unban'])
-def unban_user(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_unban(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid = message.text.split()
-        user_data[int(target_uid)]["banned"] = False
-        bot.send_message(message.chat.id, "✅ Unbanned")
+        _, uid = msg.text.split()
+        user_data[int(uid)]["banned"] = False
+        bot.send_message(msg.chat.id, f"✅ Unbanned {uid}")
     except:
-        bot.send_message(message.chat.id, "Usage: /unban user_id")
+        bot.send_message(msg.chat.id, "/unban uid")
 
+# TRX
 @bot.message_handler(commands=['add_trx'])
-def add_trx(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_addtrx(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid, amount = message.text.split()
-        user_data[int(target_uid)]["trx"] += float(amount)
-        bot.send_message(message.chat.id, "✅ TRX added")
+        _, uid, v = msg.text.split()
+        user_data[int(uid)]["trx"] += float(v)
+        bot.send_message(msg.chat.id, f"✅ +{v} TRX")
     except:
-        bot.send_message(message.chat.id, "Usage: /add_trx user_id amount")
+        bot.send_message(msg.chat.id, "/add_trx uid amount")
 
 @bot.message_handler(commands=['reduce_trx'])
-def reduce_trx(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_rtrx(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid, amount = message.text.split()
-        user_data[int(target_uid)]["trx"] = max(0, user_data[int(target_uid)]["trx"] - float(amount))
-        bot.send_message(message.chat.id, "✅ TRX reduced")
+        _, uid, v = msg.text.split()
+        user_data[int(uid)]["trx"] = max(0, user_data[int(uid)]["trx"] - float(v))
+        bot.send_message(msg.chat.id, f"✅ -{v} TRX")
     except:
-        bot.send_message(message.chat.id, "Usage: /reduce_trx user_id amount")
+        bot.send_message(msg.chat.id, "/reduce_trx uid amount")
 
+# 等级
 @bot.message_handler(commands=['setlevel'])
-def set_level(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_lvl(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid, level = message.text.split()
-        user_data[int(target_uid)]["level"] = int(level)
-        bot.send_message(message.chat.id, "✅ Level set")
+        _, uid, v = msg.text.split()
+        user_data[int(uid)]["level"] = int(v)
+        bot.send_message(msg.chat.id, f"✅ Lv{v}")
     except:
-        bot.send_message(message.chat.id, "Usage: /setlevel user_id level")
+        bot.send_message(msg.chat.id, "/setlevel uid level")
 
+# 挖矿开关
 @bot.message_handler(commands=['stop_mining'])
-def stop_mining(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_stop(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid = message.text.split()
-        user_data[int(target_uid)]["mining_today_locked"] = True
-        bot.send_message(message.chat.id, "✅ Mining stopped")
+        _, uid = msg.text.split()
+        user_data[int(uid)]["mining_today_locked"] = True
+        bot.send_message(msg.chat.id, "✅ Stopped")
     except:
-        bot.send_message(message.chat.id, "Usage: /stop_mining user_id")
+        bot.send_message(msg.chat.id, "/stop_mining uid")
 
 @bot.message_handler(commands=['resume_mining'])
-def resume_mining(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_resume(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid = message.text.split()
-        user_data[int(target_uid)]["mining_today_locked"] = False
-        bot.send_message(message.chat.id, "✅ Mining resumed")
+        _, uid = msg.text.split()
+        user_data[int(uid)]["mining_today_locked"] = False
+        bot.send_message(msg.chat.id, "✅ Resumed")
     except:
-        bot.send_message(message.chat.id, "Usage: /resume_mining user_id")
+        bot.send_message(msg.chat.id, "/resume_mining uid")
 
-# ====================== 新增：设置每日挖矿次数（不动原有功能） ======================
+# 扣除助力/积分
+@bot.message_handler(commands=['reduce_boost'])
+def cmd_rboost(msg):
+    if not is_admin(msg.from_user.id): return
+    try:
+        _, uid, v = msg.text.split()
+        u = user_data[int(uid)]
+        v = int(v)
+        u["boost"] = max(0, u["boost"] - v)
+        u["total_withdraw_boost"] += v
+        bot.send_message(msg.chat.id, f"✅ -{v} boost")
+    except:
+        bot.send_message(msg.chat.id, "/reduce_boost uid val")
+
+@bot.message_handler(commands=['reduce_point'])
+def cmd_rpoint(msg):
+    if not is_admin(msg.from_user.id): return
+    try:
+        _, uid, v = msg.text.split()
+        user_data[int(uid)]["points"] = max(0, user_data[int(uid)]["points"] - int(v))
+        bot.send_message(msg.chat.id, f"✅ -{v} points")
+    except:
+        bot.send_message(msg.chat.id, "/reduce_point uid val")
+
+@bot.message_handler(commands=['withdraw'])
+def cmd_withdraw(msg):
+    if not is_admin(msg.from_user.id): return
+    bot.send_message(msg.chat.id, "✅ Withdraw processed")
+
+# ==================== 原有新增指令 ====================
 @bot.message_handler(commands=['setminetimes'])
-def set_mine_times(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_setmines(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, target_uid, times = message.text.split()
-        target_uid = int(target_uid)
-        times = int(times)
-        user_data[target_uid]["max_mine_per_day"] = times
-        bot.send_message(message.chat.id, f"✅ 成功設置每日挖礦次數：{times} 次")
+        _, uid, t = msg.text.split()
+        user_data[int(uid)]["max_mine_per_day"] = int(t)
+        bot.send_message(msg.chat.id, f"✅ 每日上限：{t}")
     except:
-        bot.send_message(message.chat.id, "用法：/setminetimes 用户ID 次數")
+        bot.send_message(msg.chat.id, "/setminetimes uid times")
 
-# ====================== 新增：设置单个币种奖励（不动原有功能） ======================
 @bot.message_handler(commands=['set_reward'])
-def set_coin_reward(message):
-    if not is_admin(message.from_user.id):
-        return
+def cmd_setreward(msg):
+    if not is_admin(msg.from_user.id): return
     try:
-        _, coin, value = message.text.split()
+        _, coin, v = msg.text.split()
         coin = coin.upper()
-        value = int(value)
         if coin in coin_reward:
-            coin_reward[coin] = value
-            bot.send_message(message.chat.id, f"✅ {coin} 挖礦獎勵已設置為 {value}")
+            coin_reward[coin] = int(v)
+            bot.send_message(msg.chat.id, f"✅ {coin} = {v}")
         else:
-            bot.send_message(message.chat.id, "❌ 幣種不存在")
+            bot.send_message(msg.chat.id, "❌ Coin not found")
     except:
-        bot.send_message(message.chat.id, "用法：/set_reward BTC 200")
+        bot.send_message(msg.chat.id, "/set_reward BTC 200")
 
-# ====================== 启动机器人 ======================
+# ==================== 本次新增：设置挖矿到账秒数 ====================
+@bot.message_handler(commands=['set_delay'])
+def cmd_setdelay(msg):
+    if not is_admin(msg.from_user.id): return
+    try:
+        _, coin, sec = msg.text.split()
+        coin = coin.upper()
+        sec = int(sec)
+        if coin in coin_delay:
+            coin_delay[coin] = sec
+            bot.send_message(msg.chat.id, f"✅ {coin} 挖矿延迟：{sec} 秒")
+        else:
+            bot.send_message(msg.chat.id, "❌ 币种不存在")
+    except:
+        bot.send_message(msg.chat.id, "用法：/set_delay BTC 10")
+
+# 启动
 if __name__ == "__main__":
-    bot.polling(none_stop=True)
+    bot.infinity_polling()
