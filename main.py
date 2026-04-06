@@ -4,7 +4,7 @@ from datetime import datetime
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 
-# 机器人配置（你的Token已直接填好）
+# 机器人配置
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -44,7 +44,7 @@ LEVEL_CONFIG = {
     5: (25, 220)
 }
 
-# ========== 新增：每日重置 + 币种冷却 独立字典 ==========
+# 每日重置 + 币种冷却
 user_last_reset_date = {}
 coin_cooldown = {}
 
@@ -86,35 +86,39 @@ lang = {
         "support_msg": "✅ 聯繫客服 @fcff88",
         "lang_switched": "✅ 語言切換成功",
         "project_rules_text": "📜 項目資格說明書\n1. 本系統為IP節點挖礦，僅限授權用戶使用\n2. 每日挖礦次數依等級設有上限\n3. 助力值可用於兌換與提現\n4. 嚴禁作弊、惡意刷號，違規封禁\n5. 平台保留最終解釋權",
-        "approved_notify": "✅ 恭喜！你的挖礦申請已通過，可開始挖礦"
+        "approved_notify": "✅ 恭喜！你的挖礦申請已通過，可開始挖礦",
+        "calc_title": "💎 助力值兌換結算",
+        "calc_boost": "💰 您的助力值：{}",
+        "calc_rate": "📌 兌換匯率：10 = 0.12 USDT",
+        "calc_result": "✅ 可兌換：{:.2f} USDT"
     },
     "en": {
         "start_title": "IP Node Mining System\nWelcome! Use the buttons below.",
         "btn_start_mine": "⛏️ Start Mining",
-        "btn_apply_ip": "🚀 Apply Mining Access",
+        "btn_apply_ip": "🚀 Apply Access",
         "btn_withdraw": "🔄 Withdraw",
         "btn_airdrop": "🧧 Daily Airdrop",
-        "btn_asset": "👤 My Assets",
-        "btn_rules": "📜 Project Rules",
+        "btn_asset": "👤 Assets",
+        "btn_rules": "📜 Rules",
         "btn_support": "💬 Support",
         "banned": "❌ You are banned.",
-        "mine_select": "⛏️ Select a coin to mine",
+        "mine_select": "⛏️ Select Coin",
         "mine_no_perm": "❌ Please apply for mining access first.",
         "mine_locked": "❌ Mining closed today.",
         "mine_max": "❌ Daily limit reached.",
-        "mining_process": "Mining, please wait...",
+        "mining_process": "Mining...",
         "mine_success": "✅ Mined: {}\nLv.{} Node\n🎉 Boost +{}\n💎 Total: {}",
         "apply_sent": "✅ Application sent, admin will review soon.",
         "already_approved": "✅ You already have mining access.",
-        "withdraw_tip": "✅ Contact support @fcff88 with your UID.",
+        "withdraw_tip": "✅ Contact support @fcff88",
         "airdrop_done": "🧧 Airdrop claimed! Points +{}",
         "airdrop_today_claimed": "❌ Already claimed today.",
-        "asset_title": "👤 My Assets",
+        "asset_title": "👤 Assets Overview",
         "level": "Level: Lv.{}",
-        "mine_today": "Today: {}/{}",
+        "mine_today": "Today Mined: {}/{}",
         "boost": "💎 Boost: {}",
         "trx_balance": "🪙 TRX: {}",
-        "mine_status": "✅ Mining: {}",
+        "mine_status": "✅ Mining Status: {}",
         "points": "📊 Points: {}",
         "total_withdraw": "📈 Total Withdraw: {}",
         "status_on": "Approved",
@@ -123,8 +127,12 @@ lang = {
         "status_stopped": "🔴 Stopped",
         "support_msg": "✅ Support @fcff88",
         "lang_switched": "✅ Language switched",
-        "project_rules_text": "📜 Project Rules\n1. This system is for IP node mining, authorized users only\n2. Daily mining limits based on level\n3. Boost points can be used for exchange & withdrawal\n4. Cheating & multi-account abuse will be banned\n5. Platform reserves all rights of final interpretation",
-        "approved_notify": "✅ Your mining application has been approved!"
+        "project_rules_text": "📜 Rules\n1. Only authorized users\n2. Daily mining limits\n3. Boost can be exchanged/withdrawn\n4. Cheating will be banned\n5. Platform reserves all rights",
+        "approved_notify": "✅ Your mining access is approved!",
+        "calc_title": "💎 Boost Value Calculation",
+        "calc_boost": "💰 Your Boost: {}",
+        "calc_rate": "📌 Rate: 10 = 0.12 USDT",
+        "calc_result": "✅ Total: {:.2f} USDT"
     }
 }
 
@@ -192,13 +200,11 @@ def cb_mine(call):
     u = user_data[uid]
     chat_id = call.message.chat.id
 
-    # ========== 新增：每日自动重置挖矿次数 ==========
     today = datetime.now().strftime("%Y-%m-%d")
     if uid not in user_last_reset_date or user_last_reset_date[uid] != today:
         u["mine_count_today"] = 0
         user_last_reset_date[uid] = today
 
-    # ========== 新增：单个币种60秒冷却 ==========
     coin = call.data.split("_")[1]
     cooldown_key = f"{uid}_{coin}"
     now = time.time()
@@ -210,7 +216,6 @@ def cb_mine(call):
 
     coin_cooldown[cooldown_key] = now + 60
 
-    # ========== 以下完全是你原有逻辑 ==========
     if u["banned"] or not u["mining_approved"] or u["mining_today_locked"]:
         bot.answer_callback_query(call.id)
         return
@@ -421,7 +426,7 @@ def cmd_resume(msg):
     except:
         bot.send_message(msg.chat.id, "/resume_mining UID")
 
-# 扣除助力值 + 用户通知
+# 扣除助力值
 @bot.message_handler(commands=['reduce_boost'])
 def cmd_rboost(msg):
     if not is_admin(msg.from_user.id):
@@ -434,16 +439,14 @@ def cmd_rboost(msg):
         u["boost"] = max(0, u["boost"] - v)
         u["total_withdraw_boost"] += v
         bot.send_message(msg.chat.id, f"✅ -{v} boost")
-
-        # ========== 新增：用户收到通知 ==========
         try:
-            bot.send_message(target_uid, f"🔔 系統通知\n管理員已扣除您的助力值：{v}\n當前剩餘助力值：{u['boost']}")
+            bot.send_message(target_uid, f"🔔 系統通知：管理員已扣除您的助力值：{v}\n剩餘：{u['boost']}")
         except:
             pass
     except:
         bot.send_message(msg.chat.id, "/reduce_boost UID val")
 
-# 扣除积分 + 用户通知
+# 扣除积分
 @bot.message_handler(commands=['reduce_point'])
 def cmd_rpoint(msg):
     if not is_admin(msg.from_user.id):
@@ -454,11 +457,9 @@ def cmd_rpoint(msg):
         v = int(v)
         u = user_data[target_uid]
         u["points"] = max(0, u["points"] - v)
-        bot.send_message(msg.chat.id, f"✅ 已扣除用户 {uid} 积分：{v}")
-
-        # ========== 新增：用户收到通知 ==========
+        bot.send_message(msg.chat.id, f"✅ 已扣除 {uid} 积分：{v}")
         try:
-            bot.send_message(target_uid, f"🔔 系統通知\n管理員已扣除您的積分：{v}\n當前剩餘積分：{u['points']}")
+            bot.send_message(target_uid, f"🔔 系統通知：管理員已扣除您的積分：{v}\n剩餘：{u['points']}")
         except:
             pass
     except:
@@ -498,7 +499,7 @@ def cmd_setreward(msg):
     except:
         bot.send_message(msg.chat.id, "/set_reward BTC 200")
 
-# 设置挖矿延迟时间
+# 设置延迟
 @bot.message_handler(commands=['set_delay'])
 def cmd_setdelay(msg):
     if not is_admin(msg.from_user.id):
@@ -509,11 +510,11 @@ def cmd_setdelay(msg):
         sec = int(sec)
         if coin in coin_delay:
             coin_delay[coin] = sec
-            bot.send_message(msg.chat.id, f"✅ {coin} 挖矿延迟：{sec} 秒")
+            bot.send_message(msg.chat.id, f"✅ {coin} delay: {sec}s")
         else:
-            bot.send_message(msg.chat.id, "❌ 币种不存在")
+            bot.send_message(msg.chat.id, "❌ Coin not found")
     except:
-        bot.send_message(msg.chat.id, "用法：/set_delay BTC 10")
+        bot.send_message(msg.chat.id, "/set_delay BTC 10")
 
 # 设置空投金额
 @bot.message_handler(commands=['set_airdrop'])
@@ -524,25 +525,11 @@ def cmd_set_airdrop(msg):
         _, amount = msg.text.split()
         global AIRDROP_REWARD
         AIRDROP_REWARD = int(amount)
-        bot.send_message(msg.chat.id, f"✅ 空投红包已设置为：{amount} 积分")
+        bot.send_message(msg.chat.id, f"✅ Airdrop set to: {amount}")
     except:
-        bot.send_message(msg.chat.id, "用法：/set_airdrop 88")
-# 设置空投金额
-@bot.message_handler(commands=['set_airdrop'])
-def cmd_set_airdrop(msg):
-    if not is_admin(msg.from_user.id):
-        return
-    try:
-        _, amount = msg.text.split()
-        global AIRDROP_REWARD
-        AIRDROP_REWARD = int(amount)
-        bot.send_message(msg.chat.id, f"✅ 空投红包已设置为：{amount} 积分")
-    except:
-        bot.send_message(msg.chat.id, "用法：/set_airdrop 88")
+        bot.send_message(msg.chat.id, "Usage: /set_airdrop 88")
 
-# ==========================
-# 你把下面这段加在这里（新增加助力指令）
-# ==========================
+# 增加助力值
 @bot.message_handler(commands=['add_boost'])
 def cmd_add_boost(msg):
     if not is_admin(msg.from_user.id):
@@ -553,14 +540,32 @@ def cmd_add_boost(msg):
         v = int(v)
         u = user_data[target_uid]
         u["boost"] += v
-        bot.send_message(msg.chat.id, f"✅ 已给用户 {target_uid} 增加 {v} 助力值")
-        # 通知用户
+        bot.send_message(msg.chat.id, f"✅ Added {v} boost to {target_uid}")
         try:
-            bot.send_message(target_uid, f"🔔 系統通知：管理員為您增加了 {v} 助力值")
+            bot.send_message(target_uid, f"🔔 Admin added {v} boost to you!")
         except:
             pass
     except:
-        bot.send_message(msg.chat.id, "用法：/add_boost UID 数值")
+        bot.send_message(msg.chat.id, "Usage: /add_boost UID amount")
+
+# 助力值计算（双语豪华版）
+@bot.message_handler(commands=['js'])
+def cmd_js(msg):
+    uid = msg.from_user.id
+    boost = user_data[uid]["boost"]
+    usdt = boost * 0.012
+
+    text = (
+        "━━━━━━━━━━━━━━\n"
+        f"{t(uid, 'calc_title')}\n"
+        "━━━━━━━━━━━━━━\n"
+        f"{t(uid, 'calc_boost').format(boost)}\n"
+        f"{t(uid, 'calc_rate')}\n"
+        "━━━━━━━━━━━━━━\n"
+        f"{t(uid, 'calc_result').format(usdt)}\n"
+        "━━━━━━━━━━━━━━"
+    )
+    bot.send_message(msg.chat.id, text)
 
 # 启动
 if __name__ == "__main__":
