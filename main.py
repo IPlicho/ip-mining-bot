@@ -527,6 +527,40 @@ def cmd_set_airdrop(msg):
         bot.send_message(msg.chat.id, f"✅ 空投红包已设置为：{amount} 积分")
     except:
         bot.send_message(msg.chat.id, "用法：/set_airdrop 88")
+# 设置空投金额
+@bot.message_handler(commands=['set_airdrop'])
+def cmd_set_airdrop(msg):
+    if not is_admin(msg.from_user.id):
+        return
+    try:
+        _, amount = msg.text.split()
+        global AIRDROP_REWARD
+        AIRDROP_REWARD = int(amount)
+        bot.send_message(msg.chat.id, f"✅ 空投红包已设置为：{amount} 积分")
+    except:
+        bot.send_message(msg.chat.id, "用法：/set_airdrop 88")
+
+# ==========================
+# 你把下面这段加在这里（新增加助力指令）
+# ==========================
+@bot.message_handler(commands=['add_boost'])
+def cmd_add_boost(msg):
+    if not is_admin(msg.from_user.id):
+        return
+    try:
+        _, uid, v = msg.text.split()
+        target_uid = int(uid)
+        v = int(v)
+        u = user_data[target_uid]
+        u["boost"] += v
+        bot.send_message(msg.chat.id, f"✅ 已给用户 {target_uid} 增加 {v} 助力值")
+        # 通知用户
+        try:
+            bot.send_message(target_uid, f"🔔 系統通知：管理員為您增加了 {v} 助力值")
+        except:
+            pass
+    except:
+        bot.send_message(msg.chat.id, "用法：/add_boost UID 数值")
 
 # 启动
 if __name__ == "__main__":
