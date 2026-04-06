@@ -4,7 +4,7 @@ from datetime import datetime
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 
-# 机器人配置
+# 机器人配置（你的Token已直接填好）
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -44,7 +44,7 @@ LEVEL_CONFIG = {
     5: (25, 220)
 }
 
-# 每日重置 + 币种冷却
+# ========== 新增：每日重置 + 币种冷却 独立字典 ==========
 user_last_reset_date = {}
 coin_cooldown = {}
 
@@ -90,7 +90,7 @@ lang = {
         "calc_title": "💎 助力值兌換結算",
         "calc_boost": "💰 您的助力值：{}",
         "calc_rate": "📌 兌換匯率：10 = 0.12 USDT",
-        "calc_result": "✅ 可兌換：{:.2f} USDT"
+        "calc_total": "✅ 可兌換：{:.2f} USDT"
     },
     "en": {
         "start_title": "IP Node Mining System\nWelcome! Use the buttons below.",
@@ -129,10 +129,10 @@ lang = {
         "lang_switched": "✅ Language switched",
         "project_rules_text": "📜 Rules\n1. Only authorized users\n2. Daily mining limits\n3. Boost can be exchanged/withdrawn\n4. Cheating will be banned\n5. Platform reserves all rights",
         "approved_notify": "✅ Your mining access is approved!",
-        "calc_title": "💎 Boost Value Calculation",
+        "calc_title": "💎 Boost Calculation",
         "calc_boost": "💰 Your Boost: {}",
         "calc_rate": "📌 Rate: 10 = 0.12 USDT",
-        "calc_result": "✅ Total: {:.2f} USDT"
+        "calc_total": "✅ Total: {:.2f} USDT"
     }
 }
 
@@ -166,7 +166,11 @@ def cmd_start(msg):
 @bot.message_handler(commands=['lang'])
 def cmd_lang(msg):
     uid = msg.from_user.id
-    user_lang[uid] = "en" if user_lang[uid] == "zh" else "zh"
+    # 这里修复：真正来回切换 zh ↔ en
+    if user_lang[uid] == "zh":
+        user_lang[uid] = "en"
+    else:
+        user_lang[uid] = "zh"
     bot.send_message(msg.chat.id, t(uid, "lang_switched"))
     show_main_menu(msg.chat.id, uid)
 
@@ -200,20 +204,20 @@ def cb_mine(call):
     u = user_data[uid]
     chat_id = call.message.chat.id
 
+    # 每日重置
     today = datetime.now().strftime("%Y-%m-%d")
     if uid not in user_last_reset_date or user_last_reset_date[uid] != today:
         u["mine_count_today"] = 0
         user_last_reset_date[uid] = today
 
+    # 币种冷却
     coin = call.data.split("_")[1]
     cooldown_key = f"{uid}_{coin}"
     now = time.time()
-
     if cooldown_key in coin_cooldown and coin_cooldown[cooldown_key] > now:
         remain = int(coin_cooldown[cooldown_key] - now)
-        bot.answer_callback_query(call.id, f"{coin} 冷却中…还剩 {remain} 秒", show_alert=True)
+        bot.answer_callback_query(call.id, f"{coin} cooling {remain}s", show_alert=True)
         return
-
     coin_cooldown[cooldown_key] = now + 60
 
     if u["banned"] or not u["mining_approved"] or u["mining_today_locked"]:
@@ -233,8 +237,8 @@ def cb_mine(call):
     u["boost"] += reward
     u["mine_count_today"] += 1
 
-    bot.send_message(call.message.chat.id, t(uid, "mine_success").format(coin, lvl, reward, u["boost"]))
-    show_main_menu(call.message.chat.id, uid)
+    bot.send_message(chat_id, t(uid, "mine_success").format(coin, lvl, reward, u["boost"]))
+    show_main_menu(chat_id, uid)
 
 # 申请权限
 @bot.callback_query_handler(func=lambda c: c.data == "apply_mining")
@@ -440,7 +444,7 @@ def cmd_rboost(msg):
         u["total_withdraw_boost"] += v
         bot.send_message(msg.chat.id, f"✅ -{v} boost")
         try:
-            bot.send_message(target_uid, f"🔔 系統通知：管理員已扣除您的助力值：{v}\n剩餘：{u['boost']}")
+            bot.send_message(target_uid, f"🔔 系統扣除助力值：{v}\n剩餘：{u['boost']}")
         except:
             pass
     except:
@@ -457,13 +461,13 @@ def cmd_rpoint(msg):
         v = int(v)
         u = user_data[target_uid]
         u["points"] = max(0, u["points"] - v)
-        bot.send_message(msg.chat.id, f"✅ 已扣除 {uid} 积分：{v}")
+        bot.send_message(msg.chat.id, f"✅ 扣除 {uid} 积分：{v}")
         try:
-            bot.send_message(target_uid, f"🔔 系統通知：管理員已扣除您的積分：{v}\n剩餘：{u['points']}")
+            bot.send_message(target_uid, f"🔔 系統扣除積分：{v}\n剩餘：{u['points']}")
         except:
             pass
     except:
-        bot.send_message(msg.chat.id, "用法：/reduce_point UID 数值")
+        bot.send_message(msg.chat.id, "/reduce_point UID amount")
 
 @bot.message_handler(commands=['withdraw'])
 def cmd_withdraw(msg):
@@ -525,9 +529,9 @@ def cmd_set_airdrop(msg):
         _, amount = msg.text.split()
         global AIRDROP_REWARD
         AIRDROP_REWARD = int(amount)
-        bot.send_message(msg.chat.id, f"✅ Airdrop set to: {amount}")
+        bot.send_message(msg.chat.id, f"✅ Airdrop: {amount}")
     except:
-        bot.send_message(msg.chat.id, "Usage: /set_airdrop 88")
+        bot.send_message(msg.chat.id, "/set_airdrop 88")
 
 # 增加助力值
 @bot.message_handler(commands=['add_boost'])
@@ -540,13 +544,13 @@ def cmd_add_boost(msg):
         v = int(v)
         u = user_data[target_uid]
         u["boost"] += v
-        bot.send_message(msg.chat.id, f"✅ Added {v} boost to {target_uid}")
+        bot.send_message(msg.chat.id, f"✅ +{v} boost to {target_uid}")
         try:
-            bot.send_message(target_uid, f"🔔 Admin added {v} boost to you!")
+            bot.send_message(target_uid, f"🔔 系統增加助力值：{v}")
         except:
             pass
     except:
-        bot.send_message(msg.chat.id, "Usage: /add_boost UID amount")
+        bot.send_message(msg.chat.id, "/add_boost UID amount")
 
 # 助力值计算（双语豪华版）
 @bot.message_handler(commands=['js'])
@@ -562,7 +566,7 @@ def cmd_js(msg):
         f"{t(uid, 'calc_boost').format(boost)}\n"
         f"{t(uid, 'calc_rate')}\n"
         "━━━━━━━━━━━━━━\n"
-        f"{t(uid, 'calc_result').format(usdt)}\n"
+        f"{t(uid, 'calc_total').format(usdt)}\n"
         "━━━━━━━━━━━━━━"
     )
     bot.send_message(msg.chat.id, text)
