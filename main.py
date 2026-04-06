@@ -1,5 +1,6 @@
 import telebot
 import time
+from datetime import datetime
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 
@@ -42,6 +43,10 @@ LEVEL_CONFIG = {
     4: (20, 180),
     5: (25, 220)
 }
+
+# ========== 新增：每日重置 + 币种冷却 独立字典 ==========
+user_last_reset_date = {}
+coin_cooldown = {}
 
 # 语言文本
 lang = {
@@ -185,6 +190,27 @@ def cb_start_mining(call):
 def cb_mine(call):
     uid = call.from_user.id
     u = user_data[uid]
+    chat_id = call.message.chat.id
+
+    # ========== 新增：每日自动重置挖矿次数 ==========
+    today = datetime.now().strftime("%Y-%m-%d")
+    if uid not in user_last_reset_date or user_last_reset_date[uid] != today:
+        u["mine_count_today"] = 0
+        user_last_reset_date[uid] = today
+
+    # ========== 新增：单个币种60秒冷却 ==========
+    coin = call.data.split("_")[1]
+    cooldown_key = f"{uid}_{coin}"
+    now = time.time()
+
+    if cooldown_key in coin_cooldown and coin_cooldown[cooldown_key] > now:
+        remain = int(coin_cooldown[cooldown_key] - now)
+        bot.answer_callback_query(call.id, f"{coin} 冷却中…还剩 {remain} 秒", show_alert=True)
+        return
+
+    coin_cooldown[cooldown_key] = now + 60
+
+    # ========== 以下完全是你原有逻辑 ==========
     if u["banned"] or not u["mining_approved"] or u["mining_today_locked"]:
         bot.answer_callback_query(call.id)
         return
@@ -192,7 +218,6 @@ def cb_mine(call):
         bot.answer_callback_query(call.id, t(uid, "mine_max"), show_alert=True)
         return
 
-    coin = call.data.split("_")[1]
     lvl = u["level"]
     reward = coin_reward.get(coin, 100)
     delay = coin_delay.get(coin, 8)
@@ -396,29 +421,46 @@ def cmd_resume(msg):
     except:
         bot.send_message(msg.chat.id, "/resume_mining UID")
 
-# 扣除助力/积分
+# 扣除助力值 + 用户通知
 @bot.message_handler(commands=['reduce_boost'])
 def cmd_rboost(msg):
     if not is_admin(msg.from_user.id):
         return
     try:
         _, uid, v = msg.text.split()
-        u = user_data[int(uid)]
+        target_uid = int(uid)
         v = int(v)
+        u = user_data[target_uid]
         u["boost"] = max(0, u["boost"] - v)
         u["total_withdraw_boost"] += v
         bot.send_message(msg.chat.id, f"✅ -{v} boost")
+
+        # ========== 新增：用户收到通知 ==========
+        try:
+            bot.send_message(target_uid, f"🔔 系統通知\n管理員已扣除您的助力值：{v}\n當前剩餘助力值：{u['boost']}")
+        except:
+            pass
     except:
         bot.send_message(msg.chat.id, "/reduce_boost UID val")
 
+# 扣除积分 + 用户通知
 @bot.message_handler(commands=['reduce_point'])
 def cmd_rpoint(msg):
     if not is_admin(msg.from_user.id):
         return
     try:
         _, uid, v = msg.text.split()
-        user_data[int(uid)]["points"] = max(0, user_data[int(uid)]["points"] - int(v))
+        target_uid = int(uid)
+        v = int(v)
+        u = user_data[target_uid]
+        u["points"] = max(0, u["points"] - v)
         bot.send_message(msg.chat.id, f"✅ 已扣除用户 {uid} 积分：{v}")
+
+        # ========== 新增：用户收到通知 ==========
+        try:
+            bot.send_message(target_uid, f"🔔 系統通知\n管理員已扣除您的積分：{v}\n當前剩餘積分：{u['points']}")
+        except:
+            pass
     except:
         bot.send_message(msg.chat.id, "用法：/reduce_point UID 数值")
 
