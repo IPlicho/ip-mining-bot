@@ -443,7 +443,7 @@ def cmd_miners(msg):
         ap = "Approved" if d["mining_approved"] else "Pending"
         ban = "BANNED" if d["banned"] else ""
         lines.append(f"ID:{uid} Lv{d['level']} B:{d['boost']} TRX:{d['trx']} {ap} {ban}")
-    bot.send_message(msg.chat.id, "\n".join(lines[:20])
+    bot.send_message(msg.chat.id, "\n".join(lines[:20]))
 
 # 封禁
 @bot.message_handler(commands=['ban'])
