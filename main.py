@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
+from threading import Timer
 
 # 机器人配置（你的Token已直接填好）
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
@@ -44,9 +45,13 @@ LEVEL_CONFIG = {
     5: (25, 220)
 }
 
-# ========== 新增：每日重置 + 币种冷却 独立字典 ==========
+# 每日重置 + 币种冷却
 user_last_reset_date = {}
 coin_cooldown = {}
+
+# 【新增】申请资料专用变量
+user_apply_step = defaultdict(int)
+user_apply_form = defaultdict(dict)
 
 # 语言文本
 lang = {
@@ -90,7 +95,14 @@ lang = {
         "calc_title": "💎 助力值兌換結算",
         "calc_boost": "💰 您的助力值：{}",
         "calc_rate": "📌 兌換匯率：10 = 0.12 USDT",
-        "calc_total": "✅ 可兌換：{:.2f} USDT"
+        "calc_total": "✅ 可兌換：{:.2f} USDT",
+        "apply_name": "📝 請輸入您的真實姓名：",
+        "apply_contact": "📞 請輸入您的電話或郵箱：",
+        "apply_wallet": "💰 錢包地址（沒有請回覆：無）：",
+        "apply_invite": "👤 邀請人UID（必填，無則填無）：",
+        "apply_network": "🌐 網絡運營商及線路類型\n範例：Globe 5G / Smart Fiber / DITO WiFi",
+        "apply_invite_empty": "❌ 邀請人UID為必填項，請重新填寫",
+        "apply_complete": "✅ 資料已提交，請等待管理員審核"
     },
     "en": {
         "start_title": "IP Node Mining System\nWelcome! Use the buttons below.",
@@ -132,7 +144,14 @@ lang = {
         "calc_title": "💎 Boost Calculation",
         "calc_boost": "💰 Your Boost: {}",
         "calc_rate": "📌 Rate: 10 = 0.12 USDT",
-        "calc_total": "✅ Total: {:.2f} USDT"
+        "calc_total": "✅ Total: {:.2f} USDT",
+        "apply_name": "📝 Enter your full name:",
+        "apply_contact": "📞 Enter phone or email:",
+        "apply_wallet": "💰 Wallet address (type 'None' if no):",
+        "apply_invite": "👤 Inviter UID (Required):",
+        "apply_network": "🌐 Network operator & line type\nExample: Globe 5G / Smart Fiber",
+        "apply_invite_empty": "❌ Inviter UID is required",
+        "apply_complete": "✅ Application submitted successfully"
     }
 }
 
@@ -166,7 +185,6 @@ def cmd_start(msg):
 @bot.message_handler(commands=['lang'])
 def cmd_lang(msg):
     uid = msg.from_user.id
-    # 这里修复：真正来回切换 zh ↔ en
     if user_lang[uid] == "zh":
         user_lang[uid] = "en"
     else:
@@ -204,13 +222,11 @@ def cb_mine(call):
     u = user_data[uid]
     chat_id = call.message.chat.id
 
-    # 每日重置
     today = datetime.now().strftime("%Y-%m-%d")
     if uid not in user_last_reset_date or user_last_reset_date[uid] != today:
         u["mine_count_today"] = 0
         user_last_reset_date[uid] = today
 
-    # 币种冷却
     coin = call.data.split("_")[1]
     cooldown_key = f"{uid}_{coin}"
     now = time.time()
@@ -240,7 +256,7 @@ def cb_mine(call):
     bot.send_message(chat_id, t(uid, "mine_success").format(coin, lvl, reward, u["boost"]))
     show_main_menu(chat_id, uid)
 
-# 申请权限
+# 【改造】申请挖矿 → 点击后开始填表
 @bot.callback_query_handler(func=lambda c: c.data == "apply_mining")
 def cb_apply(call):
     uid = call.from_user.id
@@ -250,10 +266,58 @@ def cb_apply(call):
     if user_data[uid]["mining_approved"]:
         bot.answer_callback_query(call.id, t(uid, "already_approved"), show_alert=True)
         return
-    for a in ADMIN_IDS:
-        bot.send_message(a, f"🔔 New apply\nUID: {uid}\n/agree {uid}  /refuse {uid}")
-    bot.send_message(call.message.chat.id, t(uid, "apply_sent"))
+    user_apply_step[uid] = 1
+    bot.send_message(call.message.chat.id, t(uid, "apply_name"))
     bot.answer_callback_query(call.id)
+
+# 【新增】接收申请表单
+@bot.message_handler(func=lambda msg: user_apply_step.get(msg.from_user.id, 0) in [1,2,3,4,5])
+def handle_apply_form(msg):
+    uid = msg.from_user.id
+    chat_id = msg.chat.id
+    text = msg.text.strip()
+    step = user_apply_step[uid]
+
+    if step == 1:
+        user_apply_form[uid]["name"] = text
+        user_apply_step[uid] = 2
+        bot.send_message(chat_id, t(uid, "apply_contact"))
+    elif step == 2:
+        user_apply_form[uid]["contact"] = text
+        user_apply_step[uid] = 3
+        bot.send_message(chat_id, t(uid, "apply_wallet"))
+    elif step == 3:
+        user_apply_form[uid]["wallet"] = text
+        user_apply_step[uid] = 4
+        bot.send_message(chat_id, t(uid, "apply_invite"))
+    elif step == 4:
+        if not text or text.lower() in ["none", "无", "0"]:
+            bot.send_message(chat_id, t(uid, "apply_invite_empty"))
+            return
+        user_apply_form[uid]["invite"] = text
+        user_apply_step[uid] = 5
+        bot.send_message(chat_id, t(uid, "apply_network"))
+    elif step == 5:
+        user_apply_form[uid]["network"] = text
+        data = user_apply_form[uid]
+        admin_msg = (
+            "🔔 新挖礦申請\n"
+            f"UID: {uid}\n\n"
+            f"姓名: {data.get('name')}\n"
+            f"聯繫方式: {data.get('contact')}\n"
+            f"錢包: {data.get('wallet')}\n"
+            f"邀請人: {data.get('invite')}\n"
+            f"網絡: {data.get('network')}\n\n"
+            f"/agree {uid}\n/refuse {uid}"
+        )
+        for admin in ADMIN_IDS:
+            try:
+                bot.send_message(admin, admin_msg)
+            except:
+                pass
+        bot.send_message(chat_id, t(uid, "apply_complete"))
+        user_apply_step[uid] = 0
+        user_apply_form[uid] = {}
 
 # 提现
 @bot.callback_query_handler(func=lambda c: c.data == "apply_withdraw")
@@ -552,7 +616,7 @@ def cmd_add_boost(msg):
     except:
         bot.send_message(msg.chat.id, "/add_boost UID amount")
 
-# 助力值计算（双语豪华版）
+# 助力值计算
 @bot.message_handler(commands=['js'])
 def cmd_js(msg):
     uid = msg.from_user.id
@@ -571,6 +635,17 @@ def cmd_js(msg):
     )
     bot.send_message(msg.chat.id, text)
 
-# 启动
+# ================== 【新增】每日自动重置 ==================
+def daily_reset():
+    for uid in user_data:
+        user_data[uid]["mine_count_today"] = 0
+        user_data[uid]["airdrop_claimed"] = False
+    # 24小时后再次执行
+    Timer(86400, daily_reset).start()
+
+# 启动重置
+Timer(1, daily_reset).start()
+
+# 启动机器人
 if __name__ == "__main__":
     bot.infinity_polling()
