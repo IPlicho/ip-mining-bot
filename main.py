@@ -1,6 +1,6 @@
 import telebot
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 from threading import Timer
@@ -155,8 +155,8 @@ lang = {
         "calc_rate": "📌 Rate: 10 = 0.12 USDT",
         "calc_total": "✅ Total: {:.2f} USDT",
         "apply_invite_empty": "❌ Inviter UID is required",
-        "apply_complete": "✅ Application submitted, waiting for review.",
-        "apply_template": """📝 Copy the template below and reply
+        "apply_complete": "✅ Application submitted successfully",
+        "apply_template": """📝 Please copy the template below and reply
 
 Full Name:
 Contact Phone:
@@ -169,11 +169,11 @@ Example:
 Full Name: Chan Ka Wai
 Contact Phone: 59123456
 Residential Address: 123 Argyle Street, Mong Kok, Kowloon, Hong Kong
-Wallet Address: TYXyz1234AbCdEfGh5678IjKlMnOpQrStUvWx
+Wallet Address: TYQ56789abcdefghijKLmnopqRstuvWxyz
 Inviter UID: 98765432
 Network Operator: CSL Mobile
 
-⚠️ Inviter UID is required, cannot be empty"""
+⚠️ Inviter UID is required, cannot be filled as None"""
     }
 }
 
@@ -207,7 +207,10 @@ def cmd_start(msg):
 @bot.message_handler(commands=['lang'])
 def cmd_lang(msg):
     uid = msg.from_user.id
-    user_lang[uid] = "en" if user_lang[uid] == "zh" else "zh"
+    if user_lang[uid] == "zh":
+        user_lang[uid] = "en"
+    else:
+        user_lang[uid] = "zh"
     bot.send_message(msg.chat.id, t(uid, "lang_switched"))
     show_main_menu(msg.chat.id, uid)
 
@@ -250,7 +253,8 @@ def cb_mine(call):
     cooldown_key = f"{uid}_{coin}"
     now = time.time()
     if cooldown_key in coin_cooldown and coin_cooldown[cooldown_key] > now:
-        bot.answer_callback_query(call.id, "Cooldown...", show_alert=True)
+        remain = int(coin_cooldown[cooldown_key] - now)
+        bot.answer_callback_query(call.id, f"{coin} cooling {remain}s", show_alert=True)
         return
     coin_cooldown[cooldown_key] = now + 60
 
@@ -274,7 +278,7 @@ def cb_mine(call):
     bot.send_message(chat_id, t(uid, "mine_success").format(coin, lvl, reward, u["boost"]))
     show_main_menu(chat_id, uid)
 
-# ================== 申请模板（多语言版，只改这里，其他完全不动） ==================
+# ================== 申请挖矿：与截图格式1:1还原 + 双语 ==================
 @bot.callback_query_handler(func=lambda c: c.data == "apply_mining")
 def cb_apply(call):
     uid = call.from_user.id
@@ -284,12 +288,11 @@ def cb_apply(call):
     if user_data[uid]["mining_approved"]:
         bot.answer_callback_query(call.id, t(uid, "already_approved"), show_alert=True)
         return
-
     bot.send_message(call.message.chat.id, t(uid, "apply_template"))
     bot.answer_callback_query(call.id)
 
-# 解析申请信息
-@bot.message_handler(func=lambda msg: "真實姓名：" in msg.text or "Full Name:" in msg.text)
+# 解析用户填写的模板
+@bot.message_handler(func=lambda msg: ("真實姓名：" in msg.text or "Full Name:" in msg.text))
 def handle_apply(msg):
     uid = msg.from_user.id
     text = msg.text.strip()
@@ -323,14 +326,15 @@ def handle_apply(msg):
         elif "Network Operator:" in line:
             data["network"] = line.replace("Network Operator:", "").strip()
 
-    if not data.get("invite") or data["invite"] in ["", "无", "無", "0"]:
+    if not data.get("invite") or data["invite"] in ["", "无", "無", "0", "None"]:
         bot.send_message(msg.chat.id, t(uid, "apply_invite_empty"))
         return
 
+    # 发给管理员
     admin_msg = f"""🔔 新挖礦申請
 用戶ID: {uid}
 姓名: {data.get('name', '-')}
-手機: {data.get('contact', '-')}
+聯繫: {data.get('contact', '-')}
 地址: {data.get('address', '-')}
 錢包: {data.get('wallet', '-')}
 邀請人: {data.get('invite', '-')}
@@ -360,7 +364,7 @@ def cb_airdrop(call):
     uid = call.from_user.id
     u = user_data[uid]
     if u["banned"]:
-        bot.answer_callback_query(call.id, t(uid, "banned"), show_alert=True)
+        bot.answer_callback_query(call.id)
         return
     if u["airdrop_claimed"]:
         bot.answer_callback_query(call.id, t(uid, "airdrop_today_claimed"), show_alert=True)
@@ -390,7 +394,7 @@ def cb_asset(call):
     bot.send_message(call.message.chat.id, txt)
     bot.answer_callback_query(call.id)
 
-# 规则
+# 项目规则
 @bot.callback_query_handler(func=lambda c: c.data == "project_rules")
 def cb_rules(call):
     uid = call.from_user.id
@@ -439,7 +443,7 @@ def cmd_miners(msg):
         ap = "Approved" if d["mining_approved"] else "Pending"
         ban = "BANNED" if d["banned"] else ""
         lines.append(f"ID:{uid} Lv{d['level']} B:{d['boost']} TRX:{d['trx']} {ap} {ban}")
-    bot.send_message(msg.chat.id, "\n".join(lines[:20]))
+    bot.send_message(msg.chat.id, "\n".join(lines[:20])
 
 # 封禁
 @bot.message_handler(commands=['ban'])
@@ -451,7 +455,7 @@ def cmd_ban(msg):
         user_data[int(uid)]["banned"] = True
         bot.send_message(msg.chat.id, f"❌ Banned {uid}")
     except:
-        bot.send_message(msg.chat.id, "Usage: /ban UID")
+        bot.send_message(msg.chat.id, "/ban UID")
 
 @bot.message_handler(commands=['unban'])
 def cmd_unban(msg):
@@ -462,9 +466,9 @@ def cmd_unban(msg):
         user_data[int(uid)]["banned"] = False
         bot.send_message(msg.chat.id, f"✅ Unbanned {uid}")
     except:
-        bot.send_message(msg.chat.id, "Usage: /unban UID")
+        bot.send_message(msg.chat.id, "/unban UID")
 
-# TRX操作
+# TRX
 @bot.message_handler(commands=['add_trx'])
 def cmd_addtrx(msg):
     if not is_admin(msg.from_user.id):
@@ -474,7 +478,7 @@ def cmd_addtrx(msg):
         user_data[int(uid)]["trx"] += float(v)
         bot.send_message(msg.chat.id, f"✅ +{v} TRX")
     except:
-        bot.send_message(msg.chat.id, "Usage: /add_trx UID AMOUNT")
+        bot.send_message(msg.chat.id, "/add_trx UID amount")
 
 @bot.message_handler(commands=['reduce_trx'])
 def cmd_rtrx(msg):
@@ -485,9 +489,9 @@ def cmd_rtrx(msg):
         user_data[int(uid)]["trx"] = max(0, user_data[int(uid)]["trx"] - float(v))
         bot.send_message(msg.chat.id, f"✅ -{v} TRX")
     except:
-        bot.send_message(msg.chat.id, "Usage: /reduce_trx UID AMOUNT")
+        bot.send_message(msg.chat.id, "/reduce_trx UID amount")
 
-# 等级设置
+# 等级
 @bot.message_handler(commands=['setlevel'])
 def cmd_lvl(msg):
     if not is_admin(msg.from_user.id):
@@ -497,7 +501,7 @@ def cmd_lvl(msg):
         user_data[int(uid)]["level"] = int(v)
         bot.send_message(msg.chat.id, f"✅ Lv{v}")
     except:
-        bot.send_message(msg.chat.id, "Usage: /setlevel UID LEVEL")
+        bot.send_message(msg.chat.id, "/setlevel UID level")
 
 # 挖矿开关
 @bot.message_handler(commands=['stop_mining'])
@@ -509,7 +513,7 @@ def cmd_stop(msg):
         user_data[int(uid)]["mining_today_locked"] = True
         bot.send_message(msg.chat.id, "✅ Stopped")
     except:
-        bot.send_message(msg.chat.id, "Usage: /stop_mining UID")
+        bot.send_message(msg.chat.id, "/stop_mining UID")
 
 @bot.message_handler(commands=['resume_mining'])
 def cmd_resume(msg):
@@ -520,9 +524,9 @@ def cmd_resume(msg):
         user_data[int(uid)]["mining_today_locked"] = False
         bot.send_message(msg.chat.id, "✅ Resumed")
     except:
-        bot.send_message(msg.chat.id, "Usage: /resume_mining UID")
+        bot.send_message(msg.chat.id, "/resume_mining UID")
 
-# 助力值操作
+# 扣除助力值
 @bot.message_handler(commands=['reduce_boost'])
 def cmd_rboost(msg):
     if not is_admin(msg.from_user.id):
@@ -540,8 +544,9 @@ def cmd_rboost(msg):
         except:
             pass
     except:
-        bot.send_message(msg.chat.id, "Usage: /reduce_boost UID AMOUNT")
+        bot.send_message(msg.chat.id, "/reduce_boost UID val")
 
+# 扣除积分
 @bot.message_handler(commands=['reduce_point'])
 def cmd_rpoint(msg):
     if not is_admin(msg.from_user.id):
@@ -558,7 +563,7 @@ def cmd_rpoint(msg):
         except:
             pass
     except:
-        bot.send_message(msg.chat.id, "Usage: /reduce_point UID AMOUNT")
+        bot.send_message(msg.chat.id, "/reduce_point UID amount")
 
 @bot.message_handler(commands=['withdraw'])
 def cmd_withdraw(msg):
@@ -566,7 +571,7 @@ def cmd_withdraw(msg):
         return
     bot.send_message(msg.chat.id, "✅ Withdraw processed")
 
-# 设置每日挖矿上限
+# 设置挖矿次数
 @bot.message_handler(commands=['setminetimes'])
 def cmd_setmines(msg):
     if not is_admin(msg.from_user.id):
@@ -576,9 +581,9 @@ def cmd_setmines(msg):
         user_data[int(uid)]["max_mine_per_day"] = int(t)
         bot.send_message(msg.chat.id, f"✅ 每日上限：{t}")
     except:
-        bot.send_message(msg.chat.id, "Usage: /setminetimes UID COUNT")
+        bot.send_message(msg.chat.id, "/setminetimes UID times")
 
-# 设置币种奖励
+# 设置挖矿奖励
 @bot.message_handler(commands=['set_reward'])
 def cmd_setreward(msg):
     if not is_admin(msg.from_user.id):
@@ -592,9 +597,9 @@ def cmd_setreward(msg):
         else:
             bot.send_message(msg.chat.id, "❌ Coin not found")
     except:
-        bot.send_message(msg.chat.id, "Usage: /set_reward COIN AMOUNT")
+        bot.send_message(msg.chat.id, "/set_reward BTC 200")
 
-# 设置挖矿延迟
+# 设置延迟
 @bot.message_handler(commands=['set_delay'])
 def cmd_setdelay(msg):
     if not is_admin(msg.from_user.id):
@@ -602,15 +607,16 @@ def cmd_setdelay(msg):
     try:
         _, coin, sec = msg.text.split()
         coin = coin.upper()
+        sec = int(sec)
         if coin in coin_delay:
-            coin_delay[coin] = int(sec)
-            bot.send_message(msg.chat.id, f"✅ {coin} delay: {sec}s")
+            coin_delay[coin] = sec
+            bot.send_message(msg.chat.id, f"✅ {sec}s delay set for {coin}")
         else:
             bot.send_message(msg.chat.id, "❌ Coin not found")
     except:
-        bot.send_message(msg.chat.id, "Usage: /set_delay COIN SEC")
+        bot.send_message(msg.chat.id, "/set_delay BTC 10")
 
-# 设置空投
+# 设置空投金额
 @bot.message_handler(commands=['set_airdrop'])
 def cmd_set_airdrop(msg):
     if not is_admin(msg.from_user.id):
@@ -621,7 +627,7 @@ def cmd_set_airdrop(msg):
         AIRDROP_REWARD = int(amount)
         bot.send_message(msg.chat.id, f"✅ Airdrop: {amount}")
     except:
-        bot.send_message(msg.chat.id, "Usage: /set_airdrop AMOUNT")
+        bot.send_message(msg.chat.id, "/set_airdrop 88")
 
 # 增加助力值
 @bot.message_handler(commands=['add_boost'])
@@ -640,15 +646,16 @@ def cmd_add_boost(msg):
         except:
             pass
     except:
-        bot.send_message(msg.chat.id, "Usage: /add_boost UID AMOUNT")
+        bot.send_message(msg.chat.id, "/add_boost UID amount")
 
-# 助力值结算
+# 助力值计算
 @bot.message_handler(commands=['js'])
 def cmd_js(msg):
     uid = msg.from_user.id
     boost = user_data[uid]["boost"]
     usdt = boost * 0.012
-    txt = (
+
+    text = (
         "━━━━━━━━━━━━━━\n"
         f"{t(uid, 'calc_title')}\n"
         "━━━━━━━━━━━━━━\n"
@@ -658,16 +665,7 @@ def cmd_js(msg):
         f"{t(uid, 'calc_total').format(usdt)}\n"
         "━━━━━━━━━━━━━━"
     )
-    bot.send_message(msg.chat.id, txt)
-
-# 每日重置
-def daily_reset():
-    for uid in user_data:
-        user_data[uid]["mine_count_today"] = 0
-        user_data[uid]["airdrop_claimed"] = False
-    Timer(86400, daily_reset).start()
-
-daily_reset()
+    bot.send_message(msg.chat.id, text)
 
 # 启动机器人
 if __name__ == "__main__":
