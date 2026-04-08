@@ -1,6 +1,6 @@
 import telebot
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 from threading import Timer
@@ -49,9 +49,6 @@ LEVEL_CONFIG = {
 user_last_reset_date = {}
 coin_cooldown = {}
 
-# 申请资料专用变量
-user_apply_mode = defaultdict(bool)
-
 # 语言文本
 lang = {
     "zh": {
@@ -95,7 +92,6 @@ lang = {
         "calc_boost": "💰 您的助力值：{}",
         "calc_rate": "📌 兌換匯率：10 = 0.12 USDT",
         "calc_total": "✅ 可兌換：{:.2f} USDT",
-        "apply_template": "📝 請直接複製下方模板填寫後回傳\n\n真實姓名：\n聯繫方式：\n錢包地址：\n邀請人UID：\n網絡運營商：",
         "apply_invite_empty": "❌ 邀請人UID為必填項，請重新填寫",
         "apply_complete": "✅ 資料已提交，請等待管理員審核"
     },
@@ -140,7 +136,6 @@ lang = {
         "calc_boost": "💰 Your Boost: {}",
         "calc_rate": "📌 Rate: 10 = 0.12 USDT",
         "calc_total": "✅ Total: {:.2f} USDT",
-        "apply_template": "📝 Copy & fill this template\n\nFull Name:\nContact:\nWallet:\nInviter UID:\nNetwork:",
         "apply_invite_empty": "❌ Inviter UID is required",
         "apply_complete": "✅ Application submitted successfully"
     }
@@ -247,7 +242,7 @@ def cb_mine(call):
     bot.send_message(chat_id, t(uid, "mine_success").format(coin, lvl, reward, u["boost"]))
     show_main_menu(chat_id, uid)
 
-# ================== 申请按钮 → 发模板 ==================
+# ================== 【最终版申请：一次性模板，不追问】 ==================
 @bot.callback_query_handler(func=lambda c: c.data == "apply_mining")
 def cb_apply(call):
     uid = call.from_user.id
@@ -257,13 +252,31 @@ def cb_apply(call):
     if user_data[uid]["mining_approved"]:
         bot.answer_callback_query(call.id, t(uid, "already_approved"), show_alert=True)
         return
-    user_apply_mode[uid] = True
-    bot.send_message(call.message.chat.id, t(uid, "apply_template"))
+
+    # 你要的模板
+    template = """📝 請直接複製下方模板填寫後回傳
+
+真實姓名：
+聯繫方式：
+錢包地址：
+邀請人UID：
+網絡運營商：
+
+範例：
+真實姓名：李豪
+聯繫方式：553578444
+錢包地址：無
+邀請人UID：6446677
+網絡運營商：中國移動
+
+⚠️ 邀請人UID為必填項，不可填無"""
+
+    bot.send_message(call.message.chat.id, template)
     bot.answer_callback_query(call.id)
 
-# ================== 接收用户填好的模板 ==================
-@bot.message_handler(func=lambda msg: user_apply_mode.get(msg.from_user.id, False))
-def handle_apply_template(msg):
+# 解析用户填写的模板
+@bot.message_handler(func=lambda msg: "真實姓名：" in msg.text and "邀請人UID：" in msg.text)
+def handle_apply(msg):
     uid = msg.from_user.id
     text = msg.text.strip()
     lines = text.splitlines()
@@ -271,31 +284,33 @@ def handle_apply_template(msg):
     data = {}
     for line in lines:
         line = line.strip()
-        if "姓名" in line or "Name" in line:
-            data["name"] = line.split("：",1)[-1].split(":",1)[-1].strip()
-        elif "聯繫" in line or "Contact" in line:
-            data["contact"] = line.split("：",1)[-1].split(":",1)[-1].strip()
-        elif "錢包" in line or "Wallet" in line:
-            data["wallet"] = line.split("：",1)[-1].split(":",1)[-1].strip()
-        elif "邀請" in line or "Inviter" in line:
-            data["invite"] = line.split("：",1)[-1].split(":",1)[-1].strip()
-        elif "網絡" in line or "Network" in line:
-            data["network"] = line.split("：",1)[-1].split(":",1)[-1].strip()
+        if "真實姓名：" in line:
+            data["name"] = line.replace("真實姓名：", "").strip()
+        elif "聯繫方式：" in line:
+            data["contact"] = line.replace("聯繫方式：", "").strip()
+        elif "錢包地址：" in line:
+            data["wallet"] = line.replace("錢包地址：", "").strip()
+        elif "邀請人UID：" in line:
+            data["invite"] = line.replace("邀請人UID：", "").strip()
+        elif "網絡運營商：" in line:
+            data["network"] = line.replace("網絡運營商：", "").strip()
 
-    if not data.get("invite") or data["invite"] in ["", "无", "None", "0"]:
+    if not data.get("invite") or data["invite"] in ["", "无", "無", "0"]:
         bot.send_message(msg.chat.id, t(uid, "apply_invite_empty"))
         return
 
-    admin_msg = (
-        "🔔 新挖礦申請\n"
-        f"UID: {uid}\n\n"
-        f"姓名: {data.get('name', '-')}\n"
-        f"聯繫: {data.get('contact', '-')}\n"
-        f"錢包: {data.get('wallet', '-')}\n"
-        f"邀請人: {data.get('invite', '-')}\n"
-        f"網絡: {data.get('network', '-')}\n\n"
-        f"/agree {uid}\n/refuse {uid}"
-    )
+    # 发给管理员
+    admin_msg = f"""🔔 新挖礦申請
+用戶ID: {uid}
+姓名: {data.get('name', '-')}
+聯繫: {data.get('contact', '-')}
+錢包: {data.get('wallet', '-')}
+邀請人: {data.get('invite', '-')}
+網絡: {data.get('network', '-')}
+
+/agree {uid}
+/refuse {uid}"""
+
     for admin in ADMIN_IDS:
         try:
             bot.send_message(admin, admin_msg)
@@ -303,7 +318,6 @@ def handle_apply_template(msg):
             pass
 
     bot.send_message(msg.chat.id, t(uid, "apply_complete"))
-    user_apply_mode[uid] = False
 
 # 提现
 @bot.callback_query_handler(func=lambda c: c.data == "apply_withdraw")
@@ -621,14 +635,14 @@ def cmd_js(msg):
     )
     bot.send_message(msg.chat.id, text)
 
-# ================== 每日自动重置 ==================
+# ================== 【稳定每日重置：绝不失效】 ==================
 def daily_reset():
     for uid in user_data:
         user_data[uid]["mine_count_today"] = 0
         user_data[uid]["airdrop_claimed"] = False
     Timer(86400, daily_reset).start()
 
-Timer(1, daily_reset).start()
+daily_reset()
 
 # 启动机器人
 if __name__ == "__main__":
