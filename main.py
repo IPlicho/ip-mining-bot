@@ -93,7 +93,25 @@ lang = {
         "calc_rate": "📌 兌換匯率：10 = 0.12 USDT",
         "calc_total": "✅ 可兌換：{:.2f} USDT",
         "apply_invite_empty": "❌ 邀請人UID為必填項，請重新填寫",
-        "apply_complete": "✅ 資料已提交，請等待管理員審核"
+        "apply_complete": "✅ 資料已提交，請等待管理員審核",
+        "apply_template": """📝 請直接複製下方模板填寫後回傳
+
+真實姓名：
+聯繫手機：
+居住地址：
+錢包地址：
+邀請人UID：
+網絡運營商：
+
+範例：
+真實姓名：陳家偉
+聯繫手機：59123456
+居住地址：香港九龍旺角亞皆老街123號
+錢包地址：TYQ56789abcdefghijKLmnopqRstuvWxyz
+邀請人UID：98765432
+網絡運營商：CSL Mobile
+
+⚠️ 邀請人UID為必填項，不可填無"""
     },
     "en": {
         "start_title": "IP Node Mining System\nWelcome! Use the buttons below.",
@@ -137,7 +155,25 @@ lang = {
         "calc_rate": "📌 Rate: 10 = 0.12 USDT",
         "calc_total": "✅ Total: {:.2f} USDT",
         "apply_invite_empty": "❌ Inviter UID is required",
-        "apply_complete": "✅ Application submitted, waiting for review."
+        "apply_complete": "✅ Application submitted, waiting for review.",
+        "apply_template": """📝 Copy the template below and reply
+
+Full Name:
+Contact Phone:
+Residential Address:
+Wallet Address:
+Inviter UID:
+Network Operator:
+
+Example:
+Full Name: Chan Ka Wai
+Contact Phone: 59123456
+Residential Address: 123 Argyle Street, Mong Kok, Kowloon, Hong Kong
+Wallet Address: TYXyz1234AbCdEfGh5678IjKlMnOpQrStUvWx
+Inviter UID: 98765432
+Network Operator: CSL Mobile
+
+⚠️ Inviter UID is required, cannot be empty"""
     }
 }
 
@@ -238,7 +274,7 @@ def cb_mine(call):
     bot.send_message(chat_id, t(uid, "mine_success").format(coin, lvl, reward, u["boost"]))
     show_main_menu(chat_id, uid)
 
-# ================== 申请模板（仅修改此处，香港示例） ==================
+# ================== 申请模板（多语言版，只改这里，其他完全不动） ==================
 @bot.callback_query_handler(func=lambda c: c.data == "apply_mining")
 def cb_apply(call):
     uid = call.from_user.id
@@ -249,30 +285,11 @@ def cb_apply(call):
         bot.answer_callback_query(call.id, t(uid, "already_approved"), show_alert=True)
         return
 
-    template = """📝 請直接複製下方模板填寫後回傳
-
-真實姓名：
-聯繫手機：
-居住地址：
-錢包地址：
-邀請人UID：
-網絡運營商：
-
-範例：
-真實姓名：陳家偉
-聯繫手機：59123456
-居住地址：香港九龍旺角亞皆老街123號
-錢包地址：TYQ56789abcdefghijKLmnopqRstuvWxyz
-邀請人UID：98765432
-網絡運營商：CSL Mobile
-
-⚠️ 邀請人UID為必填項，不可填無"""
-
-    bot.send_message(call.message.chat.id, template)
+    bot.send_message(call.message.chat.id, t(uid, "apply_template"))
     bot.answer_callback_query(call.id)
 
 # 解析申请信息
-@bot.message_handler(func=lambda msg: "真實姓名：" in msg.text and "邀請人UID：" in msg.text)
+@bot.message_handler(func=lambda msg: "真實姓名：" in msg.text or "Full Name:" in msg.text)
 def handle_apply(msg):
     uid = msg.from_user.id
     text = msg.text.strip()
@@ -283,16 +300,28 @@ def handle_apply(msg):
         line = line.strip()
         if "真實姓名：" in line:
             data["name"] = line.replace("真實姓名：", "").strip()
+        elif "Full Name:" in line:
+            data["name"] = line.replace("Full Name:", "").strip()
         elif "聯繫手機：" in line:
             data["contact"] = line.replace("聯繫手機：", "").strip()
+        elif "Contact Phone:" in line:
+            data["contact"] = line.replace("Contact Phone:", "").strip()
         elif "居住地址：" in line:
             data["address"] = line.replace("居住地址：", "").strip()
+        elif "Residential Address:" in line:
+            data["address"] = line.replace("Residential Address:", "").strip()
         elif "錢包地址：" in line:
             data["wallet"] = line.replace("錢包地址：", "").strip()
+        elif "Wallet Address:" in line:
+            data["wallet"] = line.replace("Wallet Address:", "").strip()
         elif "邀請人UID：" in line:
             data["invite"] = line.replace("邀請人UID：", "").strip()
+        elif "Inviter UID:" in line:
+            data["invite"] = line.replace("Inviter UID:", "").strip()
         elif "網絡運營商：" in line:
             data["network"] = line.replace("網絡運營商：", "").strip()
+        elif "Network Operator:" in line:
+            data["network"] = line.replace("Network Operator:", "").strip()
 
     if not data.get("invite") or data["invite"] in ["", "无", "無", "0"]:
         bot.send_message(msg.chat.id, t(uid, "apply_invite_empty"))
