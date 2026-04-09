@@ -14,7 +14,7 @@ TEXT = {
     "zh": {
         "home": """🏠 TrustEscrow 專業擔保平台
 
-我們是台灣經營滿5年的老牌第三方擔保服務商
+我們已在擔保行業立足 5 年，
 專注解決線上交易欺詐問題，讓買賣雙方都安全。
 
 【平台優勢】
@@ -28,8 +28,8 @@ TEXT = {
 
         "about": """🏛️ 關於我們
 
-TrustEscrow 穩定經營滿 5 年，
-是全台最早、最專業、最具信譽的擔保平台。
+TrustEscrow 已在擔保行業立足 5 年，
+是業內最專業、最具信譽的老牌擔保平台。
 
 5年實績：
 ✅ 10,000+ 筆安全交易完成
@@ -143,8 +143,8 @@ TrustEscrow 穩定經營滿 5 年，
     "en": {
         "home": """🏠 TrustEscrow Professional Escrow
 
-We are a 5-year trusted escrow platform based in Taiwan,
-focused on safe trading & anti-scam protection.
+We have been in the escrow industry for 5 years,
+focused on eliminating scams and protecting both parties.
 
 【Features】
 ✅ 5 Years 0 Fraud
@@ -157,8 +157,8 @@ Trade safely with us.""",
 
         "about": """🏛️ About Us
 
-TrustEscrow has been successfully operating for 5+ years.
-We are the most trusted & professional escrow platform.
+TrustEscrow has been in the escrow industry for 5+ years,
+one of the most trusted and professional platforms.
 
 5 Years Achievement:
 ✅ 10,000+ Successful Deals
@@ -347,9 +347,12 @@ def cb(c):
         elif c.data == "running":
             items = []
             for i in range(4):
-                amt = random.choice([500,880,1000,1200,1500,2000])
-                st = random.choice(["擔保處理中","賣方已收款","待配對","擔保中"])
-                items.append(f"⏳ 訂單 #{i+1}\n金額：{amt} USDT\n狀態：{st}")
+                code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ0123456789", k=4))
+                amt = random.choice([380, 500, 680, 880, 1000, 1200, 1500, 1800, 2000, 2500])
+                status_list = ["擔保處理中", "賣方已收款", "待配對", "擔保中", "等待買方確認"] if lang == "zh" else \
+                              ["Escrow Processing", "Seller Paid", "Pairing", "In Escrow", "Waiting Buyer"]
+                st = random.choice(status_list)
+                items.append(f"⏳ 訂單 #{code}\n金額：{amt} USDT\n狀態：{st}")
             text = t["running"].format("\n\n".join(items))
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
@@ -365,8 +368,8 @@ def cb(c):
             bot.edit_message_text(t["input_sell_tip"], cid, mid, reply_markup=back_menu(u))
 
         bot.answer_callback_query(c.id)
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
 # ===================== 輸入處理 =====================
 @bot.message_handler(func=lambda m: True)
@@ -385,47 +388,52 @@ def msg(msg):
             try:
                 uid = int(p[1])
                 amt = float(p[2])
-                user_balance[uid] = user_balance.get(uid,0.0)+amt
-                bot.send_message(cid,f"✅ 已充值 {amt} USDT 給 {uid}")
+                user_balance[uid] = user_balance.get(uid, 0.0) + amt
+                bot.send_message(cid, f"✅ 已充值 {amt} USDT 給 {uid}")
             except:
-                bot.send_message(cid,"❌ 格式 /add ID 金額")
+                bot.send_message(cid, "❌ 格式 /add ID 金額")
         return
 
     if u not in user_step:
         user_step[u] = None
 
-    # 發起擔保
+    # 發起擔保 - 輸入金額
     if user_step[u] == "create_amount":
         try:
             amt = float(txt)
-            user_step[u] = {"step":"create_tip","amount":amt}
-            bot.send_message(cid,t["input_tip"],reply_markup=back_menu(u))
+            user_step[u] = {"step": "create_tip", "amount": amt}
+            bot.send_message(cid, t["input_tip"], reply_markup=back_menu(u))
         except:
-            bot.send_message(cid,"❌ 請輸入數字",reply_markup=back_menu(u))
+            bot.send_message(cid, "❌ 請輸入數字", reply_markup=back_menu(u))
 
-    elif type(user_step[u])==dict and user_step[u]["step"]=="create_tip":
+    # 發起擔保 - 設置口令
+    elif type(user_step[u]) == dict and user_step[u]["step"] == "create_tip":
         amt = user_step[u]["amount"]
         code = txt
-        if user_balance[u]<amt:
-            bot.send_message(cid,t["no_money"],reply_markup=main_menu(u))
-            user_step[u]=None
+        if user_balance[u] < amt:
+            bot.send_message(cid, t["no_money"], reply_markup=main_menu(u))
+            user_step[u] = None
             return
-        user_balance[u]-=amt
-        orders[code] = {"buyer":u,"amount":amt,"time":datetime.now().strftime("%m-%d %H:%M")}
-        bot.send_message(cid,t["escrow_success"].format(amt,code),reply_markup=main_menu(u))
-        user_step[u]=None
+        user_balance[u] -= amt
+        orders[code] = {
+            "buyer": u,
+            "amount": amt,
+            "time": datetime.now().strftime("%m-%d %H:%M")
+        }
+        bot.send_message(cid, t["escrow_success"].format(amt, code), reply_markup=main_menu(u))
+        user_step[u] = None
 
-    # 配對
+    # 賣方輸入口令配對
     elif user_step[u] == "join_tip":
         code = txt
         if code not in orders:
-            bot.send_message(cid,t["tip_error"],reply_markup=main_menu(u))
+            bot.send_message(cid, t["tip_error"], reply_markup=main_menu(u))
             return
         o = orders[code]
-        bot.send_message(cid,t["pair_success"].format(o["buyer"],u,o["amount"]),reply_markup=main_menu(u))
-        bot.send_message(ADMIN_ID,f"📥 新訂單\n口令：{code}\n買方：{o['buyer']}\n賣方：{u}\n金額：{o['amount']} USDT")
+        bot.send_message(cid, t["pair_success"].format(o["buyer"], u, o["amount"]), reply_markup=main_menu(u))
+        bot.send_message(ADMIN_ID, f"📥 新訂單\n口令：{code}\n買方：{o['buyer']}\n賣方：{u}\n金額：{o['amount']} USDT")
         del orders[code]
-        user_step[u]=None
+        user_step[u] = None
 
 # ===================== 啟動機器人 =====================
 if __name__ == "__main__":
