@@ -2,145 +2,103 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import json
-import datetime
+import os
+from datetime import datetime
 
 # ====================== 配置 ======================
-ADMIN_IDS = [8401979801, 8781082053]
+ADMIN_IDS = [8401979801, 8401979801]
 BOT_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, threaded=True)
 
-# ====================== 繁體文案（你給的全套） ======================
+# ====================== 雙語文案 ======================
 TEXT = {
-    "home": """🏠 担保服务平台
-安全 · 高效 · 可信 · 全程担保
-
-本平台提供第三方中立担保服务，保障交易双方资金与权益安全。
-所有担保人经过严格审核，订单可查、过程可控、售后可追溯。""",
-
-    "service": """📌 担保项目
-
-我们支持以下正规担保交易：
-
-• USDT 转账担保
-双方交易前由平台托管资金，确认无误后放行。
-
-• 线上交易担保
-商品/服务/账号/虚拟资产交易安全担保。
-
-• 线下交易担保
-当面交易资金托管，避免欺诈。
-
-• 合约履约担保
-按约定条件完成后才释放资金。
-
-• 多人交易担保
-支持多方参与的复杂交易担保。
-
-担保流程
-1. 用户发起担保 → 2. 资金托管 → 3. 履约确认 → 4. 放行结算""",
-
-    "apply": """🛡️ 担保入驻
-
-成为担保人即可接单赚取收益。
-
-入驻要求
-• 同意平台规则
-• 提供基本资料审核
-• 无违规记录
-
-申请流程
-1. 提交资料 → 2. 管理员审核 → 3. 开通权限 → 4. 开始接单
-
-注意
-• 违规将被永久封锁权限""",
-
-    "create": """🚀 发起担保
-
-下单流程：
-1. 选择担保类型
-2. 填写金额、备注
-3. 提交订单 → 等待担保人接单
-4. 托管资金 → 履约完成 → 确认放行""",
-
-    "help": """📖 帮助中心
-• 担保项目：查看支持的交易类型
-• 担保入驻：申请成为担保人
-• 发起担保：创建新订单
-• 我的订单：查看历史记录""",
-
-    "applied": "✅ 你已提交过申请",
-    "apply_success": "✅ 申请已提交，等待管理员审核",
-    "btn_back": "« 返回首页"
+    "zh": {
+        "home": "🏠 擔保服務平台\n安全 · 高效 · 可信\n\n本平台提供第三方中立擔保服務。",
+        "service": "📌 擔保項目\n• USDT 轉帳\n• 線上交易\n• 線下交易\n• 合約履約\n• 多人交易",
+        "apply": "🛡️ 申請成為擔保人\n提交後等待管理員審核",
+        "create": "🚀 發起擔保\n選擇類型 → 填金額 → 提交",
+        "help": "📖 說明\n使用前請詳閱規則",
+        "guarantor": "🛡️ 擔保人中心\n可接單、查看訂單、確認完成",
+        "orders": "📋 我的訂單",
+        "accept": "✅ 接單",
+        "complete": "✅ 確認完成",
+        "back": "🏠 返回",
+        "lang": "🌐 English"
+    },
+    "en": {
+        "home": "🏠 Escrow Platform\nSafe · Fast · Reliable\n\nWe provide neutral escrow service.",
+        "service": "📌 Services\n• USDT Transfer\n• Online Trade\n• Offline Trade\n• Contract\n• Multi-party",
+        "apply": "🛡️ Apply to be Guarantor",
+        "create": "🚀 Create Order",
+        "help": "📖 Help",
+        "guarantor": "🛡️ Guarantor Center",
+        "orders": "📋 My Orders",
+        "accept": "✅ Accept",
+        "complete": "✅ Complete",
+        "back": "🏠 Back",
+        "lang": "🌐 繁中"
+    }
 }
 
-# ====================== 數據 ======================
-def load_data():
-    try:
-        with open("data.json","r",encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return {"users":{},"apps":{},"orders":{}}
+user_lang = {}
+data = {"users": {}, "orders": {}}
 
-def save_data(data):
-    with open("data.json","w",encoding="utf-8") as f:
-        json.dump(data,f,ensure_ascii=False,indent=2)
-
-# ====================== 按鈕選單 ======================
-def main_menu():
+# ====================== 選單 ======================
+def main_menu(u):
+    lang = user_lang.get(u, "zh")
+    t = TEXT[lang]
     m = InlineKeyboardMarkup(row_width=1)
     m.add(
-        InlineKeyboardButton("📌 担保项目", callback_data="service"),
-        InlineKeyboardButton("🛡️ 担保入驻", callback_data="apply"),
-        InlineKeyboardButton("🚀 发起担保", callback_data="create"),
-        InlineKeyboardButton("📖 帮助中心", callback_data="help")
+        InlineKeyboardButton(t["service"], callback="service"),
+        InlineKeyboardButton(t["apply"], callback="apply"),
+        InlineKeyboardButton(t["create"], callback="create"),
+        InlineKeyboardButton(t["help"], callback="help"),
+        InlineKeyboardButton(t["guarantor"], callback="guarantor"),
+        InlineKeyboardButton(t["lang"], callback="lang")
     )
     return m
 
-def back_menu():
+def back_menu(u):
+    lang = user_lang.get(u, "zh")
     m = InlineKeyboardMarkup(row_width=1)
-    m.add(InlineKeyboardButton(TEXT["btn_back"], callback_data="home"))
+    m.add(InlineKeyboardButton(TEXT[lang]["back"], callback="home"))
     return m
 
 # ====================== 啟動 ======================
 @bot.message_handler(commands=["start"])
 def start(msg):
-    bot.send_message(msg.chat.id, TEXT["home"], reply_markup=main_menu())
+    u = msg.from_user.id
+    user_lang[u] = "zh"
+    bot.send_message(msg.chat.id, TEXT["zh"]["home"], reply_markup=main_menu(u))
 
-# ====================== 頁面切換 ======================
-@bot.callback_query_handler(func=lambda c:True)
+# ====================== 按鈕 ======================
+@bot.callback_query_handler(func=lambda c: True)
 def cb(c):
-    data = c.data
-    mid = c.message.id
-    cid = c.message.chat.id
-    uid = c.from_user.id
-    d = load_data()
+    u = c.from_user.id
+    lang = user_lang.get(u, "zh")
+    t = TEXT[lang]
+    m = c.message.id
+    ch = c.message.chat.id
 
-    if data == "home":
-        bot.edit_message_text(TEXT["home"], cid, mid, reply_markup=main_menu())
-
-    elif data == "service":
-        bot.edit_message_text(TEXT["service"], cid, mid, reply_markup=back_menu())
-
-    elif data == "apply":
-        bot.edit_message_text(TEXT["apply"], cid, mid, reply_markup=back_menu())
-
-    elif data == "create":
-        bot.edit_message_text(TEXT["create"], cid, mid, reply_markup=back_menu())
-
-    elif data == "help":
-        bot.edit_message_text(TEXT["help"], cid, mid, reply_markup=back_menu())
-
+    if c.data == "home":
+        bot.edit_message_text(t["home"], ch, m, reply_markup=main_menu(u))
+    elif c.data == "service":
+        bot.edit_message_text(t["service"], ch, m, reply_markup=back_menu(u))
+    elif c.data == "apply":
+        bot.edit_message_text(t["apply"], ch, m, reply_markup=back_menu(u))
+    elif c.data == "create":
+        bot.edit_message_text(t["create"], ch, m, reply_markup=back_menu(u))
+    elif c.data == "help":
+        bot.edit_message_text(t["help"], ch, m, reply_markup=back_menu(u))
+    elif c.data == "guarantor":
+        bot.edit_message_text(t["guarantor"], ch, m, reply_markup=back_menu(u))
+    elif c.data == "lang":
+        user_lang[u] = "en" if lang == "zh" else "zh"
+        new_lang = user_lang[u]
+        bot.edit_message_text(TEXT[new_lang]["home"], ch, m, reply_markup=main_menu(u))
     bot.answer_callback_query(c.id)
-
-# ====================== 管理員指令 ======================
-@bot.message_handler(commands=["审核","拒绝","封锁","解除","等级","派单","完成","通过提现","拒绝提现","公告","开启抢单","关闭抢单","用户信息","订单信息"])
-def admin_cmd(msg):
-    if msg.from_user.id not in ADMIN_IDS:
-        msg.reply("❌ 無權限")
-        return
-    msg.reply("🔐 管理員指令已接收")
 
 # ====================== 運行 ======================
 if __name__ == "__main__":
-    print("✅ 担保机器人 - 正式上線版")
+    print("✅ 雙語擔保機器人啟動")
     bot.infinity_polling()
