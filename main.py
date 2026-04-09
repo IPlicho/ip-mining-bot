@@ -1,20 +1,17 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-import time
 import json
 import os
 from datetime import datetime
+import traceback
+import time
 
-# ====================== 核心配置 ======================
-# 你的管理员ID（唯一超级管理员）
-ADMIN_ID = 8401979801
-# 机器人Token（从BotFather获取）
+# ====================== 核心配置（双管理员） ======================
+ADMIN_IDS = [8401979801, 8781082053]  # 两个管理员ID
 BOT_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
+bot = telebot.TeleBot(BOT_TOKEN, threaded=True)
 
-# 初始化机器人
-bot = telebot.TeleBot(BOT_TOKEN)
-
-# ====================== 多语言文案 ======================
+# ====================== 多语言文案（完全修复）======================
 LANG = {
     "zh_tw": {
         # 通用
@@ -22,29 +19,29 @@ LANG = {
         "select_lang": "請選擇語言 / Please select language",
         "lang_set": "✅ 語言已設定為繁體中文",
         "lang_set_en": "✅ Language set to English",
-        "back": "🔙 返回",
+        "back": "🔙 返回首頁",
         "contact_admin": "📞 聯繫管理員",
         "no_permission": "❌ 您無權使用此功能",
         "invalid_cmd": "❌ 無效指令",
         "success": "✅ 操作成功",
+        "loading": "⏳ 載入中...",
         
-        # 普通用戶菜單
-        "user_menu": {
+        # 內聯按鈕（高級懸浮，不佔鍵盤）
+        "inline": {
             "home": "🏠 首頁",
             "service": "📌 擔保項目",
             "create": "🚀 發起擔保",
-            "my_order": "📜 我的擔保",
-            "contact": "📞 聯繫客服",
-            "lang_switch": "🌐 切換語言"
+            "level": "📊 合夥人制度",
+            "lang": "🌐 切換語言"
         },
         
-        # 擔保人菜單
-        "guarantor_menu": {
-            "apply": "🛡️ 擔保入駐",
-            "order": "📦 訂單管理",
+        # 鍵盤按鈕（個人功能，固定在鍵盤）
+        "keyboard": {
+            "my_order": "📜 我的擔保",
             "income": "💰 收益中心",
             "detail": "🧾 資金明細",
-            "level": "📊 合夥人制度"
+            "apply": "🛡️ 擔保入駐",
+            "order_mgmt": "📦 訂單管理"
         },
         
         # 首頁
@@ -118,20 +115,6 @@ Lv5 合夥人（最高級）
         "apply_rejected": "❌ 您的申請已被拒絕，請聯繫管理員",
         "apply_blocked": "🔒 您已被限制擔保權限",
         
-        # 訂單狀態
-        "order_status": {
-            "pending": "待擔保",
-            "guaranteeing": "擔保中",
-            "completed": "已完成"
-        },
-        
-        # 提現
-        "withdraw_title": "💳 提現申請",
-        "withdraw_balance": "當前可提現餘額：",
-        "withdraw_submit": "✅ 提現申請已提交，請等待管理員審核",
-        "withdraw_approve": "✅ 提現已通過",
-        "withdraw_reject": "❌ 提現已拒絕，請聯繫管理員",
-        
         # 管理員指令提示
         "admin_announce": "✅ 公告已更新",
         "admin_grab_on": "✅ 搶單大廳已開啟",
@@ -150,29 +133,29 @@ Lv5 合夥人（最高級）
         "select_lang": "請選擇語言 / Please select language",
         "lang_set": "✅ Language set to Traditional Chinese",
         "lang_set_en": "✅ Language set to English",
-        "back": "🔙 Back",
+        "back": "🔙 Back to Home",
         "contact_admin": "📞 Contact Admin",
         "no_permission": "❌ You do not have permission to use this feature",
         "invalid_cmd": "❌ Invalid command",
         "success": "✅ Operation successful",
+        "loading": "⏳ Loading...",
         
-        # User Menu
-        "user_menu": {
+        # Inline Buttons (Premium Floating)
+        "inline": {
             "home": "🏠 Home",
             "service": "📌 Services",
             "create": "🚀 Create Guarantee",
-            "my_order": "📜 My Guarantees",
-            "contact": "📞 Contact Support",
-            "lang_switch": "🌐 Switch Language"
+            "level": "📊 Partner Program",
+            "lang": "🌐 Switch Language"
         },
         
-        # Guarantor Menu
-        "guarantor_menu": {
-            "apply": "🛡️ Apply as Guarantor",
-            "order": "📦 Order Management",
+        # Keyboard Buttons (Personal Functions)
+        "keyboard": {
+            "my_order": "📜 My Guarantees",
             "income": "💰 Income Center",
             "detail": "🧾 Transaction History",
-            "level": "📊 Partner Program"
+            "apply": "🛡️ Apply as Guarantor",
+            "order_mgmt": "📦 Order Management"
         },
         
         # Home
@@ -246,20 +229,6 @@ Note:
         "apply_rejected": "❌ Your application is rejected, please contact admin",
         "apply_blocked": "🔒 Your guarantor access has been restricted",
         
-        # Order Status
-        "order_status": {
-            "pending": "Pending",
-            "guaranteeing": "In Guarantee",
-            "completed": "Completed"
-        },
-        
-        # Withdraw
-        "withdraw_title": "💳 Withdrawal Request",
-        "withdraw_balance": "Current withdrawable balance: ",
-        "withdraw_submit": "✅ Withdrawal request submitted, waiting for admin review",
-        "withdraw_approve": "✅ Withdrawal approved",
-        "withdraw_reject": "❌ Withdrawal rejected, please contact admin",
-        
         # Admin Commands
         "admin_announce": "✅ Announcement updated",
         "admin_grab_on": "✅ Grab order enabled",
@@ -281,7 +250,6 @@ def init_data():
     if not os.path.exists(DATA_FILE):
         data = {
             "users": {},
-            "guarantors": {},
             "orders": {},
             "withdraws": {},
             "announcement": {
@@ -312,12 +280,22 @@ LEVELS = {
 }
 
 # ====================== 工具函數 ======================
+def is_admin(user_id):
+    return user_id in ADMIN_IDS
+
 def get_user_lang(user_id, data):
     return data["users"].get(str(user_id), {}).get("lang", "zh_tw")
 
 def t(user_id, key, data, **kwargs):
     lang = get_user_lang(user_id, data)
-    text = LANG[lang][key]
+    # 處理嵌套字典
+    if "." in key:
+        parts = key.split(".")
+        text = LANG[lang]
+        for part in parts:
+            text = text[part]
+    else:
+        text = LANG[lang][key]
     if isinstance(text, dict):
         return text
     return text.format(**kwargs)
@@ -325,136 +303,226 @@ def t(user_id, key, data, **kwargs):
 # ====================== 鍵盤生成 ======================
 def lang_select_menu():
     markup = InlineKeyboardMarkup()
-    markup.add(
+    markup.row(
         InlineKeyboardButton("繁體中文", callback_data="lang_zh_tw"),
         InlineKeyboardButton("English", callback_data="lang_en")
     )
     return markup
 
-def user_main_menu(lang):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    menu = LANG[lang]["user_menu"]
-    markup.add(
-        KeyboardButton(menu["home"]),
-        KeyboardButton(menu["service"]),
-        KeyboardButton(menu["create"]),
-        KeyboardButton(menu["my_order"]),
-        KeyboardButton(menu["contact"]),
-        KeyboardButton(menu["lang_switch"])
+# 普通用戶內聯按鈕（高級懸浮）
+def user_inline_menu(lang):
+    markup = InlineKeyboardMarkup()
+    menu = LANG[lang]["inline"]
+    markup.row(
+        InlineKeyboardButton(menu["home"], callback_data="menu_home"),
+        InlineKeyboardButton(menu["service"], callback_data="menu_service")
+    )
+    markup.row(
+        InlineKeyboardButton(menu["create"], callback_data="menu_create"),
+        InlineKeyboardButton(menu["level"], callback_data="menu_level")
+    )
+    markup.row(
+        InlineKeyboardButton(menu["lang"], callback_data="menu_lang")
     )
     return markup
 
-def guarantor_main_menu(lang):
+# 普通用戶鍵盤按鈕（個人功能）
+def user_keyboard_menu(lang):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    menu = LANG[lang]["guarantor_menu"]
+    menu = LANG[lang]["keyboard"]
     markup.add(
-        KeyboardButton(menu["apply"]),
-        KeyboardButton(menu["order"]),
+        KeyboardButton(menu["my_order"])
+    )
+    return markup
+
+# 擔保人內聯按鈕（高級懸浮）
+def guarantor_inline_menu(lang):
+    markup = InlineKeyboardMarkup()
+    menu = LANG[lang]["inline"]
+    markup.row(
+        InlineKeyboardButton(menu["home"], callback_data="menu_home"),
+        InlineKeyboardButton(menu["service"], callback_data="menu_service")
+    )
+    markup.row(
+        InlineKeyboardButton(menu["create"], callback_data="menu_create"),
+        InlineKeyboardButton(menu["level"], callback_data="menu_level")
+    )
+    markup.row(
+        InlineKeyboardButton(menu["lang"], callback_data="menu_lang")
+    )
+    return markup
+
+# 擔保人鍵盤按鈕（個人功能）
+def guarantor_keyboard_menu(lang):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    menu = LANG[lang]["keyboard"]
+    markup.add(
+        KeyboardButton(menu["order_mgmt"]),
         KeyboardButton(menu["income"]),
         KeyboardButton(menu["detail"]),
-        KeyboardButton(menu["level"])
+        KeyboardButton(menu["apply"])
     )
     return markup
 
-# ====================== 語言切換處理 ======================
+# ====================== 語言切換處理（修復點擊無反應）======================
 @bot.callback_query_handler(func=lambda call: call.data.startswith("lang_"))
 def set_language(call):
-    data = init_data()
-    user_id = call.from_user.id
-    lang = call.data.split("_")[1]
-    
-    if str(user_id) not in data["users"]:
-        data["users"][str(user_id)] = {
-            "username": call.from_user.username,
-            "first_name": call.from_user.first_name,
-            "is_guarantor": False,
-            "guarantor_status": "unapplied",
-            "level": 1,
-            "balance": 0.0,
-            "lang": lang,
-            "join_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-    else:
-        data["users"][str(user_id)]["lang"] = lang
-    save_data(data)
-    
-    if lang == "zh_tw":
-        bot.answer_callback_query(call.id, t(user_id, "lang_set", data))
-        bot.send_message(call.message.chat.id, t(user_id, "welcome", data), reply_markup=user_main_menu("zh_tw"))
-    else:
-        bot.answer_callback_query(call.id, t(user_id, "lang_set_en", data))
-        bot.send_message(call.message.chat.id, t(user_id, "welcome", data), reply_markup=user_main_menu("en"))
+    try:
+        data = init_data()
+        user_id = call.from_user.id
+        lang = call.data.split("_")[1]
+        
+        # 初始化用戶數據
+        if str(user_id) not in data["users"]:
+            data["users"][str(user_id)] = {
+                "username": call.from_user.username,
+                "first_name": call.from_user.first_name,
+                "is_guarantor": False,
+                "guarantor_status": "unapplied",
+                "level": 1,
+                "balance": 0.0,
+                "lang": lang,
+                "join_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        else:
+            data["users"][str(user_id)]["lang"] = lang
+        save_data(data)
+        
+        # 回調響應
+        if lang == "zh_tw":
+            bot.answer_callback_query(call.id, t(user_id, "lang_set", data))
+            # 發送歡迎語+雙按鈕菜單
+            bot.send_message(
+                call.message.chat.id,
+                t(user_id, "welcome", data),
+                reply_markup=user_inline_menu("zh_tw")
+            )
+            bot.send_message(
+                call.message.chat.id,
+                "✅ 菜單已加載",
+                reply_markup=user_keyboard_menu("zh_tw")
+            )
+        else:
+            bot.answer_callback_query(call.id, t(user_id, "lang_set_en", data))
+            bot.send_message(
+                call.message.chat.id,
+                t(user_id, "welcome", data),
+                reply_markup=user_inline_menu("en")
+            )
+            bot.send_message(
+                call.message.chat.id,
+                "✅ Menu loaded",
+                reply_markup=user_keyboard_menu("en")
+            )
+    except Exception as e:
+        traceback.print_exc()
+        bot.answer_callback_query(call.id, "❌ Error, please try again")
 
 # ====================== 啟動處理 ======================
 @bot.message_handler(commands=['start'])
 def start(message):
-    data = init_data()
-    user_id = message.from_user.id
-    
-    if str(user_id) not in data["users"]:
-        data["users"][str(user_id)] = {
-            "username": message.from_user.username,
-            "first_name": message.from_user.first_name,
-            "is_guarantor": False,
-            "guarantor_status": "unapplied",
-            "level": 1,
-            "balance": 0.0,
-            "lang": "zh_tw",
-            "join_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        save_data(data)
-    
-    bot.send_message(message.chat.id, t(user_id, "select_lang", data), reply_markup=lang_select_menu())
+    try:
+        data = init_data()
+        user_id = message.from_user.id
+        
+        # 初始化用戶數據
+        if str(user_id) not in data["users"]:
+            data["users"][str(user_id)] = {
+                "username": message.from_user.username,
+                "first_name": message.from_user.first_name,
+                "is_guarantor": False,
+                "guarantor_status": "unapplied",
+                "level": 1,
+                "balance": 0.0,
+                "lang": "zh_tw",
+                "join_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            save_data(data)
+        
+        # 彈出語言選擇
+        bot.send_message(
+            message.chat.id,
+            t(user_id, "select_lang", data),
+            reply_markup=lang_select_menu()
+        )
+    except Exception as e:
+        traceback.print_exc()
+        bot.send_message(message.chat.id, "❌ System error, please try again later")
 
-# ====================== 語言切換按鈕處理 ======================
-@bot.message_handler(func=lambda msg: msg.text in [LANG["zh_tw"]["user_menu"]["lang_switch"], LANG["en"]["user_menu"]["lang_switch"]])
-def switch_lang(message):
-    bot.send_message(message.chat.id, t(message.from_user.id, "select_lang", init_data()), reply_markup=lang_select_menu())
+# ====================== 內聯菜單回調處理 ======================
+@bot.callback_query_handler(func=lambda call: call.data.startswith("menu_"))
+def menu_callback(call):
+    try:
+        data = init_data()
+        user_id = call.from_user.id
+        lang = get_user_lang(user_id, data)
+        action = call.data.split("_")[1]
+        
+        if action == "home":
+            # 首頁
+            announcement = data["announcement"][lang]
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=announcement,
+                reply_markup=user_inline_menu(lang) if not data["users"][str(user_id)]["is_guarantor"] else guarantor_inline_menu(lang)
+            )
+            bot.answer_callback_query(call.id)
+        elif action == "service":
+            # 擔保項目
+            title = t(user_id, "service_title", data)
+            content = t(user_id, "service_list", data)
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=f"{title}\n{content}",
+                reply_markup=user_inline_menu(lang) if not data["users"][str(user_id)]["is_guarantor"] else guarantor_inline_menu(lang)
+            )
+            bot.answer_callback_query(call.id)
+        elif action == "level":
+            # 合夥人制度
+            title = t(user_id, "level_title", data)
+            desc = t(user_id, "level_desc", data)
+            content = t(user_id, "level_list", data)
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=f"{title}\n{desc}\n{content}",
+                reply_markup=user_inline_menu(lang) if not data["users"][str(user_id)]["is_guarantor"] else guarantor_inline_menu(lang)
+            )
+            bot.answer_callback_query(call.id)
+        elif action == "lang":
+            # 切換語言
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=t(user_id, "select_lang", data),
+                reply_markup=lang_select_menu()
+            )
+            bot.answer_callback_query(call.id)
+        elif action == "create":
+            # 發起擔保（後續補全功能）
+            bot.answer_callback_query(call.id, "⏳ Feature coming soon")
+    except Exception as e:
+        traceback.print_exc()
+        bot.answer_callback_query(call.id, "❌ Error, please try again")
 
-# ====================== 普通用戶頁面處理 ======================
-@bot.message_handler(func=lambda msg: msg.text in [LANG["zh_tw"]["user_menu"]["home"], LANG["en"]["user_menu"]["home"]])
-def home(message):
-    data = init_data()
-    user_id = message.from_user.id
-    lang = get_user_lang(user_id, data)
-    announcement = data["announcement"][lang]
-    bot.send_message(message.chat.id, announcement, reply_markup=user_main_menu(lang))
-
-@bot.message_handler(func=lambda msg: msg.text in [LANG["zh_tw"]["user_menu"]["service"], LANG["en"]["user_menu"]["service"]])
-def service(message):
-    data = init_data()
-    user_id = message.from_user.id
-    lang = get_user_lang(user_id, data)
-    title = t(user_id, "service_title", data)
-    content = t(user_id, "service_list", data)
-    bot.send_message(message.chat.id, f"{title}\n{content}", reply_markup=user_main_menu(lang))
-
-@bot.message_handler(func=lambda msg: msg.text in [LANG["zh_tw"]["guarantor_menu"]["level"], LANG["en"]["guarantor_menu"]["level"]])
-def level_info(message):
-    data = init_data()
-    user_id = message.from_user.id
-    lang = get_user_lang(user_id, data)
-    title = t(user_id, "level_title", data)
-    desc = t(user_id, "level_desc", data)
-    content = t(user_id, "level_list", data)
-    bot.send_message(message.chat.id, f"{title}\n{desc}\n{content}", reply_markup=user_main_menu(lang) if not data["users"][str(user_id)]["is_guarantor"] else guarantor_main_menu(lang))
-
-# ====================== 管理員指令 ======================
+# ====================== 管理員指令（雙管理員通用）======================
 @bot.message_handler(commands=['公告', 'announce'])
 def set_announcement(message):
-    if message.from_user.id != ADMIN_ID:
+    if not is_admin(message.from_user.id):
         bot.send_message(message.chat.id, t(message.from_user.id, "no_permission", init_data()))
         return
     data = init_data()
     text = message.text.split(" ", 1)[1] if len(message.text.split(" ", 1)) > 1 else ""
     data["announcement"]["zh_tw"] = text
-    data["announcement"]["en"] = text  # 可手動翻譯，這裡先同步
+    data["announcement"]["en"] = text
     save_data(data)
     bot.send_message(message.chat.id, t(message.from_user.id, "admin_announce", data))
 
 @bot.message_handler(commands=['開啟搶單', 'enable_grab'])
 def enable_grab(message):
-    if message.from_user.id != ADMIN_ID:
+    if not is_admin(message.from_user.id):
         bot.send_message(message.chat.id, t(message.from_user.id, "no_permission", init_data()))
         return
     data = init_data()
@@ -464,7 +532,7 @@ def enable_grab(message):
 
 @bot.message_handler(commands=['關閉搶單', 'disable_grab'])
 def disable_grab(message):
-    if message.from_user.id != ADMIN_ID:
+    if not is_admin(message.from_user.id):
         bot.send_message(message.chat.id, t(message.from_user.id, "no_permission", init_data()))
         return
     data = init_data()
@@ -472,7 +540,40 @@ def disable_grab(message):
     save_data(data)
     bot.send_message(message.chat.id, t(message.from_user.id, "admin_grab_off", data))
 
+# ====================== 異常捕獲與防崩潰 ======================
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    try:
+        data = init_data()
+        user_id = message.from_user.id
+        lang = get_user_lang(user_id, data)
+        
+        # 處理鍵盤按鈕
+        if message.text == t(user_id, "keyboard.my_order", data):
+            bot.send_message(message.chat.id, "⏳ My Guarantees coming soon", reply_markup=user_keyboard_menu(lang))
+        elif message.text == t(user_id, "keyboard.order_mgmt", data):
+            bot.send_message(message.chat.id, "⏳ Order Management coming soon", reply_markup=guarantor_keyboard_menu(lang))
+        elif message.text == t(user_id, "keyboard.income", data):
+            bot.send_message(message.chat.id, "⏳ Income Center coming soon", reply_markup=guarantor_keyboard_menu(lang))
+        elif message.text == t(user_id, "keyboard.detail", data):
+            bot.send_message(message.chat.id, "⏳ Transaction History coming soon", reply_markup=guarantor_keyboard_menu(lang))
+        elif message.text == t(user_id, "keyboard.apply", data):
+            title = t(user_id, "apply_title", data)
+            content = t(user_id, "apply_desc", data)
+            bot.send_message(message.chat.id, f"{title}\n{content}", reply_markup=guarantor_keyboard_menu(lang))
+        else:
+            bot.send_message(message.chat.id, t(user_id, "invalid_cmd", data))
+    except Exception as e:
+        traceback.print_exc()
+        bot.send_message(message.chat.id, "❌ System error, please try again later")
+
 # ====================== 啟動機器人 ======================
 if __name__ == "__main__":
-    print("🤖 TrustEscrow 雙語版機器人啟動中...")
-    bot.polling(none_stop=True)
+    print("🤖 TrustEscrow 雙管理員雙按鈕雙語穩定版啟動中...")
+    while True:
+        try:
+            bot.polling(none_stop=True, timeout=60)
+        except Exception as e:
+            traceback.print_exc()
+            time.sleep(5)
+            print("🔄 機器人崩潰，5秒後重啟...")
