@@ -5,12 +5,19 @@ import re
 import random
 import time
 import threading
-import os  # 新增：读取Railway环境变量，解决不回复问题
+import os
 
-# ===================== 核心配置（从Railway变量读取，关键修复！） =====================
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # 从环境变量读取机器人Token
-ADMIN_IDS = list(map(int, os.getenv("ADMIN_IDS", "[]").strip("[]").split(",")))  # 从环境变量读取管理员ID列表
-VIRTUAL_ORDER_REFRESH_SECONDS = 120  # 虚拟订单2分钟自动刷新
+# ===================== 核心配置（彻底修复ADMIN_IDS解析问题） =====================
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+# 更健壮的管理员ID解析，兼容多种格式，彻底解决崩溃
+admin_ids_str = os.getenv("ADMIN_IDS", "8781082053,8256055083")
+ADMIN_IDS = []
+for part in admin_ids_str.replace("[", "").replace("]", "").split(","):
+    part = part.strip()
+    if part.isdigit():
+        ADMIN_IDS.append(int(part))
+
+VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # ===================== 虚拟订单全局 =====================
@@ -172,12 +179,12 @@ Contact support: @fcff88""",
 # ===================== 数据存储 =====================
 user_lang = {}
 user_balance = {}
-user_verify = {}  # 0=未申请 1=审核中 2=已通过
+user_verify = {}
 user_info = {}
 orders = {}
 order_id = 1
 last_msg = {}
-user_applying = {}  # 标记申请流程
+user_applying = {}
 
 # ===================== 菜单生成 =====================
 def main_menu(user_id):
@@ -487,10 +494,11 @@ def admin_cmd(msg):
             return
 
         bot.send_message(u, "❌ 指令格式：\n通过 ID\n查ID ID\n+U ID 金额\n-U ID 金额\n派单 ID 金额\n完成 订单号")
-    except:
+    except Exception as e:
+        print(f"Admin cmd error: {e}")
         bot.send_message(u, "❌ 指令格式錯誤")
 
 # ===================== 启动机器人 =====================
 if __name__ == "__main__":
-    print("✅ 機器人啟動成功，Railway環境變量讀取正常")
+    print(f"✅ 機器人啟動成功，ADMIN_IDS: {ADMIN_IDS}")
     bot.infinity_polling()
