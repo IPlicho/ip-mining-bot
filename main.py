@@ -5,12 +5,12 @@ from flask import Flask, request
 
 # ====================== 你的机器人配置（已填好）======================
 BOT_TOKEN = "8747559514:AAE_N9M9CallB4rYV0lbyny_0tGJnz3hLYU"
-ADMIN_ID = 123456789  # 这里记得换成你自己的 Telegram ID
+ADMIN_ID = 123456789  # 这里改成你自己的 Telegram ID
 
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
-# 内存数据（重启会清空，先用这个测试）
+# 内存数据（测试用，重启会清空，正式用可换数据库）
 user_balance = {}
 orders = {}
 order_id = 1
@@ -27,7 +27,7 @@ def main_menu(user_id):
         markup.add(telebot.types.KeyboardButton("📊 管理员后台"))
     return markup
 
-# ====================== /start ======================
+# ====================== /start 入口 ======================
 @bot.message_handler(commands=["start"])
 def start(message):
     user_id = message.from_user.id
@@ -47,7 +47,7 @@ def handle_menu(message):
     text = message.text.strip()
     bal = user_balance.get(user_id, 0.0)
 
-    # -------------------- 用户菜单 --------------------
+    # 用户菜单：发起派单
     if text == "📝 担保申请/派单":
         bot.send_message(user_id, (
             "📝 发起担保派单\n\n"
@@ -57,6 +57,7 @@ def handle_menu(message):
             "⚠️ 余额不足将无法派单"
         ))
 
+    # 用户菜单：我的订单
     elif text == "📜 我的担保订单":
         if not orders:
             bot.send_message(user_id, "📭 暂无担保订单")
@@ -77,6 +78,7 @@ def handle_menu(message):
                 )
         bot.send_message(user_id, msg)
 
+    # 用户菜单：我的钱包
     elif text == "💰 我的钱包":
         bot.send_message(user_id, (
             f"💰 我的钱包\n\n"
@@ -85,12 +87,13 @@ def handle_menu(message):
             "充值请联系管理员"
         ))
 
-    # -------------------- 管理员后台 --------------------
+    # 管理员后台
     elif text == "📊 管理员后台" and user_id == ADMIN_ID:
         markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("📋 待接单列表", "💰 手动加余额", "🔙 返回主菜单")
         bot.send_message(user_id, "📊 管理员后台", reply_markup=markup)
 
+    # 待接单列表（仅管理员）
     elif text == "📋 待接单列表" and user_id == ADMIN_ID:
         wait = [o for o in orders.values() if o["status"] == "待接单"]
         if not wait:
@@ -108,13 +111,15 @@ def handle_menu(message):
                 f"12小时处理：{o['expire'].strftime('%m-%d %H:%M')}"
             ), reply_markup=markup)
 
+    # 手动加余额（仅管理员）
     elif text == "💰 手动加余额" and user_id == ADMIN_ID:
         bot.send_message(user_id, "发送：/add 用户ID 金额\n例：/add 123456789 100")
 
+    # 返回主菜单
     elif text == "🔙 返回主菜单":
         bot.send_message(user_id, "🔙 已返回", reply_markup=main_menu(user_id))
 
-    # ====================== 指令：派单 ======================
+    # 派单指令
     elif text.startswith("/order"):
         parts = text.split()
         if len(parts) != 3:
@@ -153,7 +158,7 @@ def handle_menu(message):
         # 通知管理员
         bot.send_message(ADMIN_ID, f"🔔 新派单 {oid}\n用户{user_id} → {to_id}，{amt} USDT")
 
-    # ====================== 指令：管理员加钱 ======================
+    # 管理员加钱指令
     elif text.startswith("/add") and user_id == ADMIN_ID:
         parts = text.split()
         if len(parts) != 3:
@@ -184,13 +189,14 @@ def accept_order(call):
     bot.edit_message_text(f"✅ 订单 {oid} 已接单", call.message.chat.id, call.message.message_id)
     bot.send_message(o["from_id"], f"📢 你的订单 {oid} 已接单，处理中！\n💰 已扣除：{o['amount']} USDT")
 
-# ====================== Webhook 运行 ======================
+# ====================== Webhook 入口 ======================
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = telebot.types.Update.de_json(request.get_json())
     bot.process_new_updates([update])
     return "ok"
 
+# ====================== 健康检查 ======================
 @app.route("/")
 def index():
     return "Bot running"
