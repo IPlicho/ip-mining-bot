@@ -12,7 +12,7 @@ def start(message):
 
 # 启动长轮询，彻底告别Webhook，绝对不崩
 if __name__ == "__main__":
-    # 只保留这一行，彻底删除所有Webhook
+    # 只保留这一行，彻底删除所有Webhook相关代码
     bot.remove_webhook()
     while True:
         try:
