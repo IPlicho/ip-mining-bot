@@ -6,7 +6,7 @@ import random
 import time
 import threading
 import os
-from flask import Flask, request
+from flask import Flask
 
 # ===================== 核心配置 =====================
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
@@ -14,23 +14,11 @@ ADMIN_IDS = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ===================== 防Railway杀进程 + Webhook适配 =====================
+# ===================== 防Railway杀进程 =====================
 app = Flask(__name__)
-
 @app.route('/')
 def home():
     return "Bot is running!", 200
-
-# Webhook 入口（只加这一段，不影响你任何逻辑）
-@app.route(f"/{BOT_TOKEN}", methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return "OK", 200
-    else:
-        return "Forbidden", 403
 
 def run_flask():
     port = int(os.getenv("PORT", 8080))
@@ -396,7 +384,7 @@ def callback(c):
                     s = s_map.get(o["status"], t["status_wait"])
                     typ = "派單" if o["type"]=="assign" else "搶單" if lang=="zh" else "Assign" if o["type"]=="assign" else "Grab"
                     lines.append(f"• #{oid} {typ} {o['amount']} USDT | {s}")
-            text = t["record"].format("\n".join(lines) if lines else ("無記錄" if lang == "zh" else "No Records"))
+            text = t["record"].format("\n".join(lines) if lines else ("無記錄" if lang=="zh" else "No Records"))
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
         bot.answer_callback_query(c.id)
@@ -576,13 +564,7 @@ def admin_cmd(msg):
 
 # ===================== 启动 =====================
 if __name__ == "__main__":
-    # 设置 Webhook（让 Telegram 把消息推给 Railway）
-    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
-    if WEBHOOK_URL:
-        bot.remove_webhook()
-        time.sleep(0.5)
-        bot.set_webhook(url=f"{WEBHOOK_URL}/{BOT_TOKEN}")
-
     threading.Thread(target=refresh_virtual_orders, daemon=True).start()
     threading.Thread(target=run_flask, daemon=True).start()
-    print("✅ 机器人启动成功 (Webhook 模式)")
+    print("✅ 机器人启动成功")
+    bot.infinity_polling()
