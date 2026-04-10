@@ -9,7 +9,7 @@ BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 ADMIN_IDS = [8781082053, 8256055083]
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ===================== 双语文案（纯表单，无格式示例） =====================
+# ===================== 双语文案 =====================
 TEXT = {
     "zh": {
         "home": """🏆 TrustEscrow 頂級擔保平台
@@ -75,9 +75,9 @@ TEXT = {
         "not_verified": "❌ 未通過審核",
         "no_detail": "❌ 你尚未填寫入駐信息",
 
+        "admin_verify_success": "✅ 已成功通過用戶 {} 的審核",
         "admin_assign": "✅ 派單成功",
         "admin_done": "✅ 訂單已完成，利潤已發放",
-        "admin_verify": "✅ 用戶已通過審核",
         "btn_back": "返回首頁",
         "btn_accept": "接單"
     },
@@ -142,9 +142,9 @@ Contact support: @fcff88""",
         "not_verified": "❌ Not verified",
         "no_detail": "❌ You have not submitted registration",
 
+        "admin_verify_success": "✅ Successfully verified user {}",
         "admin_assign": "✅ Order Assigned",
         "admin_done": "✅ Order Completed",
-        "admin_verify": "✅ User Verified",
         "btn_back": "Home",
         "btn_accept": "Accept"
     }
@@ -158,7 +158,7 @@ user_info = {}
 orders = {}
 order_id = 1
 last_msg = {}
-user_applying = {}  # 修复：标记是否在申请流程
+user_applying = {}  # 标记申请流程
 
 # ===================== 菜单生成 =====================
 def main_menu(user_id):
@@ -195,7 +195,8 @@ def notify_admins(text):
     for admin in ADMIN_IDS:
         try:
             bot.send_message(admin, text)
-        except:
+        except Exception as e:
+            print(f"通知管理员失败: {e}")
             continue
 
 # ===================== /start 启动 =====================
@@ -232,7 +233,7 @@ def callback(c):
 
         elif c.data == "reg":
             if user_verify.get(u, 0) != 0:
-                bot.answer_callback_query(c.id, t["reg_success"] if user_verify[u] == 1 else "❌ 已通過審核", show_alert=True)
+                bot.answer_callback_query(c.id, TEXT["zh"]["reg_success"] if user_verify[u] == 1 else "❌ 已通過審核", show_alert=True)
                 return
             user_applying[u] = True
             bot.edit_message_text(t["reg_form"], cid, mid, reply_markup=back_menu(u))
@@ -315,11 +316,11 @@ def callback(c):
 
         bot.answer_callback_query(c.id)
     except Exception as e:
-        print(e)
+        print(f"Callback error: {e}")
         bot.answer_callback_query(c.id)
 
-# ===================== 用户申请（修复版） =====================
-@bot.message_handler(func=lambda m: True)
+# ===================== 用户消息处理（入驻申请） =====================
+@bot.message_handler(func=lambda m: m.from_user.id not in ADMIN_IDS)
 def user_input(msg):
     u = msg.from_user.id
     txt = msg.text.strip()
@@ -331,7 +332,7 @@ def user_input(msg):
         return
 
     pattern = r"1\.?\s*真實姓名\s*(.+?)\s*2\.?\s*聯絡電話\s*(.+?)\s*3\.?\s*電子信箱\s*(.+?)\s*4\.?\s*居住地址\s*(.+?)\s*5\.?\s*推薦人ID\s*(.+)"
-    match = re.search(pattern, txt, re.DOTALL | re.IGNORECASE)
+    match = re.search(pattern, txt, re.DOTALL)
 
     if match:
         name = match.group(1).strip()
@@ -340,24 +341,73 @@ def user_input(msg):
         addr = match.group(4).strip()
         ref = match.group(5).strip()
 
-        user_info[u] = {"name": name, "phone": phone, "email": email, "addr": addr, "ref": ref}
+        user_info[u] = {
+            "name": name,
+            "phone": phone,
+            "email": email,
+            "addr": addr,
+            "ref": ref
+        }
         user_verify[u] = 1
         user_applying[u] = False
 
-        notify_admins(f"📥 新入駐申請\n用戶ID：{u}\n姓名：{name}\n電話：{phone}\n郵箱：{email}\n地址：{addr}\n推薦人：{ref}")
-        bot.send_message(u, t["reg_success"], reply_markup=main_menu(u))
-    else:
-        bot.send_message(u, t["reg_error"])
+        notify_admins(f"""📥 新入駐申請
+用戶ID：{u}
+姓名：{name}
+電話：{phone}
+郵箱：{email}
+地址：{addr}
+推薦人：{ref}""")
 
-# ===================== 管理员命令 =====================
-@bot.message_handler(func=lambda m: m.from_user.id in ADMIN_IDS)
+        mid = last_msg.get(u, None)
+        if mid:
+            bot.edit_message_text(t["reg_success"], msg.chat.id, mid, reply_markup=main_menu(u))
+        else:
+            sent = bot.send_message(msg.chat.id, t["reg_success"], reply_markup=main_menu(u))
+            last_msg[u] = sent.message_id
+    else:
+        mid = last_msg.get(u, None)
+        if mid:
+            bot.edit_message_text(t["reg_error"], msg.chat.id, mid, reply_markup=back_menu(u))
+        else:
+            sent = bot.send_message(msg.chat.id, t["reg_error"], reply_markup=back_menu(u))
+            last_msg[u] = sent.message_id
+
+# ===================== 管理员命令（核心修复！） =====================
+@bot.message_handler(func=lambda m: True)
 def admin_cmd(msg):
     u = msg.from_user.id
+    # 只处理管理员消息
+    if u not in ADMIN_IDS:
+        return
+
     txt = msg.text.strip()
     arr = txt.split()
     t = TEXT["zh"]
 
     try:
+        # 支持3种中文审核指令，全覆盖
+        if len(arr) >= 2:
+            # 匹配所有中文审核写法
+            if arr[0] in ["审核通过", "通过审核", "通过"]:
+                target = int(arr[1])
+                # 检查用户是否存在
+                if target not in user_verify:
+                    user_verify[target] = 0
+                # 标记为已通过
+                user_verify[target] = 2
+                # 回复管理员
+                bot.send_message(u, t["admin_verify_success"].format(target))
+                # 通知用户
+                mid_target = last_msg.get(target, None)
+                if mid_target:
+                    bot.edit_message_text("✅ 你的入駐申請已通過審核！", target, mid_target, reply_markup=main_menu(target))
+                else:
+                    sent = bot.send_message(target, "✅ 你的入駐申請已通過審核！", reply_markup=main_menu(target))
+                    last_msg[target] = sent.message_id
+                return
+
+        # 派单指令
         if arr[0] == "派单" and len(arr) == 3:
             target = int(arr[1])
             amt = float(arr[2])
@@ -366,25 +416,38 @@ def admin_cmd(msg):
             order_id += 1
             orders[oid] = {"user": target, "amount": amt, "type": "assign", "status": 0}
             bot.send_message(u, t["admin_assign"])
+            mid_target = last_msg.get(target, None)
+            if mid_target:
+                bot.edit_message_text(f"📥 新派單 #{oid} {amt} USDT", target, mid_target, reply_markup=accept_btn(oid, target))
+            else:
+                sent = bot.send_message(target, f"📥 新派單 #{oid} {amt} USDT", reply_markup=accept_btn(oid, target))
+                last_msg[target] = sent.message_id
+            return
 
-        elif arr[0] == "完成" and len(arr) == 2:
+        # 完成订单指令
+        if arr[0] == "完成" and len(arr) == 2:
             oid = int(arr[1])
             o = orders.get(oid)
-            if not o: return
+            if not o:
+                bot.send_message(u, "❌ 訂單不存在")
+                return
             o["status"] = 2
-            profit = o["amount"] * random.uniform(0.15, 0.2) if o["type"] == "assign" else o["amount"] * 0.05
+            if o["type"] == "assign":
+                profit = o["amount"] * random.uniform(0.15, 0.20)
+            else:
+                profit = o["amount"] * 0.05
             user_balance[o["user"]] += o["amount"] + profit
             bot.send_message(u, t["admin_done"])
+            bot.send_message(o["user"], f"✅ 訂單 #{oid} 完成！\n本金：{o['amount']} USDT\n利潤：{round(profit, 2)} USDT\n總到賬：{round(o['amount'] + profit, 2)} USDT")
+            return
 
-        elif arr[0] == "审核通过" and len(arr) == 2:
-            target = int(arr[1])
-            user_verify[target] = 2
-            bot.send_message(u, t["admin_verify"])
+        # 指令不匹配，提示
+        bot.send_message(u, "❌ 指令格式錯誤\n可用指令：\n审核通过 用户ID\n派单 用户ID 金额\n完成 订单ID")
 
-    except:
-        bot.send_message(u, "指令錯誤")
+    except Exception as e:
+        bot.send_message(u, f"❌ 指令執行失敗：{str(e)}")
 
-# ===================== 启动 =====================
+# ===================== 启动机器人 =====================
 if __name__ == "__main__":
-    print("✅ 机器人启动成功（完整+修复+账号明细）")
+    print("✅ 機器人啟動成功 (最終穩定版)")
     bot.infinity_polling()
