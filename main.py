@@ -8,13 +8,13 @@ import threading
 import os
 from flask import Flask
 
-# ===================== 核心配置 =====================
-BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
+# ===================== 核心配置（已替换为新机器人Token） =====================
+BOT_TOKEN = "8747559514:AAFJdsZ3tlCVPIfw6vL60hTuBc_Eo5FP4kU"
 ADMIN_IDS = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ===================== 防Railway杀进程 =====================
+# ===================== 防Railway杀进程：假HTTP服务 =====================
 app = Flask(__name__)
 @app.route('/')
 def home():
@@ -195,11 +195,11 @@ order_id = 101
 last_msg = {}
 user_applying = {}
 
-# 🔥 新增：资金流水 / 封禁用户
+# 新增：资金流水 / 封禁用户
 user_flow = {}
 user_banned = {}
 
-# ===================== 菜单 =====================
+# ===================== 菜单生成 =====================
 def main_menu(user_id):
     lang = user_lang.get(user_id, "zh")
     m = InlineKeyboardMarkup(row_width=2)
@@ -235,7 +235,7 @@ def notify_admins(text):
         except Exception as e:
             print(f"通知管理员失败: {e}")
 
-# ===================== /start =====================
+# ===================== /start 启动 =====================
 @bot.message_handler(commands=["start"])
 def start(msg):
     u = msg.from_user.id
@@ -426,21 +426,21 @@ def user_input(msg):
         if mid:
             bot.edit_message_text(t["reg_error"], msg.chat.id, mid, reply_markup=back_menu(u))
 
-# ===================== 管理员命令（完整版新增） =====================
+# ===================== 管理员命令（完整版） =====================
 @bot.message_handler(func=lambda m: m.from_user.id in ADMIN_IDS)
 def admin_cmd(msg):
     u = msg.from_user.id
     txt = msg.text.strip()
     arr = txt.split()
     try:
-        # 1. 通过
+        # 1. 通过用户
         if len(arr)>=2 and arr[0] in ["通过","审核通过"]:
             target = int(arr[1])
             user_verify[target] = 2
             bot.send_message(u, f"✅ 已通過用戶 {target}")
             return
 
-        # 2. 查ID
+        # 2. 查ID 用户ID
         if len(arr)>=2 and arr[0] == "查ID":
             target = int(arr[1])
             bal = user_balance.get(target,0.0)
@@ -458,7 +458,7 @@ def admin_cmd(msg):
             bot.send_message(u, text)
             return
 
-        # 3. +U
+        # 3. +U ID 金额
         if txt.startswith("+U "):
             if len(arr)==3:
                 uid = int(arr[1])
@@ -468,7 +468,7 @@ def admin_cmd(msg):
                 bot.send_message(u, f"✅ +{amt:.2f} USDT → {uid}｜餘額：{user_balance[uid]:.2f}")
             return
 
-        # 4. -U
+        # 4. -U ID 金额
         if txt.startswith("-U "):
             if len(arr)==3:
                 uid = int(arr[1])
@@ -479,7 +479,7 @@ def admin_cmd(msg):
                 bot.send_message(u, f"✅ -{amt:.2f} USDT → {uid}｜餘額：{user_balance[uid]:.2f}")
             return
 
-        # 5. 派单
+        # 5. 派单 ID 金额
         if arr[0]=="派单" and len(arr)==3:
             target = int(arr[1])
             amt = float(arr[2])
@@ -497,7 +497,7 @@ def admin_cmd(msg):
                 pass
             return
 
-        # 6. 完成
+        # 6. 完成 订单号
         if arr[0]=="完成" and len(arr)==2:
             oid = int(arr[1])
             o = orders.get(oid)
@@ -510,7 +510,7 @@ def admin_cmd(msg):
             bot.send_message(u, f"✅ 訂單 #{oid} 已完成")
             return
 
-        # 🔥 7. 取消订单（智能退本金）
+        # 7. 取消订单 订单号（智能退本金）
         if arr[0]=="取消订单" and len(arr)==2:
             oid = int(arr[1])
             o = orders.get(oid)
@@ -521,7 +521,6 @@ def admin_cmd(msg):
                 bot.send_message(u, "❌ 已取消過")
                 return
 
-            # 已接单 = 扣过钱 → 退回
             if o["status"] == 1:
                 user_balance[o["user"]] += o["amount"]
                 user_flow.setdefault(o["user"], []).append(f"+{o['amount']:.2f} USDT  取消訂單退款")
@@ -532,14 +531,14 @@ def admin_cmd(msg):
                 bot.send_message(u, f"✅ 已取消 #{oid}（未支付，無退款）")
             return
 
-        # 🔥 8. 封ID
+        # 8. 封ID 用户ID
         if arr[0]=="封ID" and len(arr)==2:
             target = int(arr[1])
             user_banned[target] = True
             bot.send_message(u, f"✅ 已封禁用戶 {target}")
             return
 
-        # 🔥 9. 解ID
+        # 9. 解ID 用户ID
         if arr[0]=="解ID" and len(arr)==2:
             target = int(arr[1])
             user_banned[target] = False
@@ -562,7 +561,7 @@ def admin_cmd(msg):
         print(f"Admin error: {e}")
         bot.send_message(u, "❌ 指令格式錯誤")
 
-# ===================== 启动 =====================
+# ===================== 启动机器人 =====================
 if __name__ == "__main__":
     threading.Thread(target=refresh_virtual_orders, daemon=True).start()
     threading.Thread(target=run_flask, daemon=True).start()
