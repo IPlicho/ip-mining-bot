@@ -1,6 +1,2 @@
-[build]
-builder = "python"
-pythonVersion = "3.13"
-
 [deploy]
 startCommand = "python main.py"
