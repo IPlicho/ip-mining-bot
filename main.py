@@ -1,23 +1,38 @@
 import telebot
-import time
+from flask import Flask, request
+import os
 
-# 已填好你最新的有效Token，直接用
+# 你的机器人Token
 BOT_TOKEN = "8716451687:AAFDXBQ-gG4AhJNVzH09NQnSwYWosZ_6ImI"
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 
-# 收到/start就回复，保证能收到消息
+# Flask服务，Railway自动分配端口
+app = Flask(__name__)
+
+# 收到/start就回复
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.chat.id, "✅ SecureEscrow Bot 已成功上线！")
 
-# 启动长轮询，彻底告别Webhook，绝对不崩
-if __name__ == "__main__":
-    # 只保留这一行，彻底删除所有Webhook相关代码
+# Webhook回调入口
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return "OK", 200
+    else:
+        return "Forbidden", 403
+
+# 初始化Webhook
+@app.route("/")
+def set_webhook():
+    # Railway自动分配的域名，直接用环境变量获取
+    webhook_url = f"https://{os.environ.get('RAILWAY_STATIC_URL')}/{BOT_TOKEN}"
     bot.remove_webhook()
-    while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception as e:
-            print(f"Bot error: {e}, 3秒后自动重启")
-            time.sleep(3)
-            continue
+    bot.set_webhook(url=webhook_url)
+    return f"Webhook set to: {webhook_url}", 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
