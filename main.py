@@ -32,12 +32,12 @@ def refresh_virtual_orders():
     while True:
         virtual_orders = []
         for i in range(6):
-            vid = 80000 + i
+            vid = 101 + i  # 固定3位单号，不再用80000+
             amt = round(random.uniform(10, 100), 2)
             virtual_orders.append({"id": vid, "amount": amt})
         time.sleep(VIRTUAL_ORDER_REFRESH_SECONDS)
 
-# ===================== 双语文案（完整保留，中英双语切换） =====================
+# ===================== 双语文案（修复英文抢单大厅显示问题，中英完全同步） =====================
 TEXT = {
     "zh": {
         "home": """🏆 TrustEscrow 頂級擔保平台
@@ -73,7 +73,7 @@ TEXT = {
 {}""",
 
         "grab": """🚀 搶單大廳（每2分鐘自動刷新）
-點擊「搶單」按鈕獲取真實訂單：
+點擊按鈕直接搶單：
 
 {}""",
 
@@ -87,15 +87,12 @@ TEXT = {
         "record": """📜 擔保記錄
 {}""",
 
-        "account_detail": """📋 賬號明細
+        "account_detail": """📋 資金明細
 🆔 用戶ID：{}
-👤 真實姓名：{}
-📞 聯絡電話：{}
-📧 電子信箱：{}
-🏠 居住地址：{}
-👥 推薦人ID：{}
 💰 當前餘額：{:.2f} USDT
-📌 審核狀態：{}""",
+
+📦 所有訂單：
+{}""",
 
         "status_wait": "待接單",
         "status_doing": "已接單",
@@ -142,9 +139,13 @@ Fill in your real info:
 ✅ Completed Orders:
 {}""",
 
-        "grab": """🚀 Grab Hall""",
-        "grab_success": "✅ Order grabbed",
-        "grab_already_gone": "❌ Order gone",
+        "grab": """🚀 Grab Hall (Auto-refresh every 2min)
+Click button to grab order:
+
+{}""",
+
+        "grab_success": "✅ Order Grabbed, Please Accept",
+        "grab_already_gone": "❌ Order Already Taken",
 
         "deposit": """💰 Deposit & Withdraw
 Contact support: @fcff88""",
@@ -152,23 +153,20 @@ Contact support: @fcff88""",
         "record": """📜 Escrow Record
 {}""",
 
-        "account_detail": """📋 Account Detail
+        "account_detail": """📋 Fund Detail
 🆔 ID: {}
-👤 Full Name: {}
-📞 Phone: {}
-📧 Email: {}
-🏠 Address: {}
-👥 Referrer ID: {}
 💰 Balance: {:.2f} USDT
-📌 Status: {}""",
+
+📦 All Orders:
+{}""",
 
         "status_wait": "Pending",
         "status_doing": "Accepted",
         "status_done": "Completed",
 
-        "accept_success": "✅ Accepted",
-        "not_enough": "❌ Not enough USDT",
-        "not_verified": "❌ Not verified",
+        "accept_success": "✅ Order Accepted, Amount Deducted",
+        "not_enough": "❌ Insufficient Balance",
+        "not_verified": "❌ Not Verified",
         "no_detail": "❌ You have not submitted registration",
 
         "btn_back": "Home",
@@ -183,7 +181,7 @@ user_balance = {}
 user_verify = {}  # 0=未申请 1=审核中 2=已通过
 user_info = {}
 orders = {}
-order_id = 1
+order_id = 101  # 从101开始，保证3位单号
 last_msg = {}
 user_applying = {}  # 标记申请流程
 
@@ -239,7 +237,7 @@ def start(msg):
     sent = bot.send_message(u, TEXT[lang]["home"], reply_markup=main_menu(u))
     last_msg[u] = sent.message_id
 
-# ===================== 按钮回调（完整保留所有按钮逻辑） =====================
+# ===================== 按钮回调（修复英文抢单显示，2列网格布局） =====================
 @bot.callback_query_handler(func=lambda c: True)
 def callback(c):
     u = c.from_user.id
@@ -266,20 +264,18 @@ def callback(c):
             bot.edit_message_text(t["reg_form"], cid, mid, reply_markup=back_menu(u))
 
         elif c.data == "detail":
-            info = user_info.get(u, {})
-            if not info:
-                bot.edit_message_text(t["no_detail"], cid, mid, reply_markup=back_menu(u))
-                return
-            name = info.get("name", "-")
-            phone = info.get("phone", "-")
-            email = info.get("email", "-")
-            addr = info.get("addr", "-")
-            ref = info.get("ref", "-")
-            bal = user_balance.get(u, 0)
-            v = user_verify.get(u, 0)
-            status = "未申請" if v == 0 else "審核中" if v == 1 else "已通過" if lang == "zh" else \
-                "Not Applied" if v == 0 else "Pending" if v == 1 else "Verified"
-            text = t["account_detail"].format(u, name, phone, email, addr, ref, bal, status)
+            bal = user_balance.get(u, 0.0)
+            my_orders = [o for o in orders.items() if o[1]["user"] == u]
+            order_lines = []
+            for oid, o in my_orders:
+                short_id = oid  # 已经是3位，直接用
+                typ = "派單" if o["type"] == "assign" else "搶單" if lang == "zh" else "Assign" if o["type"] == "assign" else "Grab"
+                sta = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] == 1 else t["status_wait"]
+                profit_rate = 0.05 if o["type"] == "grab" else random.uniform(0.15, 0.20)
+                profit = round(o["amount"] * profit_rate, 2)
+                order_lines.append(f"#{short_id} {typ} {o['amount']} USDT +{profit} | {sta}")
+            order_text = "\n".join(order_lines) if order_lines else "無訂單記錄" if lang == "zh" else "No Orders"
+            text = t["account_detail"].format(u, bal, order_text)
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
         elif c.data == "profile":
@@ -287,7 +283,7 @@ def callback(c):
             completed = []
             for oid, o in orders.items():
                 if o["user"] == u:
-                    typ = "派單" if o["type"] == "assign" else "搶單"
+                    typ = "派單" if o["type"] == "assign" else "搶單" if lang == "zh" else "Assign" if o["type"] == "assign" else "Grab"
                     s = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] == 1 else t["status_wait"]
                     line = f"• #{oid} {typ} {o['amount']} USDT | {s}"
                     if o["status"] == 2:
@@ -297,8 +293,8 @@ def callback(c):
             v = user_verify.get(u, 0)
             status = "未申請" if v == 0 else "審核中" if v == 1 else "已通過" if lang == "zh" else \
                 "Not Applied" if v == 0 else "Pending" if v == 1 else "Verified"
-            p_text = "\n".join(pending) if pending else "無"
-            c_text = "\n".join(completed) if completed else "無"
+            p_text = "\n".join(pending) if pending else "無" if lang == "zh" else "None"
+            c_text = "\n".join(completed) if completed else "無" if lang == "zh" else "None"
             text = t["profile"].format(u, user_balance.get(u, 0), status, p_text, c_text)
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
@@ -307,10 +303,19 @@ def callback(c):
                 bot.answer_callback_query(c.id, t["not_verified"], show_alert=True)
                 return
             items = []
-            m = InlineKeyboardMarkup(row_width=1)
+            m = InlineKeyboardMarkup(row_width=2)  # 2列网格布局
             for vo in virtual_orders:
-                items.append(f"🔹 訂單 {vo['id']} ｜ {vo['amount']} USDT")
-                m.add(InlineKeyboardButton(f"搶單 {vo['id']}", callback_data=f"grab_item_{vo['id']}"))
+                vid = vo["id"]
+                amt = vo["amount"]
+                profit = round(amt * 0.05, 2)
+                # 中英双语同步显示订单信息
+                if lang == "zh":
+                    items.append(f"#{vid}  {amt} USDT  +{profit}")
+                    btn_text = f"搶{vid}"
+                else:
+                    items.append(f"#{vid}  {amt} USDT  +{profit}")
+                    btn_text = f"Grab {vid}"
+                m.add(InlineKeyboardButton(btn_text, callback_data=f"grab_item_{vid}"))
             m.add(InlineKeyboardButton(t["btn_back"], callback_data="home"))
             text = t["grab"].format("\n".join(items))
             bot.edit_message_text(text, cid, mid, reply_markup=m)
@@ -328,13 +333,19 @@ def callback(c):
             oid = order_id
             order_id += 1
             orders[oid] = {"user": u, "amount": hit["amount"], "type": "grab", "status": 0}
-            bot.edit_message_text(t["grab_success"], cid, mid, reply_markup=accept_btn(oid, u))
+            # 抢单成功后显示详细信息
+            profit = round(hit["amount"] * 0.05, 2)
+            if lang == "zh":
+                success_text = f"✅ 搶單成功 #{oid}\n本金：{hit['amount']} USDT\n利潤：+{profit} USDT"
+            else:
+                success_text = f"✅ Order Grabbed #{oid}\nAmount: {hit['amount']} USDT\nProfit: +{profit} USDT"
+            bot.edit_message_text(success_text, cid, mid, reply_markup=accept_btn(oid, u))
 
         elif c.data.startswith("acc_"):
             oid = int(c.data.split("_")[1])
             o = orders.get(oid)
             if not o or o["user"] != u or o["status"] != 0:
-                bot.answer_callback_query(c.id, "❌ 無效訂單", show_alert=True)
+                bot.answer_callback_query(c.id, "❌ 無效訂單" if lang == "zh" else "❌ Invalid Order", show_alert=True)
                 return
             if user_balance.get(u, 0) < o["amount"]:
                 bot.answer_callback_query(c.id, t["not_enough"], show_alert=True)
@@ -351,9 +362,9 @@ def callback(c):
             for oid, o in orders.items():
                 if o["user"] == u:
                     s = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] == 1 else t["status_wait"]
-                    typ = "派單" if o["type"] == "assign" else "搶單"
+                    typ = "派單" if o["type"] == "assign" else "搶單" if lang == "zh" else "Assign" if o["type"] == "assign" else "Grab"
                     lines.append(f"• #{oid} {typ} {o['amount']} USDT | {s}")
-            text = t["record"].format("\n".join(lines) if lines else "無記錄")
+            text = t["record"].format("\n".join(lines) if lines else "無記錄" if lang == "zh" else "No Records")
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
         bot.answer_callback_query(c.id)
@@ -415,7 +426,7 @@ def user_input(msg):
             sent = bot.send_message(msg.chat.id, t["reg_error"], reply_markup=back_menu(u))
             last_msg[u] = sent.message_id
 
-# ===================== 管理员命令（完整保留所有指令） =====================
+# ===================== 管理员命令（优化查ID，只显示余额+订单，派单弹窗通知） =====================
 @bot.message_handler(func=lambda m: m.from_user.id in ADMIN_IDS)
 def admin_cmd(msg):
     u = msg.from_user.id
@@ -431,21 +442,21 @@ def admin_cmd(msg):
             bot.send_message(u, f"✅ 已成功通過用戶 {target} 的審核")
             return
 
-        # 2. 查ID 用户ID → 查看用户信息
+        # 2. 查ID 用户ID → 只显示余额+订单，不显示个人资料
         if len(arr) >= 2 and arr[0] == "查ID":
             target = int(arr[1])
-            info = user_info.get(target, {})
             bal = user_balance.get(target, 0.0)
-            v = user_verify.get(target, 0)
-            status = ["未申請", "審核中", "已通過"][v] if v in [0,1,2] else "未知"
-            text = f"📋 用戶信息｜ID：{target}\n"
-            text += f"姓名：{info.get('name', '-')}\n"
-            text += f"電話：{info.get('phone', '-')}\n"
-            text += f"郵箱：{info.get('email', '-')}\n"
-            text += f"地址：{info.get('addr', '-')}\n"
-            text += f"推薦人：{info.get('ref', '-')}\n"
-            text += f"餘額：{bal:.2f} USDT\n"
-            text += f"狀態：{status}"
+            my_orders = [o for o in orders.items() if o[1]["user"] == target]
+            text = f"📋 用戶 {target}\n💰 餘額：{bal:.2f} USDT\n\n"
+            if not my_orders:
+                text += "無訂單"
+            else:
+                for oid, o in my_orders:
+                    short_id = oid
+                    typ = "派單" if o["type"]=="assign" else "搶單"
+                    sta = "待接單" if o["status"]==0 else "已接單" if o["status"]==1 else "已完成"
+                    profit = round(o['amount']*(0.05 if o['type']=='grab' else random.uniform(0.15,0.2)),2)
+                    text += f"#{short_id} {typ} {o['amount']} USDT +{profit} | {sta}\n"
             bot.send_message(u, text)
             return
 
@@ -470,7 +481,7 @@ def admin_cmd(msg):
                 bot.send_message(u, f"✅ -{amt:.2f} USDT → {uid}｜餘額：{user_balance[uid]:.2f}")
             return
 
-        # 5. 派单 ID 金额
+        # 5. 派单 ID 金额 → 派单后强制弹窗通知用户
         if arr[0] == "派单" and len(arr) == 3:
             target = int(arr[1])
             amt = float(arr[2])
@@ -478,7 +489,23 @@ def admin_cmd(msg):
             oid = order_id
             order_id += 1
             orders[oid] = {"user": target, "amount": amt, "type": "assign", "status": 0}
-            bot.send_message(u, f"✅ 派單成功｜訂單 {oid} {amt} USDT → {target}")
+            # 计算派单利润
+            profit = round(amt * random.uniform(0.15, 0.20), 2)
+            # 通知管理员
+            bot.send_message(u, f"✅ 派單成功｜#{oid} {amt} USDT → {target}")
+            # 强制弹窗通知用户，只能点接单
+            assign_notify = (
+                f"📢 你有新派單\n"
+                f"#{oid}\n"
+                f"本金：{amt} USDT\n"
+                f"預計利潤：+{profit} USDT"
+            )
+            mark = InlineKeyboardMarkup()
+            mark.add(InlineKeyboardButton("接單", callback_data=f"acc_{oid}"))
+            try:
+                bot.send_message(target, assign_notify, reply_markup=mark)
+            except Exception as e:
+                print(f"通知用户派单失败: {e}")
             return
 
         # 6. 完成 订单号
@@ -491,7 +518,7 @@ def admin_cmd(msg):
             o["status"] = 2
             profit = o["amount"] * (random.uniform(0.15, 0.20) if o["type"] == "assign" else 0.05)
             user_balance[o["user"]] += o["amount"] + profit
-            bot.send_message(u, f"✅ 訂單 {oid} 已完成，利潤已發放")
+            bot.send_message(u, f"✅ 訂單 #{oid} 已完成，利潤已發放")
             return
 
         bot.send_message(u, "❌ 指令格式：\n通过 ID\n查ID ID\n+U ID 金额\n-U ID 金额\n派单 ID 金额\n完成 订单号")
