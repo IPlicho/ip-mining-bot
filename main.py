@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import re
 import random
 
 # ===================== 核心配置 =====================
@@ -8,7 +9,7 @@ BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 ADMIN_IDS = [8781082053, 8256055083]
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ===================== 双语文案（干净高级版） =====================
+# ===================== 双语文案（纯表单，无格式示例） =====================
 TEXT = {
     "zh": {
         "home": """🏆 TrustEscrow 頂級擔保平台
@@ -22,12 +23,16 @@ TEXT = {
 
 客服：@fcff88""",
 
-        "reg_step1": "📝 入駐申請\n請輸入你的真實姓名：",
-        "reg_step2": "請輸入你的聯絡電話：",
-        "reg_step3": "請輸入你的電子信箱：",
-        "reg_step4": "請輸入你的居住地址：",
-        "reg_step5": "請輸入你的推薦人ID：",
-        "reg_success": "✅ 申請已提交，等待管理員審核",
+        "reg_form": """📝 入駐擔保申請
+請依序填寫真實信息：
+1. 真實姓名
+2. 聯絡電話
+3. 電子信箱
+4. 居住地址
+5. 推薦人ID""",
+
+        "reg_success": "✅ 入駐申請已提交，等待管理員審核",
+        "reg_error": "❌ 格式錯誤，請按要求一次性發送完整5項信息",
 
         "profile": """👤 個人中心
 🆔 用戶ID：{}
@@ -76,12 +81,16 @@ Safe · Stable · Secure
 
 Support: @fcff88""",
 
-        "reg_step1": "📝 Registration\nEnter your full name:",
-        "reg_step2": "Enter your phone number:",
-        "reg_step3": "Enter your email:",
-        "reg_step4": "Enter your address:",
-        "reg_step5": "Enter your referrer ID:",
-        "reg_success": "✅ Applied, waiting for review",
+        "reg_form": """📝 Escrow Registration
+Fill in your real info:
+1. Full Name
+2. Phone Number
+3. Email
+4. Address
+5. Referrer ID""",
+
+        "reg_success": "✅ Application Submitted, Waiting for Review",
+        "reg_error": "❌ Format Error, Please send all 5 items correctly",
 
         "profile": """👤 Profile
 🆔 ID: {}
@@ -106,14 +115,14 @@ Contact support: @fcff88""",
         "status_doing": "Accepted",
         "status_done": "Completed",
 
-        "grab_success": "✅ Order grabbed",
+        "grab_success": "✅ Order Grabbed",
         "accept_success": "✅ Accepted",
         "not_enough": "❌ Not enough USDT",
         "not_verified": "❌ Not verified",
 
-        "admin_assign": "✅ Order sent",
-        "admin_done": "✅ Order completed",
-        "admin_verify": "✅ User verified",
+        "admin_assign": "✅ Order Assigned",
+        "admin_done": "✅ Order Completed",
+        "admin_verify": "✅ User Verified",
         "btn_back": "Home",
         "btn_accept": "Accept"
     }
@@ -121,13 +130,12 @@ Contact support: @fcff88""",
 
 # ===================== 数据存储 =====================
 user_lang = {}
-user_step = {}  # 存储用户当前步骤: reg_name, reg_phone, reg_email, reg_addr, reg_ref
 user_balance = {}
 user_verify = {}  # 0=未申请 1=审核中 2=已通过
 user_info = {}
 orders = {}
 order_id = 1
-last_msg = {}  # {user_id: message_id} 记录最后一条消息，用于编辑，不刷屏
+last_msg = {}  # 记录最后一条消息ID，用于编辑，零刷屏
 
 # ===================== 菜单生成 =====================
 def main_menu(user_id):
@@ -173,7 +181,7 @@ def start(msg):
     user_lang.setdefault(u, "zh")
     user_balance.setdefault(u, 0.0)
     user_verify.setdefault(u, 0)
-    user_step[u] = None
+    user_info.setdefault(u, {})
     lang = user_lang[u]
     # 发送首页，记录消息ID
     sent = bot.send_message(u, TEXT[lang]["home"], reply_markup=main_menu(u))
@@ -201,11 +209,10 @@ def callback(c):
         elif c.data == "reg":
             # 只有未申请的用户才能点
             if user_verify.get(u, 0) != 0:
-                bot.answer_callback_query(c.id, "❌ 已提交/已通過", show_alert=True)
+                bot.answer_callback_query(c.id, t["reg_success"] if user_verify[u] == 1 else "❌ 已通過審核", show_alert=True)
                 return
-            # 开始入驻流程，第一步：姓名
-            user_step[u] = "reg_name"
-            bot.edit_message_text(t["reg_step1"], cid, mid, reply_markup=back_menu(u))
+            # 显示纯入驻申请表单，无任何格式示例
+            bot.edit_message_text(t["reg_form"], cid, mid, reply_markup=back_menu(u))
 
         elif c.data == "profile":
             # 生成未完成/已完成订单列表
@@ -275,7 +282,7 @@ def callback(c):
         print(f"Callback error: {e}")
         bot.answer_callback_query(c.id)
 
-# ===================== 用户消息处理（入驻流程） =====================
+# ===================== 用户消息处理（入驻申请一次性提交） =====================
 @bot.message_handler(func=lambda m: m.from_user.id not in ADMIN_IDS)
 def user_input(msg):
     u = msg.from_user.id
@@ -289,69 +296,53 @@ def user_input(msg):
     user_balance.setdefault(u, 0.0)
     user_verify.setdefault(u, 0)
     user_info.setdefault(u, {})
-    if u not in user_step:
-        user_step[u] = None
 
-    # 第一步：姓名
-    if user_step[u] == "reg_name":
-        user_info[u]["name"] = txt
-        user_step[u] = "reg_phone"
-        # 编辑当前消息，问电话
-        if mid:
-            bot.edit_message_text(t["reg_step2"], cid, mid, reply_markup=back_menu(u))
-        else:
-            sent = bot.send_message(cid, t["reg_step2"], reply_markup=back_menu(u))
-            last_msg[u] = sent.message_id
+    # 解析入驻申请（一次性提交5项，兼容用户自由格式）
+    # 正则匹配：提取5项内容，兼容用户各种换行/空格格式
+    pattern = r"1\.?\s*真實姓名\s*(.+?)\s*2\.?\s*聯絡電話\s*(.+?)\s*3\.?\s*電子信箱\s*(.+?)\s*4\.?\s*居住地址\s*(.+?)\s*5\.?\s*推薦人ID\s*(.+)"
+    match = re.search(pattern, txt, re.DOTALL)
 
-    # 第二步：电话
-    elif user_step[u] == "reg_phone":
-        user_info[u]["phone"] = txt
-        user_step[u] = "reg_email"
-        if mid:
-            bot.edit_message_text(t["reg_step3"], cid, mid, reply_markup=back_menu(u))
-        else:
-            sent = bot.send_message(cid, t["reg_step3"], reply_markup=back_menu(u))
-            last_msg[u] = sent.message_id
+    if match:
+        # 提取信息
+        name = match.group(1).strip()
+        phone = match.group(2).strip()
+        email = match.group(3).strip()
+        addr = match.group(4).strip()
+        ref = match.group(5).strip()
 
-    # 第三步：邮箱
-    elif user_step[u] == "reg_email":
-        user_info[u]["email"] = txt
-        user_step[u] = "reg_addr"
-        if mid:
-            bot.edit_message_text(t["reg_step4"], cid, mid, reply_markup=back_menu(u))
-        else:
-            sent = bot.send_message(cid, t["reg_step4"], reply_markup=back_menu(u))
-            last_msg[u] = sent.message_id
+        # 保存用户信息
+        user_info[u] = {
+            "name": name,
+            "phone": phone,
+            "email": email,
+            "addr": addr,
+            "ref": ref
+        }
+        # 标记为审核中
+        user_verify[u] = 1
 
-    # 第四步：地址
-    elif user_step[u] == "reg_addr":
-        user_info[u]["addr"] = txt
-        user_step[u] = "reg_ref"
-        if mid:
-            bot.edit_message_text(t["reg_step5"], cid, mid, reply_markup=back_menu(u))
-        else:
-            sent = bot.send_message(cid, t["reg_step5"], reply_markup=back_menu(u))
-            last_msg[u] = sent.message_id
-
-    # 第五步：推荐人（提交申请）
-    elif user_step[u] == "reg_ref":
-        user_info[u]["ref"] = txt
-        user_verify[u] = 1  # 标记为审核中
-        user_step[u] = None
         # 通知管理员
         notify_admins(f"""📥 新入駐申請
 用戶ID：{u}
-姓名：{user_info[u]['name']}
-電話：{user_info[u]['phone']}
-郵箱：{user_info[u]['email']}
-地址：{user_info[u]['addr']}
-推薦人：{user_info[u]['ref']}
+姓名：{name}
+電話：{phone}
+郵箱：{email}
+地址：{addr}
+推薦人：{ref}
 請審核：發送「審核通過 {u}」""")
-        # 编辑回首页，显示申请成功
+
+        # 编辑当前消息，显示申请成功
         if mid:
             bot.edit_message_text(t["reg_success"], cid, mid, reply_markup=main_menu(u))
         else:
             sent = bot.send_message(cid, t["reg_success"], reply_markup=main_menu(u))
+            last_msg[u] = sent.message_id
+    else:
+        # 格式错误，提示用户
+        if mid:
+            bot.edit_message_text(t["reg_error"], cid, mid, reply_markup=back_menu(u))
+        else:
+            sent = bot.send_message(cid, t["reg_error"], reply_markup=back_menu(u))
             last_msg[u] = sent.message_id
 
 # ===================== 管理员命令 =====================
@@ -415,5 +406,5 @@ def admin_cmd(msg):
 
 # ===================== 启动机器人 =====================
 if __name__ == "__main__":
-    print("✅ 機器人啟動成功 (完美穩定版)")
+    print("✅ 機器人啟動成功 (最終完美穩定版)")
     bot.infinity_polling()
