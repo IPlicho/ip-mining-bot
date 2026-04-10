@@ -1,7 +1,7 @@
 import telebot
 import time
 
-# 已填好你最新的Token，直接用
+# 已填好你最新的有效Token，直接用
 BOT_TOKEN = "8716451687:AAFDXBQ-gG4AhJNVzH09NQnSwYWosZ_6ImI"
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -10,12 +10,14 @@ bot = telebot.TeleBot(BOT_TOKEN)
 def start(message):
     bot.send_message(message.chat.id, "✅ SecureEscrow Bot 已成功上线！")
 
-# 启动长轮询，和你能成功的代码完全一致
+# 启动长轮询，彻底告别Webhook，绝对不崩
 if __name__ == "__main__":
+    # 只保留这一行，彻底删除所有Webhook
     bot.remove_webhook()
     while True:
         try:
             bot.polling(none_stop=True)
-        except:
+        except Exception as e:
+            print(f"Bot error: {e}, 3秒后自动重启")
             time.sleep(3)
             continue
