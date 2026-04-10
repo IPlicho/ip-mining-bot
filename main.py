@@ -1,14 +1,14 @@
 import telebot
-import os
+import time
 from datetime import datetime, timedelta
-from flask import Flask, request
+import os
+import threading
 
-# ====================== 你的机器人配置（已填好）======================
-BOT_TOKEN = "8747559514:AAE_N9M9CallB4rYV0lbyny_0tGJnz3hLYU"
-ADMIN_ID = 123456789  # 这里改成你自己的 Telegram ID
+# ====================== 你的机器人配置（已填好新Token，仅改ADMIN_ID）======================
+BOT_TOKEN = "8747559514:AAFJdsZ3tlCVPIW6vL60hTuBc_Eo5FP4kU"
+ADMIN_ID = 123456789  # 🔥 这里改成你自己的 Telegram ID 🔥
 
 bot = telebot.TeleBot(BOT_TOKEN)
-app = Flask(__name__)
 
 # 内存数据（测试用，重启会清空，正式用可换数据库）
 user_balance = {}
@@ -189,17 +189,13 @@ def accept_order(call):
     bot.edit_message_text(f"✅ 订单 {oid} 已接单", call.message.chat.id, call.message.message_id)
     bot.send_message(o["from_id"], f"📢 你的订单 {oid} 已接单，处理中！\n💰 已扣除：{o['amount']} USDT")
 
-# ====================== Webhook 入口 ======================
-@app.route(f"/{BOT_TOKEN}", methods=["POST"])
-def webhook():
-    update = telebot.types.Update.de_json(request.get_json())
-    bot.process_new_updates([update])
-    return "ok"
-
-# ====================== 健康检查 ======================
-@app.route("/")
-def index():
-    return "Bot running"
+# ====================== 长轮询启动 ======================
+def run_bot():
+    bot.infinity_polling()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    # 启动长轮询，彻底告别Webhook 401问题
+    threading.Thread(target=run_bot, daemon=True).start()
+    # 保持进程运行
+    while True:
+        time.sleep(3600)
