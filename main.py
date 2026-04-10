@@ -7,7 +7,7 @@ import os
 import sys
 
 # ===================== 配置（已填好你的Token，Railway专属）=====================
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8747559514:AAE_N9M9CallB4rYV0lbyny_0tGJnz3hLYU")
+BOT_TOKEN = "8747559514:AAE_N9M9CallB4rYV0lbyny_0tGJnz3hLYU"
 ADMIN_ID = 8401979801
 
 # 初始化机器人（Railway 必须加 threaded=True）
