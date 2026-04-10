@@ -9,8 +9,8 @@ import os
 from flask import Flask
 
 # ===================== 核心配置 =====================
-# 新机器人的最新有效 Token（已填好，无需修改）
-BOT_TOKEN = "8747514402:AAF5iwtbxAvmt07jiyHg1XPt2jgBrzlKa_Y"
+# 新机器人最新有效Token（已填好，无需修改）
+BOT_TOKEN = "8719442574:AAFDmZ7i_CqEm2U1UhezZajJ7kn-IY03yl4"
 ADMIN_IDS = [878108205, 825605508]
 VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -41,18 +41,18 @@ def refresh_virtual_orders():
 # ===================== 双语文案 =====================
 TEXT = {
     "zh": {
-        "home": """🏆 TrustEscrow 頂級擔保平台
-安全交易 · 穩定收益 · 零風險保障
+        "home": """🏆 NodeVerse 頂級挖礦平台
+穩定算力 · 安全託管 · 零風險保障
 
 ✅ 5年零詐騙實績
-✅ 專業中間人墊資
+✅ 專業礦機託管
 ✅ 資金全程託管
 ✅ 搶單5%穩定收益
 ✅ 派單15%-20%高額回報
 
 客服：@fcff88""",
 
-        "reg_form": """📝 入駐擔保申請
+        "reg_form": """📝 入駐挖礦申請
 請依序填寫真實信息：
 1. 真實姓名
 2. 聯絡電話
@@ -85,7 +85,7 @@ TEXT = {
 請聯繫官方客服：
 ➡️ @fcff88""",
 
-        "record": """📜 擔保記錄
+        "record": """📜 挖礦記錄
 {}""",
 
         "account_detail": """📋 資金明細
@@ -114,17 +114,17 @@ TEXT = {
         "btn_grab": "搶單"
     },
     "en": {
-        "home": """🏆 TrustEscrow Premium Platform
-Safe, Stable, Secure
+        "home": """🏆 NodeVerse Premium Mining Platform
+Stable Hashrate, Secure, Safe
 
 ✅ 5 Years 0 Fraud
-✅ 100% Safe Escrow
+✅ 100% Safe Mining
 ✅ 5% Grab Profit
 ✅ 15-20% Assign Profit
 
 Support: @fcff88""",
 
-        "reg_form": """📝 Escrow Registration
+        "reg_form": """📝 Mining Registration
 Fill in your real info:
 1. Full Name
 2. Phone Number
@@ -156,7 +156,7 @@ Click button to grab order:
         "deposit": """💰 Deposit & Withdraw
 Contact support: @fcff88""",
 
-        "record": """📜 Escrow Record
+        "record": """📜 Mining Record
 {}""",
 
         "account_detail": """📋 Fund Detail
@@ -205,12 +205,12 @@ def main_menu(user_id):
     lang = user_lang.get(user_id, "zh")
     m = InlineKeyboardMarkup(row_width=2)
     m.add(
-        InlineKeyboardButton("入駐擔保" if lang == "zh" else "Register", callback_data="reg"),
+        InlineKeyboardButton("入駐挖礦" if lang == "zh" else "Register", callback_data="reg"),
         InlineKeyboardButton("個人中心" if lang == "zh" else "Profile", callback_data="profile"),
         InlineKeyboardButton("賬號明細" if lang == "zh" else "Account Detail", callback_data="detail"),
         InlineKeyboardButton("搶單大廳" if lang == "zh" else "Grab", callback_data="grab"),
         InlineKeyboardButton("儲值提現" if lang == "zh" else "Deposit", callback_data="deposit"),
-        InlineKeyboardButton("擔保記錄" if lang == "zh" else "Record", callback_data="record"),
+        InlineKeyboardButton("挖礦記錄" if lang == "zh" else "Record", callback_data="record"),
         InlineKeyboardButton("🌐 English" if lang == "zh" else "🌐 繁中", callback_data="lang"),
     )
     return m
