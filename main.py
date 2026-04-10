@@ -3,14 +3,9 @@ import telebot
 BOT_TOKEN = "8747559514:AAE_N9M9CallB4rYV0lbyny_0tGJnz3hLYU"
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 处理所有消息，不管是/start还是普通文字，都回复
-@bot.message_handler(func=lambda msg: True)
-def handle_all(msg):
-    bot.send_message(msg.chat.id, "✅ 机器人收到消息了！")
+@bot.message_handler(commands=['start'])
+def start(msg):
+    bot.send_message(msg.chat.id, "✅ 机器人正常运行！")
 
 if __name__ == "__main__":
-    while True:
-        try:
-            bot.polling(none_stop=True, timeout=60)
-        except:
-            continue
+    bot.polling(none_stop=True)
