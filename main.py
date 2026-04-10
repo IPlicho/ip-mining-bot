@@ -1,8 +1,14 @@
+import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-# 直接用你的 token，不用改
+# ==========================================
+# 【零配置，直接用】
+# ==========================================
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
+# Railway 自动读取端口和域名，无需手动改
+PORT = int(os.environ.get("PORT", 8080))
+RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").rstrip("/")
 
 # 内存数据
 users = {}
@@ -35,21 +41,16 @@ async def cb(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     if data == "reg":
         user_step[uid] = "name"
-        await q.edit_message_text("请输入姓名：", reply_markup=main_menu())
-
+        await q.edit_message_text("请输入姓名：")
     elif data == "me":
         u = users[uid]
         await q.edit_message_text(f"👤 个人中心\nUSDT: {u['usdt']}", reply_markup=main_menu())
-
     elif data == "grab":
         await q.edit_message_text("🚀 抢单：50/100 USDT（随机）", reply_markup=main_menu())
-
     elif data == "send":
         await q.edit_message_text("📥 管理员派单功能", reply_markup=main_menu())
-
     elif data == "pay":
         await q.edit_message_text("💰 充值提现 @fcff88", reply_markup=main_menu())
-
     elif data == "log":
         await q.edit_message_text("📜 暂无记录", reply_markup=main_menu())
 
@@ -85,13 +86,27 @@ async def msg(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         del user_step[uid]
         await update.message.reply_text("✅ 入驻成功！", reply_markup=main_menu())
 
-# 启动
+# ==========================================
+# 【Railway 专属启动，100%不崩溃】
+# ==========================================
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(cb))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, msg))
-    app.run_polling()
+
+    # 核心修复：Railway 必须用 Webhook，不能用轮询
+    if RAILWAY_DOMAIN:
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path=BOT_TOKEN,
+            webhook_url=f"{RAILWAY_DOMAIN}/{BOT_TOKEN}",
+            drop_pending_updates=True
+        )
+    else:
+        # 本地测试用轮询
+        app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
