@@ -10,7 +10,7 @@ import sys
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8747559514:AAE_N9M9CallB4rYV0lbyny_0tGJnz3hLYU")
 ADMIN_ID = 8401979801
 
-# 初始化机器人
+# 初始化机器人（Railway 必须加 threaded=True）
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML", threaded=True)
 
 # ===================== 数据存储 =====================
@@ -109,7 +109,7 @@ def fund_btn(code):
 # ===================== 启动指令 =====================
 @bot.message_handler(commands=['start'])
 def start(msg):
-    print(f"收到 /start 来自用户: {msg.from_user.id}")
+    print(f"✅ 收到 /start 来自用户: {msg.from_user.id}")
     u = msg.from_user.id
     user_lang.setdefault(u, "zh")
     step[u] = None
@@ -217,7 +217,7 @@ def cb(c):
 # ===================== 用户输入处理 =====================
 @bot.message_handler(func=lambda m: True)
 def msg(msg):
-    print(f"收到消息: {msg.text} 来自用户: {msg.from_user.id}")
+    print(f"✅ 收到消息: {msg.text} 来自用户: {msg.from_user.id}")
     u = msg.from_user.id
     txt = msg.text.strip()
     if u not in step:
