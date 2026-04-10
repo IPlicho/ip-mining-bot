@@ -8,8 +8,8 @@ import threading
 import os
 from flask import Flask
 
-# ===================== 核心配置 =====================
-BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
+# ===================== 核心配置（已替换为最新有效Token，零修改） =====================
+BOT_TOKEN = "8727191543:AAFwx7dpoGK1icoCxhS0Xp3qpi4W5n4nfHE"
 ADMIN_IDS = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
