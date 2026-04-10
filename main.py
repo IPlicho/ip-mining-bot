@@ -9,7 +9,7 @@ import os
 from flask import Flask
 
 # ===================== 核心配置 =====================
-BOT_TOKEN = "8727191543:AAF0rax78kPycp0MqahZgpjqdrrtJQbjj_I"
+BOT_TOKEN = "8747514402:AAHE02hCUsrJdjtkG0_1yNnC7ph4UyxiL1g"
 ADMIN_IDS = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
