@@ -9,8 +9,9 @@ import os
 from flask import Flask
 
 # ===================== 核心配置 =====================
-BOT_TOKEN = "8747514402:AAHE02hCUsrJdjtkG0_1yNnC7ph4UyxiL1g"
-ADMIN_IDS = [8781082053, 8256055083]
+# 新机器人的最新有效 Token（已填好，无需修改）
+BOT_TOKEN = "8747514402:AAF5iwtbxAvmt07jiyHg1XPt2jgBrzlKa_Y"
+ADMIN_IDS = [878108205, 825605508]
 VIRTUAL_ORDER_REFRESH_SECONDS = 120
 bot = telebot.TeleBot(BOT_TOKEN)
 
