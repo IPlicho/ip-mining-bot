@@ -9,7 +9,7 @@ import os
 from flask import Flask
 from datetime import datetime
 
-# ======================== 机器人TOKEN（你的原样） ========================
+# ======================== 机器人TOKEN（你自己的） ========================
 BOT1_TOKEN = "8716451687:AAGXoF5wuwuroCJ23w5UzaueXCUyy5p67q0"
 BOT2_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
 
@@ -17,7 +17,7 @@ BOT2_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
 bot1 = telebot.TeleBot(BOT1_TOKEN)
 bot2 = telebot.TeleBot(BOT2_TOKEN)
 
-# ======================== Flask保活（只加固，不影响功能） ========================
+# ======================== Flask保活 ========================
 app = Flask(__name__)
 
 @app.route("/")
@@ -363,7 +363,8 @@ def callback_a(c):
             text = t["record"].format("\n".join(lines) if lines else "無記錄" if lang == "zh" else "No Records")
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
         bot1.answer_callback_query(c.id)
-    except:
+    except Exception as e:
+        print(e)
         pass
 
 @bot1.message_handler(func=lambda m: m.from_user.id not in ADMIN_IDS_A)
@@ -491,7 +492,7 @@ def admin_cmd_a(msg):
         pass
 
 # ==============================================================================
-# ================================= 机器人B ====================================
+# ================================= 机器人B ============================
 # ==============================================================================
 
 ADMIN_ID_B = 8401979801
@@ -744,7 +745,7 @@ def msg_b(msg):
         pass
 
 # ==============================================================================
-# ========================== 启动（加固版，功能100%不变） ========================
+# ========================== 启动双机器人 ========================
 # ==============================================================================
 
 def run_bot1():
@@ -764,3 +765,5 @@ if __name__ == "__main__":
     threading.Thread(target=refresh_virtual_orders1, daemon=True).start()
     threading.Thread(target=run_bot1, daemon=True).start()
     threading.Thread(target=run_bot2, daemon=True).start()
+    while True:
+        time.sleep(1)
