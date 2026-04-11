@@ -8,9 +8,9 @@ import threading
 import os
 from flask import Flask
 
-# ======================== 机器人TOKEN ========================
-BOT1_TOKEN = "8716451687:AAGXoF5wuwuroCJ23w5UzaueXCUyy5p67q0"
-BOT2_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
+# ======================== 机器人TOKEN（改成你自己的） ========================
+BOT1_TOKEN = "YOUR_BOT1_TOKEN"
+BOT2_TOKEN = "YOUR_BOT2_TOKEN"
 
 bot1 = telebot.TeleBot(BOT1_TOKEN)
 bot2 = telebot.TeleBot(BOT2_TOKEN)
@@ -33,7 +33,7 @@ def run_flask():
 # ================================= 机器人A ====================================
 # ==============================================================================
 
-ADMIN_IDS_A = [8781082053, 8256055083]
+ADMIN_IDS_A = [123456789]  # 改成你自己的管理员ID
 VIRTUAL_ORDER_REFRESH_SECONDS_A = 120
 
 user_lang1 = {}
@@ -719,7 +719,7 @@ def admin_cmd_a(msg):
 # ================================= 机器人B ================================
 # ==============================================================================
 
-ADMIN_ID_B = 8401979801
+ADMIN_ID_B = 123456789  # 改成你自己的管理员ID
 
 user_lang2 = {}
 user_step2 = {}
@@ -856,8 +856,7 @@ def merchant_menu2(user_id):
     t = TEXT_B[lang]
     m = InlineKeyboardMarkup(row_width=1)
     m.add(
-        InlineKeyboardButton("👉 前往入驻機器人" if lang == "zh" else "👉 Register Bot",
-                             url="https://t.me/secureescrow_pro_bot"),
+        InlineKeyboardButton("👉 前往入驻機器人" if lang == "zh" else "👉 Register Bot", url="https://t.me/secureescrow_pro_bot"),
         InlineKeyboardButton(t["back"], callback_data="home")
     )
     return m
@@ -929,8 +928,7 @@ def callback_b(c):
         bot2.answer_callback_query(c.id)
     except:
         pass
-
-@bot2.message_handler(func=lambda m: True)
+        @bot2.message_handler(func=lambda m: True)
 def msg_b(msg):
     try:
         u = msg.from_user.id
@@ -939,6 +937,7 @@ def msg_b(msg):
         lang = user_lang2.get(u, "zh")
         t = TEXT_B[lang]
 
+        # 管理员充值
         if u == ADMIN_ID_B and txt.startswith("+U "):
             arr = txt.split()
             if len(arr) == 3:
@@ -948,6 +947,7 @@ def msg_b(msg):
                 bot2.send_message(cid, f"✅ +{amt} USDT → {uid}")
             return
 
+        # 管理员扣钱
         if u == ADMIN_ID_B and txt.startswith("-U "):
             arr = txt.split()
             if len(arr) == 3:
@@ -957,6 +957,7 @@ def msg_b(msg):
                 bot2.send_message(cid, f"✅ -{amt} USDT → {uid}")
             return
 
+        # 买家创建担保：输入金额
         if user_step2.get(u) == "create_amount":
             amt = float(txt)
             if user_balance2.get(u, 0) < amt:
@@ -967,8 +968,73 @@ def msg_b(msg):
             bot2.send_message(cid, t["input_tip"])
             return
 
+        # 买家创建担保：设置口令
         if isinstance(user_step2.get(u), dict) and user_step2[u]["step"] == "create_tip":
             tip_code = txt.strip()
             amt = user_step2[u]["amount"]
-            orders2[tip_code] = {"buyer": u, "amount": amt}
-            bot2.send_message(cid, t["escrow_success"].
+            orders2[tip_code] = {
+                "buyer": u,
+                "amount": amt,
+                "status": "pending"
+            }
+            user_step2[u] = None
+            bot2.send_message(cid, t["escrow_success"].format(amt, tip_code))
+            # 通知管理员
+            bot2.send_message(ADMIN_ID_B, f"📢 新担保订单\n口令: {tip_code}\n金额: {amt} USDT\n买家: {u}")
+            return
+
+        # 卖家输入口令：配对订单
+        if user_step2.get(u) == "join_tip":
+            tip_code = txt.strip()
+            if tip_code not in orders2:
+                bot2.send_message(cid, t["tip_error"])
+                return
+            order = orders2[tip_code]
+            if order["status"] != "pending":
+                bot2.send_message(cid, t["tip_error"])
+                return
+            # 配对成功
+            order["seller"] = u
+            order["status"] = "paired"
+            user_step2[u] = None
+            bot2.send_message(cid, t["pair_success"].format(order["buyer"], u, order["amount"]))
+            # 通知买家和管理员
+            bot2.send_message(order["buyer"], f"✅ 你的担保订单 #{tip_code} 已被卖家 {u} 配对，金额 {order['amount']} USDT")
+            bot2.send_message(ADMIN_ID_B, f"✅ 订单 #{tip_code} 配对成功\n买家: {order['buyer']}\n卖家: {u}\n金额: {order['amount']} USDT")
+            return
+
+    except Exception as e:
+        print(f"msg_b error: {e}")
+        pass
+
+# ======================== 启动线程 & 机器人轮询 ========================
+if __name__ == "__main__":
+    # 启动虚拟订单刷新线程（机器人A）
+    threading.Thread(target=refresh_virtual_orders1, daemon=True).start()
+    # 启动Flask保活线程
+    threading.Thread(target=run_flask, daemon=True).start()
+    
+    # 同时启动两个机器人的轮询
+    def run_bot1():
+        while True:
+            try:
+                bot1.polling(none_stop=True, timeout=60)
+            except Exception as e:
+                print(f"Bot1 error: {e}")
+                time.sleep(5)
+
+    def run_bot2():
+        while True:
+            try:
+                bot2.polling(none_stop=True, timeout=60)
+            except Exception as e:
+                print(f"Bot2 error: {e}")
+                time.sleep(5)
+
+    # 启动两个机器人线程
+    threading.Thread(target=run_bot1, daemon=True).start()
+    threading.Thread(target=run_bot2, daemon=True).start()
+    
+    # 保持主线程运行
+    while True:
+        time.sleep(3600)
