@@ -31,7 +31,7 @@ def run_flask():
         pass
 
 # ==============================================================================
-# ================================= 机器人A（仅界面优化，功能完全不变）===================================
+# ================================= 机器人A（已按约定优化）===================================
 # ==============================================================================
 ADMIN_IDS_A = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS_A = 120
@@ -49,7 +49,7 @@ user_banned1 = {}
 virtual_orders1 = []
 
 last_clean_time = time.time()
-CLEAN_INTERVAL = 6 * 24 * 60 * 60
+CLEAN_INTERVAL = 7 * 24 * 60 * 60  # 7天清理
 
 user_pwd_verify_time = {}
 PASSWORD_VALID_SECONDS = 3 * 60 * 60
@@ -102,7 +102,7 @@ TEXT_A = {
         "reg_error": "❌ 格式錯誤，請按要求一次性發送完整6項信息",
         "profile": """👤 個人中心
 🆔 用戶ID：{}
-💰 餘額：{:.2f} USDT
+💰 餘額：{:.2f} USD
 📌 狀態：{}
 
 ⏳ 進行中訂單
@@ -130,7 +130,7 @@ TEXT_A = {
 {}""",
         "account_detail": """📋 資金明細
 🆔 用戶ID：{}
-💰 當前餘額：{:.2f} USDT
+💰 當前餘額：{:.2f} USD
 
 💵 充值記錄
 {}
@@ -152,7 +152,7 @@ TEXT_A = {
 ━━━━━━━━━━━━━━━━
 🆔 訂單編號：#{}
 📝 訂單類型：{}
-💰 擔保金額：{:.2f} USDT
+💰 擔保金額：{:.2f} USD
 🔒 資金狀態：已凍結擔保
 📅 創建時間：{}
 📶 當前狀態：{}""",
@@ -171,8 +171,8 @@ TEXT_A = {
         "new_order_assign": """📢 新派單 #{}
 ━━━━━━━━━━━━━━━━
 📝 訂單類型：{}
-💰 本金：{:.2f} USDT
-📈 預計利潤：+{:.2f} USDT
+💰 本金：{:.2f} USD
+📈 預計利潤：+{:.2f}
 📅 創建時間：{}""",
         "flow_escrow_lock": "擔保凍結",
         "flow_deposit": "充值",
@@ -200,7 +200,7 @@ Fill in your real info:
         "reg_error": "❌ Format Error, Please send all 6 items correctly",
         "profile": """👤 Profile
 🆔 ID: {}
-💰 Balance: {:.2f} USDT
+💰 Balance: {:.2f} USD
 📌 Status: {}
 
 ⏳ Pending Orders
@@ -227,7 +227,7 @@ Contact support: @fcff88""",
 {}""",
         "account_detail": """📋 Account Detail
 🆔 User ID: {}
-💰 Balance: {:.2f} USDT
+💰 Balance: {:.2f} USD
 
 💵 Deposit
 {}
@@ -249,7 +249,7 @@ Contact support: @fcff88""",
 ━━━━━━━━━━━━━━━━
 🆔 Order ID: #{}
 📝 Type: {}
-💰 Amount: {:.2f} USDT
+💰 Amount: {:.2f} USD
 🔒 Status: Locked
 📅 Created: {}
 📶 State: {}""",
@@ -268,8 +268,8 @@ Contact support: @fcff88""",
         "new_order_assign": """📢 New Order #{}
 ━━━━━━━━━━━━━━━━
 📝 Type: {}
-💰 Amount: {:.2f} USDT
-📈 Profit: +{:.2f} USDT
+💰 Amount: {:.2f} USD
+📈 Profit: +{:.2f}
 📅 Created: {}""",
         "flow_escrow_lock": "Escrow Lock",
         "flow_deposit": "Deposit",
@@ -411,7 +411,7 @@ def callback_a(c):
                 o = orders1[oid]
                 user_balance1[u] -= o["amount"]
                 time_str = datetime.now().strftime("%m-%d %H:%M")
-                user_flow1[u].append(f"-{o['amount']:.2f} USDT {t['flow_escrow_lock']} {time_str}")
+                user_flow1[u].append(f"-{o['amount']:.2f} USD {t['flow_escrow_lock']} {time_str}")
                 o["status"] = 1
             bot1.answer_callback_query(c.id, f"✅ 已補接{len(target_orders)}筆" if lang=="zh" else f"✅ Accepted {len(target_orders)}", show_alert=True)
             bot1.edit_message_text(t["home"], cid, mid, reply_markup=main_menu1(u))
@@ -474,7 +474,16 @@ def callback_a(c):
                     s_map = {0: t["status_wait"], 1: t["status_doing"], 2: t["status_done"], 3: t["status_canceled"]}
                     s = s_map.get(o["status"], t["status_wait"])
                     time_str = o.get("create_time", datetime.now().strftime("%m-%d %H:%M"))
-                    line = f"• #{oid} {typ} {o['amount']:.2f} USDT | {s} | {time_str}"
+                    
+                    profit_val = o.get('profit', 0)
+                    sid = str(oid)[-3:]
+                    sta_show = "未" if o["status"] == 1 else "完" if lang == "zh" else "P" if o["status"] == 1 else "F"
+                    
+                    if lang == "zh":
+                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                    else:
+                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                    
                     if o["status"] == 2:
                         completed_lines.append(line)
                     else:
@@ -503,7 +512,7 @@ def callback_a(c):
                 profit = round(vo["amount"] * 0.05, 2)
                 tn = vo.get("type_name", "-")
                 tn = type_map[lang].get(tn, tn)
-                items.append(f"#{vo['id']} {tn} {vo['amount']} USDT +{profit}")
+                items.append(f"#{vo['id']} {tn} {vo['amount']} USD +{profit}")
                 btn_text = f"搶{vo['id']}" if lang == "zh" else f"Grab {vo['id']}"
                 m.add(InlineKeyboardButton(btn_text, callback_data=f"grab_item_{vo['id']}"))
             m.add(InlineKeyboardButton(t["btn_back"], callback_data="home"))
@@ -523,19 +532,20 @@ def callback_a(c):
             oid = order_id1
             order_id1 += 1
             time_str = datetime.now().strftime("%m-%d %H:%M")
+            profit = round(hit["amount"] * 0.05, 2)
             orders1[oid] = {
                 "user": u,
                 "amount": hit["amount"],
                 "type": "grab",
                 "type_name": hit.get("type_name", "-"),
                 "status": 0,
-                "create_time": time_str
+                "create_time": time_str,
+                "profit": profit
             }
-            profit = round(hit["amount"] * 0.05, 2)
             tn = hit.get("type_name", "-")
             tn = type_map[lang].get(tn, tn)
-            s = f"✅ 搶單成功 #{oid}\n類型：{tn}\n本金：{hit['amount']} USDT\n利潤：+{profit} USDT\n📅 {time_str}" if lang == "zh" else \
-                f"✅ Order Grabbed #{oid}\nType: {tn}\nAmount: {hit['amount']} USDT\nProfit: +{profit} USDT\n📅 {time_str}"
+            s = f"✅ 搶單成功 #{oid}\n類型：{tn}\n本金：{hit['amount']} USD\n利潤：+{profit}\n📅 {time_str}" if lang == "zh" else \
+                f"✅ Order Grabbed #{oid}\nType: {tn}\nAmount: {hit['amount']} USD\nProfit: +{profit}\n📅 {time_str}"
             bot1.edit_message_text(s, cid, mid, reply_markup=accept_btn1(oid, u))
 
         elif c.data.startswith("acc_"):
@@ -560,7 +570,7 @@ def callback_a(c):
             amount = o["amount"]
             user_balance1[u] -= amount
             time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
+            user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
             o["status"] = 1
             tn = o.get("type_name", "-")
             show_tn = type_map[lang].get(tn, tn)
@@ -589,7 +599,7 @@ def callback_a(c):
             amount = o["amount"]
             user_balance1[u] -= amount
             time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
+            user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
             o["status"] = 1
             tn = o.get("type_name", "-")
             show_tn = type_map[lang].get(tn, tn)
@@ -610,7 +620,15 @@ def callback_a(c):
                     typ = o.get("type_name", "-")
                     typ = type_map[lang].get(typ, typ)
                     time_str = o.get("create_time", datetime.now().strftime("%m-%d %H:%M"))
-                    line = f"• #{oid} {typ} {o['amount']:.2f} USDT | {s} | {time_str}"
+                    profit_val = o.get('profit',0)
+                    sid = str(oid)[-3:]
+                    sta_show = "未" if o["status"] == 1 else "完" if lang == "zh" else "P" if o["status"] ==1 else "F"
+                    
+                    if lang == "zh":
+                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                    else:
+                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                        
                     if o["status"] in (0, 1):
                         pending.append(line)
                     elif o["status"] == 2:
@@ -695,7 +713,7 @@ def user_input_a(msg):
                         amount = o["amount"]
                         time_str = datetime.now().strftime("%m-%d %H:%M")
                         user_balance1[u] -= amount
-                        user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
+                        user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
                         o["status"] = 1
                         tn = o.get("type_name","-")
                         stn = type_map[lang].get(tn,tn)
@@ -710,7 +728,7 @@ def user_input_a(msg):
                         amount = o["amount"]
                         time_str = datetime.now().strftime("%m-%d %H:%M")
                         user_balance1[u] -= amount
-                        user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
+                        user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
                         o["status"] = 1
                         tn = o.get("type_name","-")
                         stn = type_map[lang].get(tn,tn)
@@ -726,7 +744,7 @@ def user_input_a(msg):
                             o = orders1[oid]
                             user_balance1[u] -= o["amount"]
                             time_str = datetime.now().strftime("%m-%d %H:%M")
-                            user_flow1[u].append(f"-{o['amount']:.2f} USDT {t['flow_escrow_lock']} {time_str}")
+                            user_flow1[u].append(f"-{o['amount']:.2f} USD {t['flow_escrow_lock']} {time_str}")
                             o["status"] = 1
                         mid = last_msg1.get(u)
                         if mid:
@@ -771,9 +789,10 @@ def admin_cmd_a(msg):
                     typ = type_map["zh"].get(typ, typ)
                     sta_map = {0: "待接單", 1: "已接單", 2: "已完成", 3: "已取消"}
                     sta = sta_map.get(o["status"], "?")
-                    profit = round(o["amount"] * (0.05 if o["type"] == "grab" else random.uniform(0.15, 0.2)), 2)
+                    profit = o.get('profit',0)
                     time_str = o.get("create_time", datetime.now().strftime("%m-%d %H:%M"))
-                    line = f"#{oid} {typ} {o['amount']:.2f} +{profit} | {sta} | {time_str}"
+                    sid = str(oid)[-3:]
+                    line = f"#{sid} {typ} {o['amount']} USD {sta} +{profit} {time_str}"
                     if o["status"] in (0, 1):
                         pending.append(line)
                     elif o["status"] == 2:
@@ -794,7 +813,7 @@ def admin_cmd_a(msg):
             amt = float(amt)
             user_balance1[uid] = user_balance1.get(uid, 0.0) + amt
             time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1.setdefault(uid, []).append(f"+{amt:.2f} USDT {TEXT_A[user_lang1.get(uid,'zh')]['flow_deposit']} {time_str}")
+            user_flow1.setdefault(uid, []).append(f"+{amt:.2f} USD {TEXT_A[user_lang1.get(uid,'zh')]['flow_deposit']} {time_str}")
             bot1.send_message(u, f"✅ +{amt} → {uid}")
             return
 
@@ -804,32 +823,37 @@ def admin_cmd_a(msg):
             amt = float(amt)
             user_balance1[uid] = max(0.0, user_balance1.get(uid, 0.0) - amt)
             time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1.setdefault(uid, []).append(f"-{amt:.2f} USDT {TEXT_A[user_lang1.get(uid,'zh')]['flow_withdraw']} {time_str}")
+            user_flow1.setdefault(uid, []).append(f"-{amt:.2f} USD {TEXT_A[user_lang1.get(uid,'zh')]['flow_withdraw']} {time_str}")
             bot1.send_message(u, f"✅ -{amt} → {uid}")
             return
 
-        if arr[0] == "派单" and len(arr) >= 4:
-            target = int(arr[1])
-            amt = float(arr[2])
-            typename = " ".join(arr[3:])
-            global order_id1
-            oid = order_id1
-            order_id1 += 1
-            time_str = datetime.now().strftime("%m-%d %H:%M")
-            orders1[oid] = {
-                "user": target,
-                "amount": amt,
-                "type": "assign",
-                "type_name": typename,
-                "status": 0,
-                "create_time": time_str
-            }
-            profit = round(amt * random.uniform(0.15, 0.2), 2)
-            bot1.send_message(u, f"✅ 派單 #{oid} → {target}")
-            lang_t = user_lang1.get(target, "zh")
-            t_a = TEXT_A[lang_t]
-            s = t_a["new_order_assign"].format(oid, typename, amt, profit, time_str)
-            bot1.send_message(target, s, reply_markup=accept_btn1(oid, target))
+        if arr[0] == "派单":
+            if len(arr) >= 4:
+                target = int(arr[1])
+                amt = float(arr[2])
+                typename = arr[3]
+                profit_pct = float(arr[4]) if len(arr) >=5 else 15.0
+                profit_val = round(amt * profit_pct / 100, 2)
+                
+                global order_id1
+                oid = order_id1
+                order_id1 += 1
+                time_str = datetime.now().strftime("%m-%d %H:%M")
+                orders1[oid] = {
+                    "user": target,
+                    "amount": amt,
+                    "type": "assign",
+                    "type_name": typename,
+                    "status": 0,
+                    "create_time": time_str,
+                    "profit": profit_val
+                }
+                
+                bot1.send_message(u, f"✅ 派單 #{oid} → {target} 利潤:+{profit_val}")
+                lang_t = user_lang1.get(target, "zh")
+                t_a = TEXT_A[lang_t]
+                s = t_a["new_order_assign"].format(oid, typename, amt, profit_val, time_str)
+                bot1.send_message(target, s, reply_markup=accept_btn1(oid, target))
             return
 
         if arr[0] == "完成" and len(arr) == 2:
@@ -839,10 +863,10 @@ def admin_cmd_a(msg):
                 bot1.send_message(u, "❌ 無此訂單")
                 return
             o["status"] = 2
-            profit = o["amount"] * (random.uniform(0.15, 0.2) if o["type"] == "assign" else 0.05)
+            profit = o.get('profit',0)
             user_balance1[o["user"]] += o["amount"] + profit
             time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1.setdefault(o["user"], []).append(f"+{profit:.2f} USDT {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_profit'].format(oid)} {time_str}")
+            user_flow1.setdefault(o["user"], []).append(f"+{profit:.2f} USD {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_profit'].format(oid)} {time_str}")
             bot1.send_message(u, f"✅ 訂單 #{oid} 完成")
             return
 
@@ -855,7 +879,7 @@ def admin_cmd_a(msg):
             if o["status"] == 1:
                 user_balance1[o["user"]] += o["amount"]
                 time_str = datetime.now().strftime("%m-%d %H:%M")
-                user_flow1.setdefault(o["user"], []).append(f"+{o['amount']:.2f} USDT {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_refund'].format(oid)} {time_str}")
+                user_flow1.setdefault(o["user"], []).append(f"+{o['amount']:.2f} USD {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_refund'].format(oid)} {time_str}")
             o["status"] = 3
             bot1.send_message(u, f"✅ 訂單 #{oid} 已取消")
             return
