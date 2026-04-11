@@ -926,7 +926,7 @@ def callback_b(c):
         elif c.data == "merchant":
             bot2.edit_message_text(t["merchant"], cid, mid, reply_markup=merchant_menu2(u))
         bot2.answer_callback_query(c.id)
-        except:
+            except:
         pass
 
 @bot2.message_handler(func=lambda m: True)
