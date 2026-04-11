@@ -269,14 +269,6 @@ def accept_btn1(oid, user_id):
     m.add(InlineKeyboardButton(t["btn_back"], callback_data="profile"))
     return m
 
-def re_accept_btn1(oid, user_id):
-    lang = user_lang1.get(user_id, "zh")
-    t = TEXT_A[lang]
-    m = InlineKeyboardMarkup()
-    m.add(InlineKeyboardButton(t["btn_re_accept"], callback_data=f"re_acc_{oid}"))
-    m.add(InlineKeyboardButton(t["btn_back"], callback_data="profile"))
-    return m
-
 def pwd_keyboard():
     m = InlineKeyboardMarkup(row_width=3)
     m.add(
@@ -315,6 +307,7 @@ def start_a(msg):
         user_flow1.setdefault(u, [])
         user_banned1.setdefault(u, False)
         user_pwd_input[u] = None
+        user_pwd_input["buf"] = ""
         lang = user_lang1[u]
         if user_banned1[u]:
             bot1.send_message(u, TEXT_A[lang]["banned"])
@@ -347,6 +340,7 @@ def callback_a(c):
             o = orders1.get(oid)
             if not o or o.get("user") != u or o.get("status") != 0:
                 user_pwd_input[u] = None
+                user_pwd_input["buf"] = ""
                 bot1.edit_message_text(t["btn_back"], cid, mid, reply_markup=back_menu1(u))
                 return
 
@@ -366,6 +360,7 @@ def callback_a(c):
             if d == "pwd_ok" and len(current) == 6:
                 if u in user_info1 and user_info1[u].get("pwd") == current:
                     user_pwd_input[u] = None
+                    user_pwd_input["buf"] = ""
                     time.sleep(0.5)
                     amount = o["amount"]
                     user_balance1[u] -= amount
@@ -383,6 +378,7 @@ def callback_a(c):
 
         if c.data == "home":
             user_pwd_input[u] = None
+            user_pwd_input["buf"] = ""
             bot1.edit_message_text(t["home"], cid, mid, reply_markup=main_menu1(u))
 
         elif c.data == "lang":
@@ -409,7 +405,10 @@ def callback_a(c):
                 sta_map = {0: t["status_wait"], 1: t["status_doing"], 2: t["status_done"], 3: t["status_canceled"]}
                 sta = sta_map.get(o["status"], t["status_wait"])
                 profit = round(o["amount"] * (0.05 if o["type"] == "grab" else random.uniform(0.15, 0.2)), 2)
-                order_lines.append(f"#{oid} {typ} {o['amount']} USDT +{profit} | {sta}")
+                line = f"#{oid} {typ} {o['amount']} USDT +{profit} | {sta}"
+                if o["status"] == 0:
+                    line += f" [{t['btn_re_accept']}](callback:re_acc_{oid})"
+                order_lines.append(line)
             order_text = "\n".join(order_lines) if order_lines else ("無訂單" if lang == "zh" else "No Orders")
             text = t["account_detail"].format(u, bal, flow_text, order_text)
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
@@ -440,7 +439,7 @@ def callback_a(c):
                 if sta == 0:
                     p_lines.append(f"   👉 [{t['btn_re_accept']}](callback:re_acc_{oid})")
             p_text = "\n".join(p_lines) if p_lines else ("無" if lang == "zh" else "None")
-            c_text = "\n".join([x[0] for x in completed]) if completed else ("無" if lang == "zh" else "None")
+            c_text = "\n".join(completed) if completed else ("無" if lang == "zh" else "None")
             text = t["profile"].format(u, user_balance1.get(u, 0), status, p_text, c_text)
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
@@ -532,7 +531,10 @@ def callback_a(c):
                     s = s_map.get(o["status"], t["status_wait"])
                     typ = o.get("type_name", "-")
                     typ = type_map[lang].get(typ, typ)
-                    lines.append(f"• #{oid} {typ} {o['amount']} USDT | {s}")
+                    line = f"• #{oid} {typ} {o['amount']} USDT | {s}"
+                    if o["status"] == 0:
+                        line += f" [{t['btn_re_accept']}](callback:re_acc_{oid})"
+                    lines.append(line)
             text = t["record"].format("\n".join(lines) if lines else ("無記錄" if lang == "zh" else "No Records"))
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
@@ -977,4 +979,20 @@ def msg_b(msg):
 
 def run_bot1():
     try:
-        bot1.infinity_p
+        bot1.infinity_polling(timeout=60, none_stop=True)
+    except:
+        pass
+
+def run_bot2():
+    try:
+        bot2.infinity_polling(timeout=60, none_stop=True)
+    except:
+        pass
+
+if __name__ == "__main__":
+    threading.Thread(target=run_flask, daemon=True).start()
+    threading.Thread(target=refresh_virtual_orders1, daemon=True).start()
+    threading.Thread(target=run_bot1, daemon=True).start()
+    threading.Thread(target=run_bot2, daemon=True).start()
+    while True:
+        time.sleep(1)
