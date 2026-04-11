@@ -606,7 +606,11 @@ def user_input_a(msg):
             if mid:
                 bot1.edit_message_text(t["reg_error"], msg.chat.id, mid, reply_markup=back_menu1(u))
             else:
-                bot1.send_message(msg.chat.id, t["reg_error"], reply_markup=back_menu1(u
+                bot1.send_message(msg.chat.id, t["reg_error"], reply_markup=back_menu1(u))
+    except:
+        pass
+
+@bot1.message_handler(func=lambda m: m.from_user.id in ADMIN_IDS_A)
 def admin_cmd_a(msg):
     try:
         u = msg.from_user.id
@@ -960,4 +964,11 @@ def msg_b(msg):
                 return
             user_balance2[u] -= amt
             user_step2[u] = {"step": "create_tip", "amount": amt}
-            bot2.send_message(cid, t["
+            bot2.send_message(cid, t["input_tip"])
+            return
+
+        if isinstance(user_step2.get(u), dict) and user_step2[u]["step"] == "create_tip":
+            tip_code = txt.strip()
+            amt = user_step2[u]["amount"]
+            orders2[tip_code] = {"buyer": u, "amount": amt}
+            bot2.send_message(cid, t["escrow_success"].
