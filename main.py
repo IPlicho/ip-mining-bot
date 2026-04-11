@@ -31,7 +31,7 @@ def run_flask():
         pass
 
 # ==============================================================================
-# ================================ 机器人A（仅修复BUG，结构不变）=================================
+# ================================ 机器人A（仅修复3个BUG）=================================
 # ==============================================================================
 ADMIN_IDS_A = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS_A = 120
@@ -63,6 +63,14 @@ def is_pwd_verified(user_id):
 
 def set_pwd_verified(user_id):
     user_pwd_verify_time[user_id] = time.time()
+
+# 实时计算当前担保中金额（只算 status=1 已接单）
+def get_user_escrow_amount(user_id):
+    total = 0.0
+    for oid, o in orders1.items():
+        if o["user"] == user_id and o["status"] == 1:
+            total += o["amount"]
+    return round(total, 2)
 
 def auto_clean_orders():
     global last_clean_time
@@ -125,21 +133,16 @@ TEXT_A = {
 {}
 
 ✅ 已完成
-{}
-
-❌ 已取消
 {}""",
         "account_detail": """📋 資金明細
 🆔 用戶ID：{}
 💰 當前餘額：{:.2f} USD
+🔒 擔保凍結：{:.2f} USD
 
 💵 充值記錄
 {}
 
 📈 收益記錄
-{}
-
-🔒 擔保凍結
 {}
 
 💳 提現記錄
@@ -222,21 +225,16 @@ Contact support: @fcff88""",
 {}
 
 ✅ Completed
-{}
-
-❌ Canceled
 {}""",
         "account_detail": """📋 Account Detail
 🆔 User ID: {}
 💰 Balance: {:.2f} USD
+🔒 Escrow Locked: {:.2f} USD
 
 💵 Deposit
 {}
 
 📈 Profit
-{}
-
-🔒 Escrow Lock
 {}
 
 💳 Withdraw
@@ -438,11 +436,11 @@ def callback_a(c):
 
         elif c.data == "detail":
             bal = user_balance1.get(u, 0.0)
+            escrow_amt = get_user_escrow_amount(u)
             flows = user_flow1.get(u, [])
 
             deposit_lines = []
             profit_lines = []
-            escrow_lines = []
             withdraw_lines = []
 
             for line in flows[-20:]:
@@ -450,19 +448,16 @@ def callback_a(c):
                     deposit_lines.append(line)
                 elif t["flow_withdraw"] in line:
                     withdraw_lines.append(line)
-                elif t["flow_profit"].split("#")[0] in line or "Profit" in line:
+                elif t["flow_profit"].split("#")[0] in line or "Profit" in line or t["flow_refund"].split("#")[0] in line:
                     profit_lines.append(line)
-                elif t["flow_escrow_lock"] in line:
-                    escrow_lines.append(line)
 
             def join_lines(lst):
                 return "\n".join(lst) if lst else "—"
 
             text = t["account_detail"].format(
-                u, bal,
+                u, bal, escrow_amt,
                 join_lines(deposit_lines),
                 join_lines(profit_lines),
-                join_lines(escrow_lines),
                 join_lines(withdraw_lines)
             )
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
@@ -502,10 +497,11 @@ def callback_a(c):
                     
                     line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
                     
-                    if o["status"] == 2:
-                        completed_lines.append(line)
-                    else:
+                    # 已完成 + 已取消 都放进已完成
+                    if o["status"] == 1:
                         pending_lines.append(line)
+                    else:
+                        completed_lines.append(line)
 
             v = user_verify1.get(u, 0)
             status_map = {
@@ -632,7 +628,6 @@ def callback_a(c):
         elif c.data == "record":
             pending = []
             completed = []
-            canceled = []
             for oid, o in orders1.items():
                 if o["user"] == u:
                     s_map = {0: t["status_wait"], 1: t["status_doing"], 2: t["status_done"], 3: t["status_canceled"]}
@@ -665,15 +660,12 @@ def callback_a(c):
                         
                     if o["status"] in (0, 1):
                         pending.append(line)
-                    elif o["status"] == 2:
+                    else:
                         completed.append(line)
-                    elif o["status"] == 3:
-                        canceled.append(line)
 
             text = t["record"].format(
                 "\n".join(pending) if pending else "—",
-                "\n".join(completed) if completed else "—",
-                "\n".join(canceled) if canceled else "—"
+                "\n".join(completed) if completed else "—"
             )
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
@@ -818,7 +810,6 @@ def admin_cmd_a(msg):
 
             pending = []
             completed = []
-            canceled = []
 
             for oid, o in orders1.items():
                 if o["user"] == target:
@@ -832,15 +823,12 @@ def admin_cmd_a(msg):
                     line = f"#{sid} {typ} {o['amount']} USD {sta} +{profit} {time_str}"
                     if o["status"] in (0, 1):
                         pending.append(line)
-                    elif o["status"] == 2:
+                    else:
                         completed.append(line)
-                    elif o["status"] == 3:
-                        canceled.append(line)
 
             text = f"📋 用戶 {target}\n姓名：{name}\n郵箱：{email}\n密碼：{pwd}\n💰 餘額：{bal:.2f}\n\n"
             text += "⏳ 進行中\n" + "\n".join(pending) + "\n\n" if pending else ""
-            text += "✅ 已完成\n" + "\n".join(completed) + "\n\n" if completed else ""
-            text += "❌ 已取消\n" + "\n".join(canceled) if canceled else ""
+            text += "✅ 已完成（含取消）\n" + "\n".join(completed) if completed else ""
             bot1.send_message(u, text)
             return
 
