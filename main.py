@@ -642,7 +642,7 @@ def callback_a(c):
     except Exception as e:
         pass
 
-# ======================== 用户消息处理（完全不变）========================
+# ======================== 用户消息处理（英文注册已修复）========================
 @bot1.message_handler(func=lambda m: m.from_user.id not in ADMIN_IDS_A)
 def user_input_a(msg):
     try:
@@ -655,8 +655,15 @@ def user_input_a(msg):
         t = TEXT_A[lang]
 
         if user_applying1.get(u, False):
-            pattern = r"1\.?\s*真實姓名\s*(.+?)\s*2\.?\s*聯絡電話\s*(.+?)\s*3\.?\s*電子信箱\s*(.+?)\s*4\.?\s*居住地址\s*(.+?)\s*5\.?\s*推薦人ID\s*(.+?)\s*6\.?\s*6位交易密碼\s*(\d{6})"
-            match = re.search(pattern, txt, re.DOTALL)
+            # 中文注册匹配
+            if lang == "zh":
+                pattern = r"1\.?\s*真實姓名\s*(.+?)\s*2\.?\s*聯絡電話\s*(.+?)\s*3\.?\s*電子信箱\s*(.+?)\s*4\.?\s*居住地址\s*(.+?)\s*5\.?\s*推薦人ID\s*(.+?)\s*6\.?\s*6位交易密碼\s*(\d{6})"
+                match = re.search(pattern, txt, re.DOTALL)
+            else:
+                # 英文注册匹配（修复）
+                pattern_en = r"1\.?\s*Full\s*Name\s*(.+?)\s*2\.?\s*Phone\s*Number\s*(.+?)\s*3\.?\s*Email\s*(.+?)\s*4\.?\s*Address\s*(.+?)\s*5\.?\s*Referrer\s*ID\s*(.+?)\s*6\.?\s*6-digit\s*Password\s*(\d{6})"
+                match = re.search(pattern_en, txt, re.DOTALL | re.IGNORECASE)
+
             if match:
                 name = match.group(1).strip()
                 phone = match.group(2).strip()
@@ -747,7 +754,7 @@ def user_input_a(msg):
     except:
         pass
 
-# ======================== 管理员命令（管理员查ID也归类排版）========================
+# ======================== 管理员命令（完全不变）========================
 @bot1.message_handler(func=lambda m: m.from_user.id in ADMIN_IDS_A)
 def admin_cmd_a(msg):
     try:
@@ -763,7 +770,6 @@ def admin_cmd_a(msg):
             bot1.send_message(u, f"✅ 已通過用戶 {target}")
             return
 
-        # 管理员查ID：订单归类排版
         if len(arr) >= 2 and arr[0] == "查ID":
             target = int(arr[1])
             info = user_info1.get(target, {})
