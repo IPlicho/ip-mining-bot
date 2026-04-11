@@ -31,13 +31,14 @@ def run_flask():
         pass
 
 # ==============================================================================
-# ================================= 机器人A（已按约定优化）===================================
+# ================================ 机器人A（仅修复BUG，结构不变）=================================
 # ==============================================================================
 ADMIN_IDS_A = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS_A = 120
 
 user_lang1 = {}
 user_balance1 = {}
+user_frozen1 = {}
 user_verify1 = {}
 user_info1 = {}
 orders1 = {}
@@ -49,7 +50,7 @@ user_banned1 = {}
 virtual_orders1 = []
 
 last_clean_time = time.time()
-CLEAN_INTERVAL = 7 * 24 * 60 * 60  # 7天清理
+CLEAN_INTERVAL = 6 * 24 * 60 * 60  # 6天清理已完成/已取消订单
 
 user_pwd_verify_time = {}
 PASSWORD_VALID_SECONDS = 3 * 60 * 60
@@ -358,6 +359,7 @@ def start_a(msg):
         u = msg.from_user.id
         user_lang1.setdefault(u, "zh")
         user_balance1.setdefault(u, 0.0)
+        user_frozen1.setdefault(u, 0.0)
         user_verify1.setdefault(u, 0)
         user_info1.setdefault(u, {})
         user_applying1[u] = False
@@ -410,6 +412,7 @@ def callback_a(c):
             for oid in target_orders:
                 o = orders1[oid]
                 user_balance1[u] -= o["amount"]
+                user_frozen1[u] += o["amount"]
                 time_str = datetime.now().strftime("%m-%d %H:%M")
                 user_flow1[u].append(f"-{o['amount']:.2f} USD {t['flow_escrow_lock']} {time_str}")
                 o["status"] = 1
@@ -477,12 +480,27 @@ def callback_a(c):
                     
                     profit_val = o.get('profit', 0)
                     sid = str(oid)[-3:]
-                    sta_show = "未" if o["status"] == 1 else "完" if lang == "zh" else "P" if o["status"] == 1 else "F"
                     
                     if lang == "zh":
-                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                        if o["status"] == 1:
+                            sta_show = "未"
+                        elif o["status"] == 2:
+                            sta_show = "完"
+                        elif o["status"] == 3:
+                            sta_show = "取"
+                        else:
+                            sta_show = "待"
                     else:
-                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                        if o["status"] == 1:
+                            sta_show = "P"
+                        elif o["status"] == 2:
+                            sta_show = "F"
+                        elif o["status"] == 3:
+                            sta_show = "C"
+                        else:
+                            sta_show = "W"
+                    
+                    line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
                     
                     if o["status"] == 2:
                         completed_lines.append(line)
@@ -569,6 +587,7 @@ def callback_a(c):
 
             amount = o["amount"]
             user_balance1[u] -= amount
+            user_frozen1[u] += amount
             time_str = datetime.now().strftime("%m-%d %H:%M")
             user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
             o["status"] = 1
@@ -598,6 +617,7 @@ def callback_a(c):
 
             amount = o["amount"]
             user_balance1[u] -= amount
+            user_frozen1[u] += amount
             time_str = datetime.now().strftime("%m-%d %H:%M")
             user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
             o["status"] = 1
@@ -622,12 +642,26 @@ def callback_a(c):
                     time_str = o.get("create_time", datetime.now().strftime("%m-%d %H:%M"))
                     profit_val = o.get('profit',0)
                     sid = str(oid)[-3:]
-                    sta_show = "未" if o["status"] == 1 else "完" if lang == "zh" else "P" if o["status"] ==1 else "F"
-                    
                     if lang == "zh":
-                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                        if o["status"] == 1:
+                            sta_show = "未"
+                        elif o["status"] == 2:
+                            sta_show = "完"
+                        elif o["status"] == 3:
+                            sta_show = "取"
+                        else:
+                            sta_show = "待"
                     else:
-                        line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
+                        if o["status"] == 1:
+                            sta_show = "P"
+                        elif o["status"] == 2:
+                            sta_show = "F"
+                        elif o["status"] == 3:
+                            sta_show = "C"
+                        else:
+                            sta_show = "W"
+                        
+                    line = f"#{sid} {typ} {o['amount']} USD {sta_show} +{profit_val} {time_str}"
                         
                     if o["status"] in (0, 1):
                         pending.append(line)
@@ -713,6 +747,7 @@ def user_input_a(msg):
                         amount = o["amount"]
                         time_str = datetime.now().strftime("%m-%d %H:%M")
                         user_balance1[u] -= amount
+                        user_frozen1[u] += amount
                         user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
                         o["status"] = 1
                         tn = o.get("type_name","-")
@@ -728,6 +763,7 @@ def user_input_a(msg):
                         amount = o["amount"]
                         time_str = datetime.now().strftime("%m-%d %H:%M")
                         user_balance1[u] -= amount
+                        user_frozen1[u] += amount
                         user_flow1[u].append(f"-{amount:.2f} USD {t['flow_escrow_lock']} {time_str}")
                         o["status"] = 1
                         tn = o.get("type_name","-")
@@ -743,6 +779,7 @@ def user_input_a(msg):
                         for oid in target_orders:
                             o = orders1[oid]
                             user_balance1[u] -= o["amount"]
+                            user_frozen1[u] += o["amount"]
                             time_str = datetime.now().strftime("%m-%d %H:%M")
                             user_flow1[u].append(f"-{o['amount']:.2f} USD {t['flow_escrow_lock']} {time_str}")
                             o["status"] = 1
@@ -813,7 +850,9 @@ def admin_cmd_a(msg):
             amt = float(amt)
             user_balance1[uid] = user_balance1.get(uid, 0.0) + amt
             time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1.setdefault(uid, []).append(f"+{amt:.2f} USD {TEXT_A[user_lang1.get(uid,'zh')]['flow_deposit']} {time_str}")
+            ulang = user_lang1.get(uid, "zh")
+            flow_text = f"+{amt:.2f} USD {TEXT_A[ulang]['flow_deposit']} {time_str}"
+            user_flow1.setdefault(uid, []).append(flow_text)
             bot1.send_message(u, f"✅ +{amt} → {uid}")
             return
 
@@ -821,10 +860,15 @@ def admin_cmd_a(msg):
             _, uid, amt = txt.split()
             uid = int(uid)
             amt = float(amt)
-            user_balance1[uid] = max(0.0, user_balance1.get(uid, 0.0) - amt)
-            time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1.setdefault(uid, []).append(f"-{amt:.2f} USD {TEXT_A[user_lang1.get(uid,'zh')]['flow_withdraw']} {time_str}")
-            bot1.send_message(u, f"✅ -{amt} → {uid}")
+            if user_balance1.get(uid, 0.0) >= amt:
+                user_balance1[uid] -= amt
+                time_str = datetime.now().strftime("%m-%d %H:%M")
+                ulang = user_lang1.get(uid, "zh")
+                flow_text = f"-{amt:.2f} USD {TEXT_A[ulang]['flow_withdraw']} {time_str}"
+                user_flow1.setdefault(uid, []).append(flow_text)
+                bot1.send_message(u, f"✅ -{amt} → {uid}")
+            else:
+                bot1.send_message(u, "❌ 餘額不足")
             return
 
         if arr[0] == "派单":
@@ -859,15 +903,21 @@ def admin_cmd_a(msg):
         if arr[0] == "完成" and len(arr) == 2:
             oid = int(arr[1])
             o = orders1.get(oid)
-            if not o:
-                bot1.send_message(u, "❌ 無此訂單")
+            if not o or o["status"] != 1:
+                bot1.send_message(u, "❌ 無效訂單或非進行中")
                 return
             o["status"] = 2
-            profit = o.get('profit',0)
-            user_balance1[o["user"]] += o["amount"] + profit
+            uid = o["user"]
+            amount = o["amount"]
+            profit = o.get("profit", 0)
+            
+            user_balance1[uid] += amount + profit
+            user_frozen1[uid] = max(0.0, user_frozen1.get(uid, 0.0) - amount)
+            
             time_str = datetime.now().strftime("%m-%d %H:%M")
-            user_flow1.setdefault(o["user"], []).append(f"+{profit:.2f} USD {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_profit'].format(oid)} {time_str}")
-            bot1.send_message(u, f"✅ 訂單 #{oid} 完成")
+            ulang = user_lang1.get(uid, "zh")
+            user_flow1[uid].append(f"+{profit:.2f} USD {TEXT_A[ulang]['flow_profit'].format(oid)} {time_str}")
+            bot1.send_message(u, f"✅ 訂單 #{oid} 已完成，本金+利潤已發放")
             return
 
         if arr[0] == "取消订单" and len(arr) == 2:
@@ -876,12 +926,16 @@ def admin_cmd_a(msg):
             if not o:
                 bot1.send_message(u, "❌ 無此訂單")
                 return
+            uid = o["user"]
+            amount = o["amount"]
             if o["status"] == 1:
-                user_balance1[o["user"]] += o["amount"]
+                user_balance1[uid] += amount
+                user_frozen1[uid] = max(0.0, user_frozen1.get(uid, 0.0) - amount)
                 time_str = datetime.now().strftime("%m-%d %H:%M")
-                user_flow1.setdefault(o["user"], []).append(f"+{o['amount']:.2f} USD {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_refund'].format(oid)} {time_str}")
+                ulang = user_lang1.get(uid, "zh")
+                user_flow1[uid].append(f"+{amount:.2f} USD {TEXT_A[ulang]['flow_refund'].format(oid)} {time_str}")
             o["status"] = 3
-            bot1.send_message(u, f"✅ 訂單 #{oid} 已取消")
+            bot1.send_message(u, f"✅ 訂單 #{oid} 已取消，本金已退回")
             return
 
         if arr[0] == "封ID" and len(arr) == 2:
@@ -899,7 +953,7 @@ def admin_cmd_a(msg):
         pass
 
 # ==============================================================================
-# ================================= 机器人B（完全原样，一字未改）=============================
+# ================================ 机器人B（完全原样，一字未改）=============================
 # ==============================================================================
 ADMIN_ID_B = 8401979801
 user_lang2 = {}
