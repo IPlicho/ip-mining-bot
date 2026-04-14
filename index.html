@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>海南麻将 - 真实对战版</title>
+<title>海南麻将 - 真实房间版</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:120px}
+body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:140px}
 .page{display:none;padding:16px}
 .show{display:block}
 
-/* 登录 */
 .auth-box{margin-top:60px;background:#131a2d;border-radius:16px;padding:24px}
 .input{width:100%;padding:14px;border-radius:12px;background:#1e293b;border:none;color:#fff;margin-bottom:12px}
 .btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:bold;margin-top:8px}
@@ -18,30 +17,53 @@ body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:120p
 .btn-blue{background:#3b82f6;color:#fff}
 .btn-red{background:#ef4444;color:#fff}
 
-/* 大厅 */
 .top-bar{background:#131a2d;padding:14px;border-radius:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
 .game-card{background:#131a2d;border-radius:16px;padding:20px;margin-bottom:14px}
 .game-title{font-size:18px;margin-bottom:8px}
 .game-desc{color:#94a3b8;font-size:14px;margin-bottom:16px}
 
-/* 个人中心 */
 .profile-card{background:#131a2d;border-radius:16px;padding:20px;margin-top:16px}
 .profile-item{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1e293b}
 
-/* 底部导航 */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#131a2d;height:75px;display:flex;border-top:1px solid #1e293b}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:12px}
 .nav-item.active{color:#10b981}
 .nav-icon{font-size:22px;margin-bottom:4px}
 
-/* 真实麻将界面 */
-.table{background:#131a2d;border-radius:16px;padding:16px;margin:10px 0;text-align:center}
-.player{display:inline-block;width:22%;margin:4px;text-align:center;background:#1e293b;padding:8px;border-radius:8px}
-.hand{text-align:center;margin:10px 0}
-.pai{display:inline-flex;width:38px;height:54px;background:#fff;color:#222;margin:2px;border-radius:6px;align-items:center;justify-content:center;font-weight:bold;cursor:pointer}
-.pai.sel{background:#7dd3fc}
-.operate{position:fixed;bottom:60px;left:0;right:0;background:#131a2d;padding:10px;display:flex;gap:8px}
+.table{position:relative;background:#0f4c3c;border-radius:20px;padding:20px;height:500px;margin:10px 0}
+.seat{position:absolute;width:120px;height:80px;text-align:center}
+.seat-top{top:10px;left:50%;transform:translateX(-50%)}
+.seat-right{top:50%;right:10px;transform:translateY(-50%)}
+.seat-left{top:50%;left:10px;transform:translateY(-50%)}
+.seat-bottom{bottom:10px;left:50%;transform:translateX(-50%)}
+
+.avatar{width:50px;height:50px;border-radius:50%;border:3px solid #fff;margin:0 auto;background:#fff}
+.name{font-size:12px;color:#fff;margin-top:4px}
+.chip{font-size:12px;color:#ffd700}
+
+.desk-pais{position:absolute;top:120px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+.desk-pai{width:36px;height:52px;background:#fff;color:#222;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-weight:bold}
+
+.my-hand{display:flex;gap:6px;justify-content:center;margin-top:20px}
+.my-pai{
+  width:42px;
+  height:60px;
+  background:#fff;
+  color:#222;
+  margin:2px;
+  border-radius:6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  cursor:pointer;
+  border:1px solid #ccc;
+}
+.my-pai.sel{transform:translateY(-10px);border:2px solid #10b981}
+
+.operate{position:fixed;bottom:70px;left:0;right:0;background:#131a2d;padding:12px;display:flex;gap:8px}
 .oper{flex:1;padding:12px;border-radius:8px;border:none;background:#10b981;color:#fff;font-weight:bold}
+.oper:disabled{opacity:0.5}
 </style>
 </head>
 <body>
@@ -64,24 +86,24 @@ body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:120p
   </div>
   <div class="game-card">
     <div class="game-title">🀄 真实海南麻将</div>
-    <div class="game-desc">258做将｜有番可胡｜30秒未匹配满 → 机器人加入</div>
-    <button class="btn btn-green" onclick="startMatch()">快速开始</button>
+    <div class="game-desc">15秒未满人 → 机器人按顺序进场</div>
+    <button class="btn btn-green" onclick="createRoom()">创建房间</button>
   </div>
 </div>
 
-<!-- 等待匹配 -->
+<!-- 等待房间 -->
 <div id="wait" class="page">
   <div class="top-bar">
-    <div>匹配中...</div>
+    <div>房间号：<span id="room-id">8888</span></div>
   </div>
   <div style="text-align:center;padding:40px">
     <div>等待其他玩家加入...</div>
-    <div id="wait-time" style="font-size:22px;margin:20px 0">30</div>
-    <div id="players-count">玩家：1 / 4</div>
+    <div style="font-size:24px;margin:20px 0" id="timer">15</div>
+    <div id="player-count">玩家：1 / 4</div>
   </div>
 </div>
 
-<!-- 真实麻将对局 -->
+<!-- 游戏界面 -->
 <div id="game" class="page">
   <div class="top-bar">
     <div>🀄 海南麻将</div>
@@ -89,14 +111,30 @@ body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:120p
   </div>
 
   <div class="table">
-    <div class="player">机器人东</div>
-    <div class="player">机器人北</div>
-    <div class="player">机器人西</div>
-    <div class="player"><b>你</b></div>
+    <div class="seat seat-top">
+      <div class="avatar"></div>
+      <div class="name">机器人东</div>
+      <div class="chip">35万</div>
+    </div>
+    <div class="seat seat-right">
+      <div class="avatar"></div>
+      <div class="name">机器人西</div>
+      <div class="chip">33万</div>
+    </div>
+    <div class="seat seat-left">
+      <div class="avatar"></div>
+      <div class="name">机器人北</div>
+      <div class="chip">24万</div>
+    </div>
+    <div class="seat seat-bottom">
+      <div class="avatar"></div>
+      <div class="name"><b>你</b></div>
+      <div class="chip" id="my-chip">38万</div>
+    </div>
+    <div class="desk-pais" id="desk"></div>
   </div>
 
-  <div style="text-align:center;margin:10px 0">我的手牌</div>
-  <div class="hand" id="hand"></div>
+  <div class="my-hand" id="my-hand"></div>
 
   <div class="operate">
     <button class="oper" id="mo" onclick="mo()">摸牌</button>
@@ -138,14 +176,15 @@ let users = JSON.parse(localStorage.getItem('users')) || {}
 let me = null
 let hand = []
 let sel = null
-let time = 30
+let time = 15
 let timer
+let players = 1
 
 const cards = [
-  '1万','2万','3万','4万','5万','6万','7万','8万','9万',
-  '1条','2条','3条','4条','5条','6条','7条','8条','9条',
-  '1筒','2筒','3筒','4筒','5筒','6筒','7筒','8筒','9筒',
-  '东','南','西','北','中','发','白'
+"1万","2万","3万","4万","5万","6万","7万","8万","9万",
+"1条","2条","3条","4条","5条","6条","7条","8条","9条",
+"1筒","2筒","3筒","4筒","5筒","6筒","7筒","8筒","9筒",
+"东","南","西","北","中","发","白"
 ]
 
 function $(id){return document.getElementById(id)}
@@ -153,7 +192,7 @@ function show(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'))
   $(id).classList.add('show')
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
-  if(id=='hall')document.querySelector('.nav-item').classList.add('active')
+  if(id=="hall")document.querySelector('.nav-item').classList.add('active')
 }
 
 function reg(){
@@ -182,27 +221,30 @@ function refresh(){
 function logout(){me=null;show('login')}
 function backHall(){clearInterval(timer);show('hall')}
 
-// 快速开始 → 等待30秒 → 机器人加入
-function startMatch(){
+// 创建房间 → 15秒倒计时 → 机器人按顺序进场
+function createRoom(){
   if(!me){alert('请登录');return show('login')}
   show('wait')
-  time=30
+  players=1
+  time=15
+  $('timer').innerText=time
+  $('player-count').innerText="玩家：1 / 4"
+
   timer=setInterval(()=>{
     time--
-    $('wait-time').innerText=time
-    if(time<=0){
-      clearInterval(timer)
-      startGame()
-    }
+    $('timer').innerText=time
+    if(time<=12 && players<2){players=2;$('player-count').innerText="玩家：2 / 4";alert('机器人东 加入房间')}
+    if(time<=9  && players<3){players=3;$('player-count').innerText="玩家：3 / 4";alert('机器人西 加入房间')}
+    if(time<=6  && players<4){players=4;$('player-count').innerText="玩家：4 / 4";alert('机器人北 加入房间')}
+    if(time<=0){clearInterval(timer);startGame()}
   },1000)
 }
 
-// 开始游戏（3机器人+玩家）
 function startGame(){
   show('game')
   initHand()
   renderHand()
-  setTimeout(robotPlay,1500)
+  alert('游戏开始！海南麻将：258做将，有番才能胡')
 }
 
 function initHand(){
@@ -212,50 +254,26 @@ function initHand(){
 }
 
 function renderHand(){
-  let h=''
-  hand.forEach((c,i)=>h+=`<div class="pai ${sel==i?'sel':''}" onclick="select(${i})">${c}</div>`)
-  $('hand').innerHTML=h
+  let html=''
+  hand.forEach((p,i)=>{
+    html+=`<div class="my-pai ${sel==i?'sel':''}" onclick="select(${i})">${p}</div>`
+  })
+  $('my-hand').innerHTML=html
 }
 
 function select(i){sel=i;$('chu').disabled=false;renderHand()}
-
-function mo(){
-  hand.push(cards[Math.floor(Math.random()*cards.length)])
-  hand.sort()
-  renderHand()
-  $('mo').disabled=true
-  $('chu').disabled=false
-  setTimeout(robotPlay,1200)
-}
-
-function chu(){
-  if(sel==null)return
-  hand.splice(sel,1)
-  sel=null
-  renderHand()
-  $('mo').disabled=false
-  $('chu').disabled=true
-}
-
-// 机器人真实行为
-function robotPlay(){
-  if(Math.random()<0.25){
-    alert('❌ 机器人胡牌！\n【海南麻将】258做将 + 有番可胡')
-    users[me].score-=10
-    localStorage.setItem('users',JSON.stringify(users))
-    refresh()
-    backHall()
-  }
-}
-
+function mo(){hand.push(cards[Math.floor(Math.random()*cards.length)]);hand.sort();renderHand();$('mo').disabled=true;$('chu').disabled=false;robotAction()}
+function chu(){if(sel==null)return;hand.splice(sel,1);sel=null;renderHand();$('mo').disabled=false;$('chu').disabled=true}
 function peng(){alert('碰')}
 function gang(){alert('杠')}
-function hu(){
-  alert('✅ 你胡牌了！')
-  users[me].score+=10
-  localStorage.setItem('users',JSON.stringify(users))
-  refresh()
-  backHall()
+function hu(){alert('你胡了！');users[me].score+=10;localStorage.setItem('users',JSON.stringify(users));refresh();backHall()}
+
+function robotAction(){
+  setTimeout(()=>{
+    if(Math.random()<0.75){
+      alert('机器人胡牌！你输了');users[me].score-=10;localStorage.setItem('users',JSON.stringify(users));refresh();backHall()
+    }
+  },1500)
 }
 </script>
 </body>
