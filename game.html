@@ -1,167 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>房间 {{rid}}</title>
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{
-            min-height:100vh;
-            background:#27ae60;
-            color:white;
-            font-family:"微软雅黑",sans-serif;
-            padding:1rem;
-        }
-        .info{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:1rem;
-            padding:0.5rem;
-        }
-        .players{
-            display:flex;
-            flex-wrap:wrap;
-            gap:0.5rem;
-            margin-bottom:1rem;
-            padding:0.5rem;
-        }
-        .player{
-            background:rgba(255,255,255,0.1);
-            padding:0.5rem 1rem;
-            border-radius:8px;
-        }
-        .discards{
-            display:flex;
-            flex-wrap:wrap;
-            gap:0.3rem;
-            background:rgba(0,0,0,0.1);
-            padding:1rem;
-            border-radius:10px;
-            margin-bottom:1rem;
-            min-height:80px;
-        }
-        .tile{
-            width:42px;
-            height:58px;
-            background:white;
-            color:black;
-            border-radius:6px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-weight:bold;
-            font-size:1rem;
-            box-shadow:0 2px 5px rgba(0,0,0,0.2);
-        }
-        .hand{
-            display:flex;
-            flex-wrap:wrap;
-            gap:0.4rem;
-            justify-content:center;
-            margin-top:1rem;
-            min-height:80px;
-        }
-        .hand .tile{
-            width:48px;
-            height:66px;
-            cursor:pointer;
-            transition:transform 0.2s;
-        }
-        .hand .tile:hover{
-            transform:translateY(-8px);
-        }
-        .btn{
-            background:white;
-            color:#27ae60;
-            padding:1rem;
-            border:none;
-            border-radius:12px;
-            width:100%;
-            margin-top:1rem;
-            font-weight:bold;
-            font-size:1.2rem;
-            cursor:pointer;
-        }
-        #msg{
-            text-align:center;
-            color:#ffeb3b;
-            margin:1rem 0;
-            font-size:1.1rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>口红机闯关</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,"Microsoft YaHei"}
+body{background:#1a1a2e;color:#fff;overflow:hidden}
+#game{width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify:center}
+#title{font-size:22px;margin-bottom:10px}
+#tip{font-size:14px;color:#ccc;margin-bottom:20px}
+#price-box{display:flex;gap:15px;margin-bottom:20px}
+.price-btn{padding:12px 24px;border-radius:8px;border:none;font-size:16px;font-weight:bold}
+.btn-8{background:#28a745;color:#fff}
+.btn-18{background:#ff7700;color:#fff}
+#wheel-box{position:relative;width:280px;height:280px;margin:20px 0}
+#wheel{width:280px;height:280px;border-radius:50%;background:#fff;position:relative;transition:transform 0.05s linear}
+.center{position:absolute;top:50%;left:50%;width:80px;height:80px;background:#ffeb3b;border-radius:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify:center;color:#333;font-weight:bold}
+.lipstick{position:absolute;width:6px;height:85px;background:#e63975;left:50%;top:0;transform-origin:bottom center;border-radius:3px}
+#launcher{width:12px;height:60px;background:#e63975;position:absolute;bottom:20px;left:50%;transform:translateX(-50%);border-radius:6px}
+#result{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);display:none;align-items:center;justify:center}
+.result-box{background:#fff;color:#333;padding:30px;border-radius:12px;text-align:center}
+.result-box h2{margin-bottom:10px}
+.result-box .btn{margin-top:20px;padding:10px 20px;background:#28a745;color:#fff;border:none;border-radius:8px}
+</style>
 </head>
 <body>
-    <div class="info">
-        <div>{{room.name}}</div>
-        <div>入场积分：{{room.cost}}</div>
+<div id="game">
+  <div id="title">口红机闯关 · 3关通关领奖</div>
+  <div id="tip">点击发射口红 · 碰到即失败</div>
+  <div id="price-box">
+    <button class="price-btn btn-8" onclick="start(8)">8元玩法(奖品100内)</button>
+    <button class="price-btn btn-18" onclick="start(18)">18元玩法(奖品200内)</button>
+  </div>
+  <div id="wheel-box">
+    <div id="wheel">
+      <div class="center">口红机</div>
     </div>
+    <div id="launcher"></div>
+  </div>
+</div>
+<div id="result">
+  <div class="result-box">
+    <h2 id="res-title"></h2>
+    <p id="res-msg"></p>
+    <button class="btn" onclick="closeResult()">确定</button>
+  </div>
+</div>
+<script>
+let price = 0;
+let level = 1;
+let spinning = false;
+let canShoot = false;
+let lipAngles = [];
+let wheel = document.getElementById('wheel');
+let res = document.getElementById('result');
+let rot = 0;
 
-    <div id="msg"></div>
-    <div class="players" id="players"></div>
+function start(p){
+  price = p;
+  level = 1;
+  lipAngles = [];
+  canShoot = true;
+  spinning = true;
+  runWheel();
+}
 
-    <h4>出牌区</h4>
-    <div class="discards" id="discards"></div>
+function runWheel(){
+  setInterval(()=>{
+    if(!spinning) return;
+    rot += 2 + level*0.8;
+    wheel.style.transform = `rotate(${rot}deg)`;
+  },20)
+}
 
-    <h4>你的手牌</h4>
-    <div class="hand" id="hand"></div>
+document.addEventListener('click',()=>{
+  if(!canShoot) return;
+  let now = rot % 360;
+  for(let a of lipAngles){
+    if(Math.abs((now-a+360)%360) < 18){
+      showResult("游戏失败","口红碰到一起了！");
+      canShoot = false;
+      return;
+    }
+  }
+  lipAngles.push(now);
+  let el = document.createElement('div');
+  el.className = 'lipstick';
+  el.style.transform = `rotate(${now}deg)`;
+  wheel.appendChild(el);
+  if(lipAngles.length >= 12 + level*2){
+    if(level >=3){
+      showResult("恭喜通关","可以挑选奖品！");
+      canShoot = false;
+    }else{
+      level++;
+      lipAngles = [];
+      showResult("第"+(level-1)+"关通关","进入第"+level+"关！");
+    }
+  }
+})
 
-    <button class="btn" id="startBtn" onclick="startGame()">开始游戏（需2人以上）</button>
-
-    <script>
-        const rid = "{{rid}}";
-        const uid = localStorage.uid;
-        const socket = io();
-        let myHand = [];
-
-        // 登录后进入房间
-        socket.emit("login", {uid:uid});
-        socket.on("login_ok", ()=>{
-            socket.emit("enter_room", {rid:rid, uid:uid});
-        });
-
-        // 房间玩家更新
-        socket.on("room_update", d=>{
-            document.getElementById("players").innerHTML =
-                d.players.map(n=>`<div class="player">${n}</div>`).join('');
-        });
-
-        // 开始游戏
-        function startGame(){
-            socket.emit("start_game", rid);
-        }
-
-        // 游戏开始通知
-        socket.on("game_start", d=>{
-            document.getElementById("msg").innerText = "游戏开始！当前出牌："+d.current;
-            document.getElementById("startBtn").style.display = "none";
-        });
-
-        // 接收自己的手牌
-        socket.on("your_hand", d=>{
-            myHand = d.hand;
-            document.getElementById("hand").innerHTML =
-                myHand.map(t=>`<div class="tile" onclick="doDiscard('${t}')">${t}</div>`).join('');
-        });
-
-        // 出牌
-        function doDiscard(tile){
-            socket.emit("discard", {rid:rid, tile:tile});
-        }
-
-        // 接收别人出牌
-        socket.on("discarded", d=>{
-            document.getElementById("msg").innerText = `${d.player} 打出 ${d.tile} | 下家：${d.next}`;
-            document.getElementById("discards").innerHTML =
-                d.discards.map(x=>`<div class="tile">${x.tile}</div>`).join('');
-        });
-
-        // 错误提示
-        socket.on("err", d=>{
-            alert(d.msg);
-        });
-    </script>
+function showResult(t,m){
+  document.getElementById('res-title').innerText = t;
+  document.getElementById('res-msg').innerText = m;
+  res.style.display = 'flex';
+}
+function closeResult(){
+  res.style.display = 'none';
+}
+</script>
 </body>
 </html>
