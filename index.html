@@ -2,193 +2,183 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>海南麻将 - 好友棋牌</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海南麻将 - 真实互动版</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:70px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0c1222;color:#fff;font-family:sans-serif;padding-bottom:140px}
 .page{display:none;padding:16px}
 .show{display:block}
 
-.auth-box{margin-top:60px;background:#131a2d;border-radius:16px;padding:24px}
-.input{width:100%;padding:14px;border-radius:12px;background:#1e293b;border:none;color:#fff;margin-bottom:12px}
-.btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:bold;margin-top:8px}
-.btn-green{background:#10b981;color:#fff}
-.btn-blue{background:#3b82f6;color:#fff}
-.btn-red{background:#ef4444;color:#fff}
+/* 顶部 */
+.top-bar{background:#131a2d;padding:14px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;background:#10b981;color:#fff;font-weight:bold;margin-top:8px}
+.btn-blue{background:#3b82f6}
+.btn-red{background:#ef4444}
 
-.top-bar{background:#131a2d;padding:14px;border-radius:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.user-info{font-size:14px;color:#94a3b8}
-.user-info span{color:#10b981;font-weight:bold}
+/* 麻将牌样式 */
+.mj-container{text-align:center;margin:10px 0}
+.mj-pai{
+  display:inline-flex;
+  width:42px;
+  height:60px;
+  background:#fff;
+  color:#222;
+  margin:2px;
+  border-radius:6px;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  cursor:pointer;
+}
+.mj-pai.selected{background:#93c5fd}
 
-.game-card{background:#131a2d;border-radius:16px;padding:20px;margin-bottom:14px}
-.game-title{font-size:18px;margin-bottom:8px}
-.game-desc{color:#94a3b8;font-size:14px;margin-bottom:16px}
+/* 桌面牌堆 */
+.desk{background:#131a2d;padding:20px;border-radius:16px;margin:10px 0;text-align:center;min-height:80px}
 
-.profile-card{background:#131a2d;border-radius:16px;padding:20px;margin-top:16px}
-.profile-item{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1e293b}
-
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#131a2d;height:65px;display:flex;border-top:1px solid #1e293b}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:12px}
-.nav-item.active{color:#10b981}
-.nav-icon{font-size:22px;margin-bottom:4px}
-
-.pai{display:inline-block;width:36px;height:50px;background:#fff;color:#000;text-align:center;line-height:50px;margin:2px;border-radius:6px;font-weight:bold}
+/* 底部操作栏 */
+.operate{position:fixed;bottom:0;left:0;right:0;background:#131a2d;padding:12px;border-top:1px solid #1e293b}
+.operate-row{display:flex;gap:8px;margin-bottom:8px}
+.operate-btn{flex:1;padding:12px;border-radius:8px;border:none;background:#10b981;color:#fff;font-weight:bold}
 </style>
 </head>
 <body>
 
-<!-- 登录 -->
-<div id="login" class="page show">
-  <div class="auth-box">
-    <h2 style="text-align:center;margin-bottom:20px">登录 / 注册</h2>
-    <input class="input" id="user" placeholder="用户名">
-    <button class="btn btn-green" onclick="login()">登录</button>
-    <button class="btn btn-blue" onclick="reg()">注册</button>
-  </div>
-</div>
-
-<!-- 大厅 -->
-<div id="hall" class="page">
-  <div class="top-bar">
-    <div>🎮 游戏大厅</div>
-    <div class="user-info">
-      <div id="hall_name"></div>
-      <div>积分: <span id="hall_score"></span></div>
-    </div>
-  </div>
-
-  <div class="game-card" onclick="openHainanMajiang()">
-    <div class="game-title">🀄 海南麻将</div>
-    <div class="game-desc">258做将｜有番才能胡｜AI机器人陪玩</div>
-    <button class="btn btn-green">进入游戏</button>
-  </div>
-</div>
-
-<!-- 海南麻将 -->
-<div id="hainan-majiang" class="page">
+<!-- 游戏大厅 -->
+<div id="hall" class="page show">
   <div class="top-bar">
     <div>🀄 海南麻将</div>
-    <button class="btn" style="background:#1e293b;color:#fff" onclick="showPage('hall')">返回</button>
+    <div>用户：<span id="uname"></span></div>
   </div>
+  <button class="btn" onclick="startGame()">开始游戏（机器人陪玩）</button>
+</div>
+
+<!-- 真实麻将游戏界面 -->
+<div id="majiang" class="page">
+  <div class="top-bar">
+    <div>海南麻将 - 对局中</div>
+    <button class="btn-blue" style="width:auto;padding:8px 12px" onclick="backHall()">退出</button>
+  </div>
+
+  <div class="desk" id="desk">桌面：</div>
 
   <div style="text-align:center;margin:10px 0">
-    <button class="btn btn-blue" onclick="startWithRobot()">VS AI机器人（高胜率）</button>
+    <div>我的手牌：</div>
   </div>
+  <div id="my-hand" class="mj-container"></div>
 
-  <div id="show-pai" style="text-align:center;min-height:60px"></div>
-  <div id="result" style="text-align:center;font-size:18px;margin:20px 0"></div>
-
-  <div style="text-align:center">
-    <button class="btn btn-green" onclick="playRound()">摸牌出牌</button>
-  </div>
-</div>
-
-<!-- 个人中心 -->
-<div id="profile" class="page">
-  <div class="top-bar">
-    <div>个人中心</div>
-  </div>
-  <div class="profile-card">
-    <div class="profile-item">
-      <div>用户名</div>
-      <div id="p_name"></div>
+  <div class="operate">
+    <div class="operate-row">
+      <button class="operate-btn" id="mo-btn" onclick="moPai()">摸牌</button>
+      <button class="operate-btn" id="chu-btn" onclick="chuPai()" disabled>出牌</button>
     </div>
-    <div class="profile-item">
-      <div>当前积分</div>
-      <div id="p_score" style="color:#10b981"></div>
+    <div class="operate-row">
+      <button class="operate-btn" onclick="peng()">碰</button>
+      <button class="operate-btn" onclick="gang()">杠</button>
+      <button class="operate-btn" onclick="hu()">胡</button>
     </div>
-  </div>
-  <button class="btn btn-red" onclick="logout()">退出登录</button>
-</div>
-
-<!-- 底部导航 -->
-<div class="bottom-nav">
-  <div class="nav-item active" onclick="showPage('hall')">
-    <div class="nav-icon">🎮</div>
-    <div>游戏大厅</div>
-  </div>
-  <div class="nav-item" onclick="showPage('profile')">
-    <div class="nav-icon">👤</div>
-    <div>个人中心</div>
   </div>
 </div>
 
 <script>
-let users = JSON.parse(localStorage.getItem('users')) || {}
-let now = null
-let paiList = ['1万','2万','5万','8万','1条','2条','5条','8条','1筒','2筒','5筒','8筒','东','南','西','北','中','发','白']
+let user = "玩家"
+let myHand = []
+let selected = null
+let desk = []
 
-function $(id){return document.getElementById(id)}
+// 初始化牌库（海南麻将简化：万条筒 + 字）
+const allCards = [
+  "1万","2万","3万","4万","5万","6万","7万","8万","9万",
+  "1条","2条","3条","4条","5条","6条","7条","8条","9条",
+  "1筒","2筒","3筒","4筒","5筒","6筒","7筒","8筒","9筒",
+  "东","南","西","北","中","发","白"
+]
 
+// 显示页面
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'))
-  $(id).classList.add('show')
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
-  if(id==='hall') document.querySelector('.nav-item:nth-child(1)').classList.add('active')
-  if(id==='profile') document.querySelector('.nav-item:nth-child(2)').classList.add('active')
+  document.getElementById(id).classList.add('show')
 }
 
-function reg(){
-  let u = $('user').value.trim()
-  if(!u || users[u]) return alert('用户名已存在')
-  users[u] = {score:100}
-  localStorage.setItem('users',JSON.stringify(users))
-  alert('注册成功')
+// 开始游戏
+function startGame(){
+  initHand()
+  showPage('majiang')
+  renderHand()
 }
 
-function login(){
-  let u = $('user').value.trim()
-  if(!users[u]) return alert('用户不存在')
-  now = u
-  refresh()
-  showPage('hall')
-}
-
-function logout(){ now=null; showPage('login') }
-function refresh(){
-  if(!now)return
-  $('hall_name').innerText=now
-  $('hall_score').innerText=users[now].score
-  $('p_name').innerText=now
-  $('p_score').innerText=users[now].score
-}
-
-function openHainanMajiang(){
-  if(!now){alert('请登录');return showPage('login')}
-  showPage('hainan-majiang')
-}
-
-// 海南麻将核心规则：258做将 + 有番才能胡
-// AI 80%胜率
-function startWithRobot(){
-  $('result').innerText='🏁 已开始 VS AI机器人（海南麻将）'
-}
-
-function playRound(){
-  let random = Math.random()
-  if(random < 0.8){
-    // AI赢（80%）
-    users[now].score -= 10
-    $('result').innerText='❌ AI机器人胡牌\n【规则】258做将 + 有番可胡\n你 -10 积分'
-  }else{
-    // 玩家赢
-    users[now].score += 10
-    $('result').innerText='✅ 你胡牌！\n满足海南麻将番型\n你 +10 积分'
+// 初始化13张牌
+function initHand(){
+  myHand = []
+  for(let i=0;i<13;i++){
+    let r = Math.floor(Math.random()*allCards.length)
+    myHand.push(allCards[r])
   }
-  localStorage.setItem('users',JSON.stringify(users))
-  refresh()
-  showPai()
+  myHand.sort()
 }
 
-function showPai(){
-  let html = ''
-  for(let i=0;i<5;i++){
-    let p = paiList[Math.floor(Math.random()*paiList.length)]
-    html += '<span class="pai">'+p+'</span>'
-  }
-  $('show-pai').innerHTML = html
+// 渲染手牌
+function renderHand(){
+  let dom = document.getElementById('my-hand')
+  dom.innerHTML = ''
+  myHand.forEach((p,idx)=>{
+    let el = document.createElement('div')
+    el.className = 'mj-pai'
+    el.innerText = p
+    el.onclick = ()=>{selectPai(idx)}
+    dom.appendChild(el)
+  })
 }
+
+// 选牌
+function selectPai(idx){
+  selected = idx
+  let els = document.querySelectorAll('.mj-pai')
+  els.forEach((e,i)=>e.classList.toggle('selected',i===idx))
+  document.getElementById('chu-btn').disabled = false
+}
+
+// 摸牌
+function moPai(){
+  let r = Math.floor(Math.random()*allCards.length)
+  myHand.push(allCards[r])
+  myHand.sort()
+  renderHand()
+  document.getElementById('mo-btn').disabled = true
+  document.getElementById('chu-btn').disabled = false
+  
+  // 机器人AI摸牌后行动（高胜率）
+  setTimeout(robotAction,800)
+}
+
+// 出牌
+function chuPai(){
+  if(selected==null)return
+  let chu = myHand.splice(selected,1)[0]
+  desk.push(chu)
+  document.getElementById('desk').innerText = "桌面："+desk.join(' ')
+  selected = null
+  renderHand()
+  document.getElementById('mo-btn').disabled = false
+  document.getElementById('chu-btn').disabled = true
+}
+
+// 机器人AI（高胜率、会胡牌）
+function robotAction(){
+  document.getElementById('desk').innerText += " → 机器人出牌"
+  if(Math.random()<0.75){
+    alert("❌ 机器人【胡牌】！\n（海南麻将：258做将 + 有番可胡）")
+    backHall()
+  }
+}
+
+function peng(){alert("碰了")}
+function gang(){alert("杠了")}
+function hu(){alert("✅ 你胡牌了！")}
+function backHall(){showPage('hall')}
+
+// 初始化
+document.getElementById('uname').innerText = "玩家"
 </script>
 </body>
 </html>
