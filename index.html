@@ -3,297 +3,264 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>PG电子游戏厅</title>
+<title>PG电子高仿</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0c0c1a;--card:#141425;--br:#2a2a42;--gold:#ffb100;--pink:#ff3d71;--pur:#7057ff}
-body{background:var(--bg);color:#fff;font-family:system-ui,sans-serif;max-width:480px;margin:0 auto}
-.page{padding:16px}
-.box{background:var(--card);border-radius:14px;padding:20px;margin-top:20px;border:1px solid var(--br)}
-.title{font-size:18px;font-weight:700;margin-bottom:16px;text-align:center}
-input{width:100%;padding:14px;background:var(--br);border:none;border-radius:10px;color:#fff;margin-bottom:12px}
-.btn{width:100%;padding:14px;background:var(--pink);border:none;border-radius:10px;color:#fff;font-weight:700;margin-top:8px}
-.btn-outline{background:transparent;border:1px solid var(--br)}
-.header{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--card);border-radius:12px;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.game{background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--br)}
-.cover{height:130px;display:grid;place-items:center;font-size:44px;background:#19192d}
-.info{padding:12px}
-.name{font-weight:600;margin-bottom:6px}
-.play{background:var(--pink);color:#fff;border:none;width:100%;padding:10px;border-radius:10px;margin-top:8px;font-weight:700}
-.profile{background:var(--card);border-radius:14px;padding:18px;margin-top:20px;border:1px solid var(--br)}
-.item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--br)}
-.item:last-child{border-bottom:none}
-.game-page{display:none;padding:12px}
-.bar{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--card);border-radius:12px;margin-bottom:12px}
-.back{width:36px;height:36px;border-radius:50%;background:var(--br);border:none;color:#fff}
-.slot{background:var(--card);border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--br)}
-.reels{display:flex;gap:8px;justify-content:center}
-.reel{width:70px;height:110px;background:#0f0f1d;border:2px solid var(--br);border-radius:10px;overflow:hidden}
-.strip{position:relative;top:0;transition:top 0.7s cubic-bezier(0.2,0.7,0.8,0.6)}
-.sym{height:110px;display:grid;place-items:center;font-size:34px}
-.ctrl{background:var(--card);border-radius:14px;padding:16px}
-.bet-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.bet-btn{width:36px;height:36px;border-radius:50%;background:var(--br);border:none;color:#fff}
-.bet-val{font-size:17px;font-weight:700;min-width:60px;text-align:center}
-.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.action-btn{padding:12px 0;border-radius:10px;border:none;font-weight:700;background:var(--pink);color:#fff}
-.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;color:#fff;padding:12px 20px;border-radius:8px;display:none;z-index:10}
+body{background:#000;color:#fff;font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;position:relative;height:100vh;overflow:hidden}
+.page{position:absolute;top:0;left:0;width:100%;height:100%;padding:10px;display:none;overflow-y:auto}
+.active{display:block}
+
+/* 登录页 */
+#login-page{background:#0a0a12;display:flex;flex-direction:column;justify-content:center}
+.login-box{padding:20px;background:#111;border-radius:14px;margin:20px}
+input{width:100%;padding:14px;background:#222;border:none;border-radius:10px;color:#fff;margin-bottom:12px;font-size:16px}
+.btn{width:100%;padding:14px;background:#ff3d71;border:none;border-radius:10px;color:#fff;font-weight:700;margin-top:10px}
+
+/* 顶部状态栏 (模仿游戏) */
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:#111;border-bottom:1px solid #333}
+.uid{font-weight:600}
+.balance{color:#ffb100;font-weight:700}
+
+/* 游戏大厅 */
+#hall-page{background:#000;padding-bottom:80px}
+.game-grid{display:grid;grid-template-columns:1fr;gap:15px;margin-top:15px}
+.game-card{background:#1a1a1a;border-radius:14px;overflow:hidden;border:1px solid #333}
+.game-cover{height:200px;display:grid;place-items:center;font-size:60px;background:#222}
+.game-info{padding:15px}
+.game-title{font-size:18px;font-weight:700;margin-bottom:10px}
+.play-btn{background:#ff3d71;color:#fff;border:none;width:100%;padding:12px;border-radius:10px;font-weight:700;margin-top:10px}
+
+/* 个人中心 */
+#profile-page{background:#0a0a12;padding-bottom:80px}
+.profile-card{background:#111;border-radius:14px;padding:20px;margin-top:15px;border:1px solid #333}
+.profile-item{display:flex;justify-content:space-between;padding:15px 0;border-bottom:1px solid #333;font-size:16px}
+.logout-btn{background:#ff3d71;color:#fff;border:none;width:100%;padding:14px;border-radius:10px;font-weight:700;margin-top:20px}
+
+/* 游戏页面 (高仿PG电子) */
+#queen-game,#mahjong-game{background:url('https://img.icons8.com/fluency/960/000000/wooden-background.png') no-repeat center center;background-size:cover;padding:10px;padding-bottom:100px}
+.game-top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#111;border-radius:10px;margin-bottom:10px}
+.game-title-top{font-weight:700}
+.game-money{color:#ffb100;font-weight:700}
+
+/* 老虎机矩阵 (5x5) */
+.slot-matrix{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:10px auto;background:rgba(0,0,0,0.5);padding:8px;border-radius:10px}
+.slot-cell{width:100%;aspect-ratio:1/1;background:#222;border:2px solid #444;border-radius:8px;display:grid;place-items:center;font-size:20px;color:#fff}
+.win{border-color:#ffb100;background:#332200}
+
+/* 控制栏 (底部按键) */
+.ctrl-bar{position:fixed;bottom:0;left:0;width:100%;max-width:480px;background:#111;padding:15px;border-top:1px solid #333;display:flex;justify-content:space-around;align-items:center}
+.ctrl-btn{width:50px;height:50px;border-radius:50%;background:#333;color:#fff;border:none;font-size:20px}
+.ctrl-center{width:80px;height:80px;border-radius:50%;background:#ffb100;color:#000;border:none;font-size:24px;font-weight:700}
+.ctrl-num{background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:16px;font-weight:700}
+
+/* 免费旋转提示 */
+.free-spin{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);padding:20px;border-radius:10px;text-align:center;display:none}
+.free-title{font-size:24px;font-weight:700;color:#ffb100;margin-bottom:10px}
+.free-num{font-size:40px;font-weight:700;color:#fff}
+
+/* 金币爆分动画 */
+@keyframes winAnim{0%{transform:scale(0.5);opacity:0}50%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
+.win-text{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:36px;font-weight:700;color:#ffb100;display:none;text-shadow:0 0 10px #000}
+.win-anim{display:block;animation:winAnim 0.8s}
+
+/* 底部导航 */
+.bottom-nav{position:fixed;bottom:0;left:0;width:100%;max-width:480px;height:60px;background:#111;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #333}
+.nav-item{display:flex;flex-direction:column;align-items:center;color:#999;font-size:12px}
+.nav-item.active{color:#ff3d71}
+.nav-icon{font-size:24px;margin-bottom:5px}
 </style>
 </head>
 <body>
 
-<!-- 登录 -->
-<div id="login-page" class="page">
-  <div class="header"><div style="font-weight:700">PG电子游戏厅</div></div>
-  <div class="box">
-    <div class="title">账号登录</div>
-    <input id="login-user" placeholder="用户名">
-    <input id="login-pwd" type="password" placeholder="密码">
-    <button class="btn" onclick="login()">登录</button>
-    <button class="btn btn-outline" onclick="showPage('reg-page')">去注册</button>
-  </div>
+<!-- 1. 登录页 -->
+<div id="login-page" class="page active">
+<div class="login-box">
+<input id="login-user" placeholder="请输入用户名">
+<input id="login-pwd" type="password" placeholder="请输入密码">
+<button class="btn" onclick="login()">登录</button>
+</div>
 </div>
 
-<!-- 注册 -->
-<div id="reg-page" class="page" style="display:none">
-  <div class="header"><div style="font-weight:700">PG电子游戏厅</div></div>
-  <div class="box">
-    <div class="title">注册账号</div>
-    <input id="reg-user" placeholder="用户名">
-    <input id="reg-pwd" type="password" placeholder="密码">
-    <button class="btn" onclick="reg()">注册</button>
-    <button class="btn btn-outline" onclick="showPage('login-page')">返回登录</button>
-  </div>
+<!-- 2. 游戏大厅 -->
+<div id="hall-page" class="page">
+<div class="status-bar">
+<div class="uid">欢迎: <span id="hall-uid">游客</span></div>
+<div class="balance">余额: <span id="hall-money">1000.00</span></div>
+</div>
+<div class="game-grid">
+<div class="game-card" onclick="startGame('queen')">
+<div class="game-cover">👑</div>
+<div class="game-info">
+<div class="game-title">赏金女王</div>
+<button class="play-btn">开始游戏</button>
+</div>
+</div>
+<div class="game-card" onclick="startGame('mahjong')">
+<div class="game-cover">🀄</div>
+<div class="game-info">
+<div class="game-title">麻将胡了</div>
+<button class="play-btn">开始游戏</button>
+</div>
+</div>
+</div>
 </div>
 
-<!-- 大厅 -->
-<div id="hall-page" class="page" style="display:none">
-  <div class="header">
-    <div>游戏大厅</div>
-    <div id="uname" style="color:var(--gold)"></div>
-  </div>
-  <div class="grid">
-    <div class="game" onclick="openGame('queen')">
-      <div class="cover">👑</div>
-      <div class="info">
-        <div class="name">赏金女王</div>
-        <button class="play">开始游戏</button>
-      </div>
-    </div>
-    <div class="game" onclick="openGame('mahjong')">
-      <div class="cover">🀄</div>
-      <div class="info">
-        <div class="name">麻将胡了</div>
-        <button class="play">开始游戏</button>
-      </div>
-    </div>
-  </div>
-  <div class="profile">
-    <div class="item"><div>用户名</div><div id="u-user"></div></div>
-    <div class="item"><div>余额</div><div id="u-money" style="color:var(--gold)"></div></div>
-    <div class="item"><div>游戏次数</div><div id="u-times"></div></div>
-  </div>
-  <button class="btn" onclick="logout()">退出登录</button>
+<!-- 3. 个人中心 -->
+<div id="profile-page" class="page">
+<div class="status-bar">
+<div>个人中心</div>
+</div>
+<div class="profile-card">
+<div class="profile-item">
+<div>用户名</div>
+<div id="p-uid">游客</div>
+</div>
+<div class="profile-item">
+<div>当前余额</div>
+<div id="p-money" style="color:#ffb100">1000.00</div>
+</div>
+<div class="profile-item">
+<div>游戏次数</div>
+<div id="p-times">0</div>
+</div>
+</div>
+<button class="logout-btn" onclick="logout()">退出登录</button>
 </div>
 
-<!-- 赏金女王 -->
-<div id="queen-page" class="game-page">
-  <div class="bar">
-    <button class="back" onclick="backHall()">←</button>
-    <div>赏金女王</div>
-    <div id="q-money" style="color:var(--gold)"></div>
-  </div>
-  <div class="slot">
-    <div class="reels">
-      <div class="reel"><div class="strip" id="q1"></div></div>
-      <div class="reel"><div class="strip" id="q2"></div></div>
-      <div class="reel"><div class="strip" id="q3"></div></div>
-      <div class="reel"><div class="strip" id="q4"></div></div>
-      <div class="reel"><div class="strip" id="q5"></div></div>
-    </div>
-  </div>
-  <div class="ctrl">
-    <div class="bet-line">
-      <div>投注</div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <button class="bet-btn" onclick="setBet('q',-0.1)">-</button>
-        <div class="bet-val" id="q-bet">0.80</div>
-        <button class="bet-btn" onclick="setBet('q',0.1)">+</button>
-      </div>
-    </div>
-    <div class="actions">
-      <button class="action-btn" style="background:var(--pur)">自动</button>
-      <button class="action-btn" onclick="playQueen()">开始</button>
-      <button class="action-btn" style="background:#ff7b42">极速</button>
-    </div>
-  </div>
+<!-- 4. 赏金女王游戏页 (1:1高仿) -->
+<div id="queen-game" class="page">
+<div class="game-top-bar">
+<button class="back-btn" onclick="backHall()">←</button>
+<div class="game-title-top">赏金女王</div>
+<div class="game-money" id="q-money">1000.00</div>
 </div>
 
-<!-- 麻将胡了 -->
-<div id="mahjong-page" class="game-page">
-  <div class="bar">
-    <button class="back" onclick="backHall()">←</button>
-    <div>麻将胡了</div>
-    <div id="m-money" style="color:var(--gold)"></div>
-  </div>
-  <div class="slot">
-    <div class="reels">
-      <div class="reel"><div class="strip" id="m1"></div></div>
-      <div class="reel"><div class="strip" id="m2"></div></div>
-      <div class="reel"><div class="strip" id="m3"></div></div>
-      <div class="reel"><div class="strip" id="m4"></div></div>
-      <div class="reel"><div class="strip" id="m5"></div></div>
-    </div>
-  </div>
-  <div class="ctrl">
-    <div class="bet-line">
-      <div>投注</div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <button class="bet-btn" onclick="setBet('m',-0.1)">-</button>
-        <div class="bet-val" id="m-bet">0.80</div>
-        <button class="bet-btn" onclick="setBet('m',0.1)">+</button>
-      </div>
-    </div>
-    <div class="actions">
-      <button class="action-btn" style="background:var(--pur)">自动</button>
-      <button class="action-btn" onclick="playMahjong()">开始</button>
-      <button class="action-btn" style="background:#ff7b42">极速</button>
-    </div>
-  </div>
+<!-- 顶部倍率桶 -->
+<div style="text-align:center;margin:10px 0">
+<div style="display:inline-block;background:#222;padding:5px 15px;border-radius:20px;font-size:14px">中奖奖金倍数高达 x40!</div>
+<div style="display:flex;justify-content:center;gap:15px;margin-top:10px">
+<div style="width:60px;height:60px;border-radius:50%;background:#ff0000;display:grid;place-items:center;font-weight:700">x1</div>
+<div style="width:60px;height:60px;border-radius:50%;background:#333;display:grid;place-items:center;font-weight:700">x2</div>
+<div style="width:60px;height:60px;border-radius:50%;background:#333;display:grid;place-items:center;font-weight:700">x3</div>
+<div style="width:60px;height:60px;border-radius:50%;background:#333;display:grid;place-items:center;font-weight:700">x5</div>
+</div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- 5x5 矩阵 -->
+<div class="slot-matrix" id="queen-matrix">
+</div>
+
+<!-- 底部控制按键 -->
+<div class="ctrl-bar">
+<button class="ctrl-btn">-</button>
+<div class="ctrl-num">0.80</div>
+<button class="ctrl-btn">+</button>
+<button class="ctrl-btn">自动</button>
+<button class="ctrl-center" onclick="playQueen()">▶</button>
+</div>
+
+<!-- 免费旋转弹窗 -->
+<div class="free-spin" id="free-spin">
+<div class="free-title">剩余免费旋转次数</div>
+<div class="free-num" id="free-count">5</div>
+</div>
+
+<!-- 爆分动画 -->
+<div class="win-text" id="win-text">+407.88</div>
+</div>
+
+<!-- 5. 麻将胡了游戏页 (1:1高仿) -->
+<div id="mahjong-game" class="page">
+<div class="game-top-bar">
+<button class="back-btn" onclick="backHall()">←</button>
+<div class="game-title-top">麻将胡了</div>
+<div class="game-money" id="m-money">1000.00</div>
+</div>
+
+<!-- 顶部金元宝倍率 -->
+<div style="text-align:center;margin:10px 0">
+<div style="display:inline-block;background:#222;padding:5px 15px;border-radius:20px;font-size:14px">1024 路中奖组合</div>
+<div style="display:flex;justify-content:center;gap:15px;margin-top:10px">
+<div style="background:#333;padding:5px 15px;border-radius:10px;font-weight:700">x2</div>
+<div style="background:#333;padding:5px 15px;border-radius:10px;font-weight:700">x4</div>
+<div style="background:#333;padding:5px 15px;border-radius:10px;font-weight:700">x6</div>
+<div style="background:#333;padding:5px 15px;border-radius:10px;font-weight:700">x10</div>
+</div>
+</div>
+
+<!-- 5x4 矩阵 -->
+<div class="slot-matrix" id="mahjong-matrix">
+</div>
+
+<!-- 底部控制 -->
+<div class="ctrl-bar">
+<button class="ctrl-btn">-</button>
+<div class="ctrl-num">0.40</div>
+<button class="ctrl-btn">+</button>
+<button class="ctrl-btn">自动</button>
+<button class="ctrl-center" onclick="playMahjong()">▶</button>
+</div>
+
+<!-- 免费旋转 -->
+<div class="free-spin" id="mj-free-spin">
+<div class="free-title">剩余免费旋转次数</div>
+<div class="free-num" id="mj-free-count">5</div>
+</div>
+
+<!-- 爆分 -->
+<div class="win-text" id="mj-win-text">+384.40</div>
+</div>
+
+<!-- 底部导航栏 -->
+<div class="bottom-nav">
+<div class="nav-item active" onclick="switchNav('hall')">
+<div class="nav-icon">🎮</div>
+<div>游戏大厅</div>
+</div>
+<div class="nav-item" onclick="switchNav('profile')">
+<div class="nav-icon">👤</div>
+<div>个人中心</div>
+</div>
+</div>
 
 <script>
-let users = JSON.parse(localStorage.getItem('users')) || {}
-let nowUser = null
-let qBet = 0.8, mBet = 0.8
+// 全局数据
+let users = JSON.parse(localStorage.getItem('users')) || {};
+let nowUser = null;
+let currentGame = '';
+let qBet = 0.8, mBet = 0.8;
+let freeSpins = 5;
+let mjFreeSpins = 5;
 
-const $ = id => document.getElementById(id)
-const toast = msg => {
-  const t = $('toast')
-  t.textContent = msg
-  t.style.display = 'block'
-  setTimeout(() => t.style.display = 'none', 1600)
-}
-const showPage = id => {
-  document.querySelectorAll('.page,.game-page').forEach(e => e.style.display = 'none')
-  $(id).style.display = 'block'
-}
+// 符号库
+const queenSymbols = ['A','K','Q','👑','💰','📜','🧭','🔫','🎁'];
+const mahjongSymbols = ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡','🀁','🀂','🀃','🀄','🀅','🀆'];
 
-// 注册
-function reg() {
-  const user = $('reg-user').value.trim()
-  const pwd = $('reg-pwd').value.trim()
-  if (!user || !pwd) return toast('请填写完整')
-  if (users[user]) return toast('用户名已存在')
-  users[user] = { pwd, money: 1000, times: 0 }
-  localStorage.setItem('users', JSON.stringify(users))
-  toast('注册成功！请登录')
-  showPage('login-page')
-}
+// 工具
+const $ = id => document.getElementById(id);
+const toast = msg => { /* 简化 */ };
 
 // 登录
-function login() {
-  const user = $('login-user').value.trim()
-  const pwd = $('login-pwd').value.trim()
-  if (!user || !pwd) return toast('请填写完整')
-  if (!users[user] || users[user].pwd !== pwd) return toast('账号或密码错误')
-  nowUser = user
-  showHall()
-}
-
-function showHall() {
-  showPage('hall-page')
-  const u = users[nowUser]
-  $('uname').textContent = nowUser
-  $('u-user').textContent = nowUser
-  $('u-money').textContent = u.money.toFixed(2)
-  $('u-times').textContent = u.times || 0
-}
-
-function logout() {
-  nowUser = null
-  showPage('login-page')
-}
-
-function backHall() { showHall() }
-function openGame(g) {
-  if (!nowUser) return toast('请先登录')
-  showPage(g + '-page')
-  refreshMoney()
-}
-
-function refreshMoney() {
-  if (!nowUser) return
-  const m = users[nowUser].money.toFixed(2)
-  $('q-money').textContent = m
-  $('m-money').textContent = m
-  $('u-money').textContent = m
-}
-
-function setBet(typ, v) {
-  if (typ === 'q') {
-    qBet = Math.max(0.2, Math.min(50, qBet + v))
-    $('q-bet').textContent = qBet.toFixed(2)
-  } else {
-    mBet = Math.max(0.2, Math.min(50, mBet + v))
-    $('m-bet').textContent = mBet.toFixed(2)
+function login(){
+  const user = $('login-user').value.trim();
+  const pwd = $('login-pwd').value.trim();
+  if(!user || !pwd) return alert('请输入完整');
+  if(!users[user]){
+    users[user] = {pwd, money:1000, times:0};
+    localStorage.setItem('users',JSON.stringify(users));
   }
+  if(users[user].pwd !== pwd) return alert('密码错误');
+  nowUser = user;
+  showPage('hall-page');
+  updateHallUI();
+  switchNav('hall');
 }
 
-const queenSym = ['👑','💎','💰','♠','♥','♦','♣','7','⭐']
-const mjSym = ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡','🀁','🀂','🀃']
-
-function genStrip(el, list) {
-  let html = ''
-  for (let i = 0; i < 14; i++) {
-    const s = list[Math.floor(Math.random() * list.length)]
-    html += `<div class="sym">${s}</div>`
-  }
-  $(el).innerHTML = html
+// 页面切换
+function showPage(id){
+  document.querySelectorAll('.page').forEach(e=>e.style.display='none');
+  $(id).style.display='block';
 }
-
-function playQueen() {
-  const u = users[nowUser]
-  if (u.money < qBet) return toast('余额不足')
-  u.money -= qBet
-  u.times = (u.times || 0) + 1
-  localStorage.setItem('users', JSON.stringify(users))
-  refreshMoney()
-
-  for (let i = 1; i <= 5; i++) genStrip('q' + i, queenSym)
-  setTimeout(() => {
-    const win = Math.random() < 0.32 ? qBet * 12 : 0
-    if (win > 0) {
-      u.money += win
-      localStorage.setItem('users', JSON.stringify(users))
-      refreshMoney()
-      toast('爆分 +' + win.toFixed(2))
-    }
-  }, 700)
-}
-
-function playMahjong() {
-  const u = users[nowUser]
-  if (u.money < mBet) return toast('余额不足')
-  u.money -= mBet
-  u.times = (u.times || 0) + 1
-  localStorage.setItem('users', JSON.stringify(users))
-  refreshMoney()
-
-  for (let i = 1; i <= 5; i++) genStrip('m' + i, mjSym)
-  setTimeout(() => {
-    const win = Math.random() < 0.35 ? mBet * 15 : 0
-    if (win > 0) {
-      u.money += win
-      localStorage.setItem('users', JSON.stringify(users))
-      refreshMoney()
-      toast('胡了 +' + win.toFixed(2))
-    }
-  }, 700)
-}
-</script>
-</body>
-</html>
+function switchNav(page){
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.nav-item:nth-child
