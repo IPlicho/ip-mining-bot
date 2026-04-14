@@ -1,280 +1,275 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>海南麻将 - 真实房间版</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:140px}
-.page{display:none;padding:16px}
-.show{display:block}
+# -*- coding: utf-8 -*-
+"""
+海南麻将核心逻辑类
+适配规则：144张牌、有番条件、包牌/包杠、花杠、指定算分规则
+"""
+import random
+from enum import Enum
+from typing import List, Dict, Tuple, Optional
 
-.auth-box{margin-top:60px;background:#131a2d;border-radius:16px;padding:24px}
-.input{width:100%;padding:14px;border-radius:12px;background:#1e293b;border:none;color:#fff;margin-bottom:12px}
-.btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:bold;margin-top:8px}
-.btn-green{background:#10b981;color:#fff}
-.btn-blue{background:#3b82f6;color:#fff}
-.btn-red{background:#ef4444;color:#fff}
+# ---------------------- 基础常量定义 ----------------------
+# 牌型定义
+SUITS = ['万', '筒', '条']  # 花色
+NUMBERS = [str(i) for i in range(1, 10)]  # 数字
+HONORS = ['东', '南', '西', '北', '中', '发', '白']  # 字牌
+FLOWERS = ['春', '夏', '秋', '冬', '梅', '兰', '竹', '菊']  # 花牌
+ALL_FLOWERS = FLOWERS  # 全套花牌
+ALL_HONORS = HONORS + FLOWERS  # 字牌+花牌
 
-.top-bar{background:#131a2d;padding:14px;border-radius:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.game-card{background:#131a2d;border-radius:16px;padding:20px;margin-bottom:14px}
-.game-title{font-size:18px;margin-bottom:8px}
-.game-desc{color:#94a3b8;font-size:14px;margin-bottom:16px}
-
-.profile-card{background:#131a2d;border-radius:16px;padding:20px;margin-top:16px}
-.profile-item{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1e293b}
-
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#131a2d;height:75px;display:flex;border-top:1px solid #1e293b}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:12px}
-.nav-item.active{color:#10b981}
-.nav-icon{font-size:22px;margin-bottom:4px}
-
-.table{position:relative;background:#0f4c3c;border-radius:20px;padding:20px;height:500px;margin:10px 0}
-.seat{position:absolute;width:120px;height:80px;text-align:center}
-.seat-top{top:10px;left:50%;transform:translateX(-50%)}
-.seat-right{top:50%;right:10px;transform:translateY(-50%)}
-.seat-left{top:50%;left:10px;transform:translateY(-50%)}
-.seat-bottom{bottom:10px;left:50%;transform:translateX(-50%)}
-
-.avatar{width:50px;height:50px;border-radius:50%;border:3px solid #fff;margin:0 auto;background:#fff}
-.name{font-size:12px;color:#fff;margin-top:4px}
-.chip{font-size:12px;color:#ffd700}
-
-.desk-pais{position:absolute;top:120px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
-.desk-pai{width:36px;height:52px;background:#fff;color:#222;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-weight:bold}
-
-.my-hand{display:flex;gap:6px;justify-content:center;margin-top:20px}
-.my-pai{
-  width:42px;
-  height:60px;
-  background:#fff;
-  color:#222;
-  margin:2px;
-  border-radius:6px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:bold;
-  cursor:pointer;
-  border:1px solid #ccc;
-}
-.my-pai.sel{transform:translateY(-10px);border:2px solid #10b981}
-
-.operate{position:fixed;bottom:70px;left:0;right:0;background:#131a2d;padding:12px;display:flex;gap:8px}
-.oper{flex:1;padding:12px;border-radius:8px;border:none;background:#10b981;color:#fff;font-weight:bold}
-.oper:disabled{opacity:0.5}
-</style>
-</head>
-<body>
-
-<!-- 登录 -->
-<div id="login" class="page show">
-  <div class="auth-box">
-    <h2 style="text-align:center;margin-bottom:20px">登录 / 注册</h2>
-    <input class="input" id="user" placeholder="输入用户名">
-    <button class="btn btn-green" onclick="login()">登录</button>
-    <button class="btn btn-blue" onclick="reg()">注册</button>
-  </div>
-</div>
-
-<!-- 大厅 -->
-<div id="hall" class="page">
-  <div class="top-bar">
-    <div>🎮 海南麻将</div>
-    <div>用户：<span id="uname"></span></div>
-  </div>
-  <div class="game-card">
-    <div class="game-title">🀄 真实海南麻将</div>
-    <div class="game-desc">15秒未满人 → 机器人按顺序进场</div>
-    <button class="btn btn-green" onclick="createRoom()">创建房间</button>
-  </div>
-</div>
-
-<!-- 等待房间 -->
-<div id="wait" class="page">
-  <div class="top-bar">
-    <div>房间号：<span id="room-id">8888</span></div>
-  </div>
-  <div style="text-align:center;padding:40px">
-    <div>等待其他玩家加入...</div>
-    <div style="font-size:24px;margin:20px 0" id="timer">15</div>
-    <div id="player-count">玩家：1 / 4</div>
-  </div>
-</div>
-
-<!-- 游戏界面 -->
-<div id="game" class="page">
-  <div class="top-bar">
-    <div>🀄 海南麻将</div>
-    <button class="btn-red" style="width:auto;padding:8px 12px" onclick="backHall()">退出</button>
-  </div>
-
-  <div class="table">
-    <div class="seat seat-top">
-      <div class="avatar"></div>
-      <div class="name">机器人东</div>
-      <div class="chip">35万</div>
-    </div>
-    <div class="seat seat-right">
-      <div class="avatar"></div>
-      <div class="name">机器人西</div>
-      <div class="chip">33万</div>
-    </div>
-    <div class="seat seat-left">
-      <div class="avatar"></div>
-      <div class="name">机器人北</div>
-      <div class="chip">24万</div>
-    </div>
-    <div class="seat seat-bottom">
-      <div class="avatar"></div>
-      <div class="name"><b>你</b></div>
-      <div class="chip" id="my-chip">38万</div>
-    </div>
-    <div class="desk-pais" id="desk"></div>
-  </div>
-
-  <div class="my-hand" id="my-hand"></div>
-
-  <div class="operate">
-    <button class="oper" id="mo" onclick="mo()">摸牌</button>
-    <button class="oper" id="chu" onclick="chu()" disabled>出牌</button>
-    <button class="oper" onclick="peng()">碰</button>
-    <button class="oper" onclick="gang()">杠</button>
-    <button class="oper" onclick="hu()">胡</button>
-  </div>
-</div>
-
-<!-- 个人中心 -->
-<div id="profile" class="page">
-  <div class="top-bar">
-    <div>个人中心</div>
-  </div>
-  <div class="profile-card">
-    <div class="profile-item">
-      <div>用户名</div><div id="pname"></div>
-    </div>
-    <div class="profile-item">
-      <div>积分</div><div id="pscore" style="color:#10b981"></div>
-    </div>
-  </div>
-  <button class="btn btn-red" onclick="logout()">退出登录</button>
-</div>
-
-<!-- 底部导航 -->
-<div class="bottom-nav">
-  <div class="nav-item active" onclick="show('hall')">
-    <div class="nav-icon">🎮</div><div>大厅</div>
-  </div>
-  <div class="nav-item" onclick="show('profile')">
-    <div class="nav-icon">👤</div><div>个人中心</div>
-  </div>
-</div>
-
-<script>
-let users = JSON.parse(localStorage.getItem('users')) || {}
-let me = null
-let hand = []
-let sel = null
-let time = 15
-let timer
-let players = 1
-
-const cards = [
-"1万","2万","3万","4万","5万","6万","7万","8万","9万",
-"1条","2条","3条","4条","5条","6条","7条","8条","9条",
-"1筒","2筒","3筒","4筒","5筒","6筒","7筒","8筒","9筒",
-"东","南","西","北","中","发","白"
-]
-
-function $(id){return document.getElementById(id)}
-function show(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'))
-  $(id).classList.add('show')
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
-  if(id=="hall")document.querySelector('.nav-item').classList.add('active')
+# 番型定义（对应规则里的有番条件）
+FAN_TYPES = {
+    "四个顺子带一对": {"condition": lambda x: len(x["shunzi"])>=4 and len(x["pair"])==1, "multi": 1},
+    "门前清": {"condition": lambda x: x["chi"]==0 and x["peng"]==0 and x["angang"]==0, "multi": 1},
+    "二五八做将": {"condition": lambda x: x["pair_card"] in [str(i) for i in [2,5,8]] + SUITS, "multi": 1},
+    "中发白刻子/杠": {"condition": lambda x: any([len(c)>=3 for c in x["kezi"] if c[0] in ['中','发','白']]), "multi": 1},
+    "风位刻子/杠": {"condition": lambda x, seat: any([len(c)>=3 for c in x["kezi"] if c[0] == seat]), "multi": 1},
+    "令牌刻子": {"condition": lambda x: False, "multi": 1},  # 需补充令牌定义
+    "混一色": {"condition": lambda x: len(x["suits"])==1 and all([c[0] not in ALL_HONORS for c in x["tiles"]]), "multi": 2},
+    "抢杠胡": {"condition": lambda x: x["gang_hu"] is True, "multi": 1},
+    "自摸": {"condition": lambda x: x["self_draw"] is True, "multi": 1},
+    "碰碰胡": {"condition": lambda x: len(x["shunzi"])==0 and len(x["pair"])==1, "multi": 2},
+    "杠牌": {"condition": lambda x: len(x["gangs"])>0, "multi": 1}
 }
 
-function reg(){
-  let u = $('user').value.trim()
-  if(!u||users[u])return alert('用户名已存在')
-  users[u]={score:100}
-  localStorage.setItem('users',JSON.stringify(users))
-  alert('注册成功')
+# 牌型倍数（算分规则）
+HAND_MULTIPLIER = {
+    "平胡": 1,
+    "碰碰胡": 2,
+    "混一色": 2,
+    "清一色": 3,
+    "七对": 2,
+    "十三幺": 13
 }
 
-function login(){
-  let u = $('user').value.trim()
-  if(!users[u])return alert('用户不存在')
-  me=u
-  refresh()
-  show('hall')
+# 结算常量
+BASE_SCORE = {
+    "花杠后胡": 3,
+    "点炮": 1,
+    "明杠": 1,
+    "暗杠": 2,
+    "首轮跟牌": 1
 }
+# ---------------------- 工具类 ----------------------
+class TileType(Enum):
+    """牌的类型枚举"""
+    WAN = 0
+    TONG = 1
+    TIAO = 2
+    HONOR = 3  # 东南西北中发白
+    FLOWER = 4  # 春夏秋冬梅兰竹菊
 
-function refresh(){
-  if(!me)return
-  $('uname').innerText=me
-  $('pname').innerText=me
-  $('pscore').innerText=users[me].score
-}
+class HainanMahjongGame:
+    """海南麻将核心游戏类"""
+    def __init__(self, seat: str):
+        """
+        初始化游戏
+        :param seat: 玩家座位（东/南/西/北）
+        """
+        self.seat = seat  # 玩家座位（决定风位刻子条件）
+        self.tiles = []  # 玩家手牌
+        self.shunzi = []  # 顺子列表 [['1万','2万','3万'], ...]
+        self.kezi = []    # 刻子列表 [['1万','1万','1万'], ...]
+        self.pair = []    # 对子 [['5万','5万']]
+        self.pair_card = None  # 对子牌面
+        self.gangs = []   # 杠牌列表
+        self.angang = 0   # 暗杠数量
+        self.minggang = 0 # 明杠数量
+        self.chi = 0      # 吃牌次数
+        self.peng = 0     # 碰牌次数
+        self.self_draw = False  # 是否自摸胡
+        self.gang_hu = False    # 是否抢杠胡
+        self.hu_type = None     # 胡牌类型（平胡/碰碰胡等）
+        self.fan_count = 0      # 番数
+        self.total_score = 0    # 最终得分
+        self.tiles_remaining = 144  # 剩余牌数
+        self.is_menqianqing = False  # 是否门前清
 
-function logout(){me=null;show('login')}
-function backHall(){clearInterval(timer);show('hall')}
+    # ---------------------- 核心功能：洗牌发牌 ----------------------
+    def shuffle_and_deal(self) -> List[str]:
+        """洗牌并生成初始手牌（13张）"""
+        # 生成144张牌
+        all_tiles = []
+        # 万筒条各36张
+        for suit in SUITS:
+            for num in NUMBERS:
+                all_tiles.extend([f"{num}{suit}"] * 4)
+        # 字牌各4张
+        for honor in HONORS:
+            all_tiles.extend([honor] * 4)
+        # 花牌各1张（共8张）
+        all_tiles.extend(FLOWERS)
+        # 洗牌
+        random.shuffle(all_tiles)
+        # 发牌（每人13张，庄家14张）
+        if self.seat == '东':  # 东为首局随机庄
+            self.tiles = all_tiles[:14]
+            remaining = all_tiles[14:]
+        else:
+            self.tiles = all_tiles[:13]
+            remaining = all_tiles[13:]
+        self.tiles_remaining = len(remaining)
+        return self.tiles
 
-// 创建房间 → 15秒倒计时 → 机器人按顺序进场
-function createRoom(){
-  if(!me){alert('请登录');return show('login')}
-  show('wait')
-  players=1
-  time=15
-  $('timer').innerText=time
-  $('player-count').innerText="玩家：1 / 4"
+    # ---------------------- 核心功能：牌型拆解 ----------------------
+    def parse_tiles(self) -> None:
+        """拆解手牌为顺子、刻子、对子"""
+        # 简化版牌型拆解（实际需更复杂，适配核心规则）
+        tile_dict = {}
+        for tile in self.tiles:
+            tile_dict[tile] = tile_dict.get(tile, 0) + 1
 
-  timer=setInterval(()=>{
-    time--
-    $('timer').innerText=time
-    if(time<=12 && players<2){players=2;$('player-count').innerText="玩家：2 / 4";alert('机器人东 加入房间')}
-    if(time<=9  && players<3){players=3;$('player-count').innerText="玩家：3 / 4";alert('机器人西 加入房间')}
-    if(time<=6  && players<4){players=4;$('player-count').innerText="玩家：4 / 4";alert('机器人北 加入房间')}
-    if(time<=0){clearInterval(timer);startGame()}
-  },1000)
-}
+        shunzi = []
+        kezi = []
+        pair = []
+        # 拆解顺子/刻子/对子
+        for tile, count in tile_dict.items():
+            if tile in FLOWERS:  # 花牌不参与牌型拆解
+                continue
+            if count == 2:
+                pair.append([tile, tile])
+                self.pair_card = tile
+            elif count == 3:
+                kezi.append([tile, tile, tile])
+            elif count == 4:
+                kezi.append([tile, tile, tile])
+                self.gangs.append([tile, tile, tile, tile])
+                self.minggang += 1  # 明杠统计
 
-function startGame(){
-  show('game')
-  initHand()
-  renderHand()
-  alert('游戏开始！海南麻将：258做将，有番才能胡')
-}
+        # 拆解顺子（万筒条内部）
+        for suit in SUITS:
+            suit_tiles = [t for t in self.tiles if t.endswith(suit) and t not in FLOWERS]
+            suit_nums = sorted([int(t[:-1]) for t in suit_tiles])
+            i = 0
+            while i < len(suit_nums) - 2:
+                if suit_nums[i] + 1 == suit_nums[i+1] and suit_nums[i+1] + 1 == suit_nums[i+2]:
+                    shunzi.append([f"{suit_nums[i]}{suit}", f"{suit_nums[i+1]}{suit}", f"{suit_nums[i+2]}{suit}"])
+                    i += 3
+                else:
+                    i += 1
 
-function initHand(){
-  hand=[]
-  for(let i=0;i<13;i++)hand.push(cards[Math.floor(Math.random()*cards.length)])
-  hand.sort()
-}
+        self.shunzi = shunzi
+        self.kezi = kezi
+        self.pair = pair
+        # 判定门前清
+        self.is_menqianqing = self.chi == 0 and self.peng == 0 and self.angang == 0
 
-function renderHand(){
-  let html=''
-  hand.forEach((p,i)=>{
-    html+=`<div class="my-pai ${sel==i?'sel':''}" onclick="select(${i})">${p}</div>`
-  })
-  $('my-hand').innerHTML=html
-}
+    # ---------------------- 核心功能：番型判断（有番条件） ----------------------
+    def check_fan_conditions(self) -> bool:
+        """检查是否满足胡牌番型条件（必须满足至少一种）"""
+        fan_conditions = [
+            # 1. 四个顺子带一对
+            (len(self.shunzi) >= 4 and len(self.pair) == 1),
+            # 2. 门前清
+            self.is_menqianqing,
+            # 3. 二五八做将
+            (self.pair_card and self.pair_card[:-1] in [str(i) for i in [2,5,8]]),
+            # 4. 中发白刻子/杠
+            any([k[0] in ['中','发','白'] for k in self.kezi]),
+            # 5. 自身风位刻子/杠
+            any([k[0] == self.seat for k in self.kezi]),
+            # 6. 混一色
+            (len(set([t[-1] for t in self.tiles if t[-1] in SUITS])) == 1 and not any([t in ALL_HONORS for t in self.tiles])),
+            # 7. 碰碰胡
+            (len(self.shunzi) == 0 and len(self.pair) == 1),
+            # 8. 抢杠胡/自摸/杠牌
+            self.gang_hu or self.self_draw or (len(self.gangs) > 0)
+        ]
+        self.fan_count = sum(fan_conditions)
+        return any(fan_conditions)
 
-function select(i){sel=i;$('chu').disabled=false;renderHand()}
-function mo(){hand.push(cards[Math.floor(Math.random()*cards.length)]);hand.sort();renderHand();$('mo').disabled=true;$('chu').disabled=false;robotAction()}
-function chu(){if(sel==null)return;hand.splice(sel,1);sel=null;renderHand();$('mo').disabled=false;$('chu').disabled=true}
-function peng(){alert('碰')}
-function gang(){alert('杠')}
-function hu(){alert('你胡了！');users[me].score+=10;localStorage.setItem('users',JSON.stringify(users));refresh();backHall()}
+    # ---------------------- 核心功能：算分逻辑 ----------------------
+    def calculate_score(self, hu_type: str, is_dianpao: bool, gang_count: int, flower_count: int) -> int:
+        """
+        按规则计算最终得分
+        :param hu_type: 胡牌类型（平胡/碰碰胡/混一色/清一色/七对/十三幺）
+        :param is_dianpao: 是否点炮胡
+        :param gang_count: 杠总数（明杠+暗杠）
+        :param flower_count: 花牌数量
+        :return: 最终得分
+        """
+        # 基础分
+        base_multi = HAND_MULTIPLIER.get(hu_type, 1)
+        base_score = BASE_SCORE.get("花杠后胡", 3) if flower_count > 0 else 1
 
-function robotAction(){
-  setTimeout(()=>{
-    if(Math.random()<0.75){
-      alert('机器人胡牌！你输了');users[me].score-=10;localStorage.setItem('users',JSON.stringify(users));refresh();backHall()
-    }
-  },1500)
-}
-</script>
-</body>
-</html>
+        # 额外分
+        extra_score = 0
+        if is_dianpao:
+            extra_score += BASE_SCORE["点炮"]
+        # 明杠/暗杠分
+        extra_score += self.minggang * BASE_SCORE["明杠"]
+        extra_score += self.angang * BASE_SCORE["暗杠"]
+        # 首轮跟牌分（需记录首轮出牌）
+        # extra_score += BASE_SCORE["首轮跟牌"]  # 需补充出牌逻辑
+
+        # 花杠分
+        if flower_count >= 7:
+            extra_score += 1
+        if flower_count >= 4:
+            extra_score += flower_count // 4  # 凑4种花加1杠分
+
+        # 总得分公式：输赢分数=基础分*牌型倍数*(噶数+1+庄分)+额外分
+        # 简化版（适配核心逻辑）
+        total_score = base_score * base_multi + extra_score
+        self.total_score = total_score
+        return total_score
+
+    # ---------------------- 核心功能：包牌/包杠规则 ----------------------
+    def check_bao_pai(self, a_seat: str, b_seat: str, chi_count: int, peng_count: int) -> Dict:
+        """
+        检查包牌规则
+        :param a_seat: 玩家A座位
+        :param b_seat: 玩家B座位
+        :param chi_count: A吃B的次数
+        :param peng_count: A碰B的次数
+        :return: 包牌结果
+        """
+        bao_result = {"is_bao": False, "bearer": None, "rule": None}
+        total_chi_peng = chi_count + peng_count
+        # 三道包牌：吃碰3次
+        if total_chi_peng == 3:
+            bao_result = {"is_bao": True, "bearer": f"{a_seat}与{b_seat}互包", "rule": "三道包牌"}
+        # 四道包牌：吃碰4次
+        elif total_chi_peng == 4:
+            bao_result = {"is_bao": True, "bearer": f"{a_seat}与{b_seat}互包（含自摸）", "rule": "四道包牌"}
+        return bao_result
+
+    def check_bao_gang(self, first_discard: str, gang_tile: str) -> Dict:
+        """
+        检查包杠规则
+        :param first_discard: 玩家首轮出牌
+        :param gang_tile: 杠的牌
+        :return: 包杠结果
+        """
+        bao_result = {"is_bao": False, "bearer": None, "rule": None}
+        # 玩家首轮出的牌点的明杠需要包此杠
+        if first_discard == gang_tile and len(self.gangs) > 0:
+            bao_result = {"is_bao": True, "bearer": "首轮出牌玩家包杠", "rule": "包杠规则"}
+        return bao_result
+
+    # ---------------------- 核心功能：花杠规则 ----------------------
+    def calculate_flower_gang(self, flower_tiles: List[str], is_choose_flowers: bool) -> Tuple[int, int]:
+        """
+        计算花杠分
+        :param flower_tiles: 花牌列表
+        :param is_choose_flowers: 是否勾选花牌规则
+        :return: (杠分数, 额外分)
+        """
+        flower_count = len(flower_tiles)
+        gang_score = 0
+        extra_score = 0
+        if is_choose_flowers:
+            # 勾选：春夏秋冬/梅兰竹菊算花杠，摸到8张加3杠分
+            gang_score = flower_count // 8 * 3 + flower_count // 4
+        else:
+            # 不勾选：摸到7张算花杠，摸到8张加3杠分
+            if flower_count >= 7:
+                gang_score = 1
+            if flower_count >= 8:
+                gang_score += 3
+        # 凑齐4种花加1杠分，凑齐7种加1分
+        unique_flowers = len(set(flower_tiles))
+        if unique_flowers >= 4:
+            extra_score += 1
+        if unique_flowers >= 7:
+            extra_score += 1
+        return gang_score, extra_score
