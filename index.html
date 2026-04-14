@@ -2,119 +2,172 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>欢乐游戏城</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>海盗老虎机 - 高仿版</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
     <style>
-        *{box-sizing:border-box;margin:0;padding:0}
-        body{background:#121212;color:#fff;font-family:Arial}
-        .head{background:#1e1e1e;padding:18px 15px;display:flex;justify-content:space-between;align-items:center}
-        .logo{font-size:22px;font-weight:bold;color:#ffcc00}
-        .points{background:#367ff7;padding:6px 12px;border-radius:20px;font-size:14px}
-        .game-box{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px}
-        .game{background:#1e1e1e;border-radius:12px;padding:15px;text-align:center}
-        .game .icon{font-size:40px;margin-bottom:10px}
-        .game .name{font-size:16px;margin-bottom:5px}
-        .game .btn{background:#ffcc00;color:#000;padding:10px;border-radius:8px;border:none;width:100%;font-size:16px;font-weight:bold;margin-top:10px}
-        .kefu{position:fixed;bottom:25px;right:25px;width:60px;height:60px;background:#ffcc00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px}
-        .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center}
-        .modal-content{background:#1e1e1e;width:90%;max-width:400px;padding:25px;border-radius:16px;text-align:center}
-        .slot{display:flex;gap:10px;justify-content:center;margin:20px 0}
-        .reel{width:70px;height:70px;background:#000;border:2px solid #ffcc00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:30px}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: 'Arial', sans-serif; }
+        #game-container { width: 100vw; height: 100vh; position: relative; }
+        /* 仿截图底部UI */
+        .ui-bottom { position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; z-index: 10; }
+        .btn { display: inline-block; width: 60px; height: 60px; border-radius: 50%; background: #ffcc00; margin: 0 15px; font-size: 24px; line-height: 60px; cursor: pointer; }
+        .bet-display { display: inline-block; background: #333; color: #fff; padding: 10px 30px; border-radius: 8px; font-size: 18px; margin: 0 10px; }
     </style>
 </head>
 <body>
-<div class="head">
-    <div class="logo">🎮 欢乐游戏城</div>
-    <div class="points">积分: <span id="score">1000</span></div>
-</div>
-
-<div class="game-box">
-    <div class="game">
-        <div class="icon">🎰</div>
-        <div class="name">老虎机</div>
-        <button class="btn" onclick="openSlot()">开始游戏</button>
-    </div>
-    <div class="game">
-        <div class="icon">🎡</div>
-        <div class="name">幸运转盘</div>
-        <button class="btn" onclick="alert('即将开放')">即将开放</button>
-    </div>
-    <div class="game">
-        <div class="icon">🃏</div>
-        <div class="name">翻牌抽奖</div>
-        <button class="btn" onclick="alert('即将开放')">即将开放</button>
-    </div>
-    <div class="game">
-        <div class="icon">👤</div>
-        <div class="name">个人中心</div>
-        <button class="btn" onclick="alert('个人中心')">进入</button>
-    </div>
-</div>
-
-<div class="kefu" onclick="alert('联系客服：你的微信号')">💬</div>
-
-<div class="modal" id="slotModal">
-    <div class="modal-content">
-        <h2>🎰 老虎机</h2>
-        <div class="slot">
-            <div class="reel" id="a">🍒</div>
-            <div class="reel" id="b">🍋</div>
-            <div class="reel" id="c">🍉</div>
-        </div>
-        <button class="btn" onclick="spin()" style="max-width:200px;margin:0 auto">开始转动</button>
-        <div id="result" style="margin-top:15px;font-size:18px"></div>
-        <button class="btn" onclick="closeSlot()" style="max-width:200px;margin:15px auto 0;background:#367ff7">关闭</button>
+<div id="game-container">
+    <!-- 底部UI -->
+    <div class="ui-bottom">
+        <div class="btn">⚡</div> <!-- 极速 -->
+        <div class="btn">-</div>  <!-- 减注 -->
+        <div class="bet-display" id="bet-info">¥0.80</div> <!-- 投注 -->
+        <div class="btn">+</div>  <!-- 加注 -->
+        <div class="btn">▶️</div> <!-- 自动 -->
     </div>
 </div>
 
 <script>
-    let score = 1000;
-    const icons = ["🍒","🍋","🍉","7️⃣","⭐","🍀"];
-    const scoreEl = document.getElementById("score");
-    const modal = document.getElementById("slotModal");
+// 1. 配置游戏参数
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    parent: 'game-container',
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }
+};
 
-    function updateScore() {
-        scoreEl.innerText = score;
-        // 本地存储，刷新不丢
-        localStorage.setItem("game_score", score);
-    }
+// 2. 初始化游戏
+const game = new Phaser.Game(config);
+let bet = 0.8; // 初始投注
+let balance = 500.41; // 初始余额
+let reels = []; // 5x3 矩阵
+let spinButton;
 
-    // 加载本地积分
-    window.onload = function() {
-        const saved = localStorage.getItem("game_score");
-        if(saved) score = parseInt(saved);
-        updateScore();
-    }
+function preload() {
+    // 🔥 这里需要替换成你自己的海盗主题图片URL
+    // 建议图标的图：A, K, Q, 海盗头像, 藏宝图, 望远镜, 大炮
+    this.load.image('A', 'https://your-image-url.com/A.png');
+    this.load.image('K', 'https://your-image-url.com/K.png');
+    this.load.image('Q', 'https://your-image-url.com/Q.png');
+    this.load.image('pirate', 'https://your-image-url.com/pirate.png');
+    this.load.image('map', 'https://your-image-url.com/map.png');
+    this.load.image('telescope', 'https://your-image-url.com/telescope.png');
+}
 
-    function openSlot() { modal.style.display = "flex"; }
-    function closeSlot() { modal.style.display = "none"; }
+function create() {
+    // 背景
+    this.add.image(400, 300, 'background').setDisplaySize(800, 900);
 
-    function spin() {
-        if(score < 50) {
-            alert("积分不足！");
-            return;
+    // 顶部倍率桶 (x1, x2, x3, x5)
+    this.add.text(150, 150, 'x1', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#ff0000');
+    this.add.text(250, 150, 'x2', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#333');
+    this.add.text(350, 150, 'x3', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#333');
+    this.add.text(450, 150, 'x5', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#333');
+
+    // 3. 生成 5x3 老虎机矩阵 (核心布局)
+    const startX = 100;
+    const startY = 250;
+    const slotWidth = 120;
+    const slotHeight = 120;
+
+    for (let col = 0; col < 5; col++) { // 5列
+        reels[col] = [];
+        for (let row = 0; row < 3; row++) { // 3行
+            // 随机生成图标
+            const icons = ['A', 'K', 'Q', 'pirate', 'map', 'telescope'];
+            const randomIcon = icons[Math.floor(Math.random() * icons.length)];
+            
+            const slot = this.add.image(startX + col * slotWidth, startY + row * slotHeight, randomIcon)
+                                 .setDisplaySize(slotWidth, slotHeight);
+            reels[col][row] = { icon: randomIcon, sprite: slot };
         }
-        score -= 50;
-        updateScore();
-        document.getElementById("result").innerText = "转动中...";
-
-        // 随机转动
-        let a = icons[Math.floor(Math.random()*icons.length)];
-        let b = icons[Math.floor(Math.random()*icons.length)];
-        let c = icons[Math.floor(Math.random()*icons.length)];
-
-        document.getElementById("a").innerText = a;
-        document.getElementById("b").innerText = b;
-        document.getElementById("c").innerText = c;
-
-        if(a === b && b === c) {
-            score += 500;
-            document.getElementById("result").innerText = "🎉 恭喜中奖！+500积分";
-        } else {
-            document.getElementById("result").innerText = "谢谢参与";
-        }
-        updateScore();
     }
+
+    // 底部余额显示
+    this.add.text(50, 650, `¥${balance.toFixed(2)}`, { fontSize: '24px', fill: '#fff' });
+    this.add.text(300, 650, `¥${bet}`, { fontSize: '24px', fill: '#fff' }); // 投注金额
+
+    // 旋转按钮 (船舵)
+    spinButton = this.add.image(400, 750, 'spin').setDisplaySize(100, 100);
+    spinButton.setInteractive();
+    spinButton.on('pointerdown', spinReels, this);
+}
+
+// 4. 核心旋转逻辑
+function spinReels() {
+    if (balance < bet) {
+        alert('余额不足！');
+        return;
+    }
+
+    // 扣款
+    balance -= bet;
+    updateBalanceDisplay();
+
+    // 模拟转动动画
+    const spinDuration = 1000; // 1秒
+    const startTime = Date.now();
+
+    const spinInterval = setInterval(() => {
+        for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < 3; row++) {
+                const icons = ['A', 'K', 'Q', 'pirate', 'map', 'telescope'];
+                reels[col][row].sprite.setTexture(icons[Math.floor(Math.random() * icons.length)]);
+            }
+        }
+
+        if (Date.now() - startTime > spinDuration) {
+            clearInterval(spinInterval);
+            // 停止后判断中奖
+            checkWin();
+        }
+    }, 50);
+}
+
+// 5. 中奖判断 (赢面逻辑)
+function checkWin() {
+    // 简单的连线中奖逻辑
+    const firstRow = [reels[0][0].icon, reels[1][0].icon, reels[2][0].icon, reels[3][0].icon, reels[4][0].icon];
+    const secondRow = [reels[0][1].icon, reels[1][1].icon, reels[2][1].icon, reels[3][1].icon, reels[4][1].icon];
+    const thirdRow = [reels[0][2].icon, reels[1][2].icon, reels[2][2].icon, reels[3][2].icon, reels[4][2].icon];
+
+    // 检测是否有三个相同的连成一条线 (这里简化检测第一行)
+    const winIcons = ['A', 'K', 'Q'];
+    let winAmount = 0;
+
+    winIcons.forEach(icon => {
+        // 检测中间列是否全是该图标 (模拟中奖线)
+        if (reels[2][0].icon === icon && reels[2][1].icon === icon && reels[2][2].icon === icon) {
+            winAmount = bet * 10; // 10倍赔付
+        }
+    });
+
+    if (winAmount > 0) {
+        balance += winAmount;
+        // 加金币飘移动画逻辑
+        this.add.text(400, 400, `+¥${winAmount}`, { fontSize: '32px', fill: '#ffcc00' }).setAlpha(1).setDepth(100);
+        this.tweens.add({
+            targets: this.add.text(400, 400, `+¥${winAmount}`),
+            y: 600,
+            alpha: 0,
+            duration: 1000
+        });
+    }
+    updateBalanceDisplay();
+}
+
+function updateBalanceDisplay() {
+    document.getElementById('bet-info').innerText = `¥${bet.toFixed(2)}`;
+    // 这里需要用Phaser更新文本...
+}
+
+function update() {}
 </script>
 </body>
 </html>
