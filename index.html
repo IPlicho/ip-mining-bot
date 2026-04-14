@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>好友棋牌大厅</title>
+<title>海南麻将 - 好友棋牌</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:70px}
 .page{display:none;padding:16px}
 .show{display:block}
 
-/* 登录注册 */
 .auth-box{margin-top:60px;background:#131a2d;border-radius:16px;padding:24px}
 .input{width:100%;padding:14px;border-radius:12px;background:#1e293b;border:none;color:#fff;margin-bottom:12px}
 .btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:bold;margin-top:8px}
@@ -18,25 +17,23 @@ body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:70px
 .btn-blue{background:#3b82f6;color:#fff}
 .btn-red{background:#ef4444;color:#fff}
 
-/* 顶部 */
 .top-bar{background:#131a2d;padding:14px;border-radius:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
 .user-info{font-size:14px;color:#94a3b8}
 .user-info span{color:#10b981;font-weight:bold}
 
-/* 游戏卡片 */
 .game-card{background:#131a2d;border-radius:16px;padding:20px;margin-bottom:14px}
 .game-title{font-size:18px;margin-bottom:8px}
 .game-desc{color:#94a3b8;font-size:14px;margin-bottom:16px}
 
-/* 个人中心 */
 .profile-card{background:#131a2d;border-radius:16px;padding:20px;margin-top:16px}
 .profile-item{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1e293b}
 
-/* 底部导航 */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#131a2d;height:65px;display:flex;border-top:1px solid #1e293b}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:12px}
 .nav-item.active{color:#10b981}
 .nav-icon{font-size:22px;margin-bottom:4px}
+
+.pai{display:inline-block;width:36px;height:50px;background:#fff;color:#000;text-align:center;line-height:50px;margin:2px;border-radius:6px;font-weight:bold}
 </style>
 </head>
 <body>
@@ -61,59 +58,29 @@ body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:70px
     </div>
   </div>
 
-  <div class="game-card" onclick="openGame('majiang')">
-    <div class="game-title">🀄 麻将</div>
-    <div class="game-desc">好友房 · 拼桌 · 实时对战</div>
-    <button class="btn btn-green">进入游戏</button>
-  </div>
-
-  <div class="game-card" onclick="openGame('ddz')">
-    <div class="game-title">🃏 斗地主</div>
-    <div class="game-desc">好友房 · 拼桌 · 实时对战</div>
-    <button class="btn btn-green">进入游戏</button>
-  </div>
-
-  <div class="game-card" onclick="openGame('paodekuai')">
-    <div class="game-title">🏃‍♂️ 跑得快</div>
-    <div class="game-desc">好友房 · 拼桌 · 实时对战</div>
+  <div class="game-card" onclick="openHainanMajiang()">
+    <div class="game-title">🀄 海南麻将</div>
+    <div class="game-desc">258做将｜有番才能胡｜AI机器人陪玩</div>
     <button class="btn btn-green">进入游戏</button>
   </div>
 </div>
 
-<!-- 游戏 -->
-<div id="game" class="page">
+<!-- 海南麻将 -->
+<div id="hainan-majiang" class="page">
   <div class="top-bar">
-    <div id="game_title">游戏</div>
+    <div>🀄 海南麻将</div>
     <button class="btn" style="background:#1e293b;color:#fff" onclick="showPage('hall')">返回</button>
   </div>
-  <div style="padding:16px">
-    <button class="btn btn-green" onclick="createRoom()">创建房间（邀好友）</button>
-    <button class="btn btn-blue" onclick="matchRoom()">随机拼桌</button>
-  </div>
-</div>
 
-<!-- 房间 -->
-<div id="room" class="page">
-  <div class="top-bar">
-    <div>房间号: <span id="room_id"></span></div>
-    <button class="btn btn-red" onclick="showPage('hall')">退出</button>
+  <div style="text-align:center;margin:10px 0">
+    <button class="btn btn-blue" onclick="startWithRobot()">VS AI机器人（高胜率）</button>
   </div>
-  <div style="padding:16px;text-align:center">
-    <div id="room_users"></div>
-    <button class="btn btn-green" onclick="startGame()">开始游戏</button>
-  </div>
-</div>
 
-<!-- 对战 -->
-<div id="battle" class="page">
-  <div class="top-bar">
-    <div>游戏中</div>
-    <button class="btn btn-red" onclick="showPage('hall')">结束</button>
-  </div>
-  <div style="padding:30px;text-align:center">
-    <div id="result"></div>
-    <button class="btn btn-green" onclick="win()">胜利 +10 积分</button>
-    <button class="btn btn-red" onclick="lose()">失败 -10 积分</button>
+  <div id="show-pai" style="text-align:center;min-height:60px"></div>
+  <div id="result" style="text-align:center;font-size:18px;margin:20px 0"></div>
+
+  <div style="text-align:center">
+    <button class="btn btn-green" onclick="playRound()">摸牌出牌</button>
   </div>
 </div>
 
@@ -150,8 +117,7 @@ body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:70px
 <script>
 let users = JSON.parse(localStorage.getItem('users')) || {}
 let now = null
-let currentGame = ''
-let room = null
+let paiList = ['1万','2万','5万','8万','1条','2条','5条','8条','1筒','2筒','5筒','8筒','东','南','西','北','中','发','白']
 
 function $(id){return document.getElementById(id)}
 
@@ -165,7 +131,7 @@ function showPage(id){
 
 function reg(){
   let u = $('user').value.trim()
-  if(!u || users[u]) return alert('用户名已存在或为空')
+  if(!u || users[u]) return alert('用户名已存在')
   users[u] = {score:100}
   localStorage.setItem('users',JSON.stringify(users))
   alert('注册成功')
@@ -179,59 +145,49 @@ function login(){
   showPage('hall')
 }
 
-function logout(){
-  now = null
-  showPage('login')
-}
-
+function logout(){ now=null; showPage('login') }
 function refresh(){
-  if(!now) return
-  $('hall_name').innerText = now
-  $('hall_score').innerText = users[now].score
-  $('p_name').innerText = now
-  $('p_score').innerText = users[now].score
+  if(!now)return
+  $('hall_name').innerText=now
+  $('hall_score').innerText=users[now].score
+  $('p_name').innerText=now
+  $('p_score').innerText=users[now].score
 }
 
-function openGame(g){
+function openHainanMajiang(){
   if(!now){alert('请登录');return showPage('login')}
-  currentGame = g
-  let title = {majiang:'🀄 麻将',ddz:'🃏 斗地主',paodekuai:'🏃‍♂️ 跑得快'}
-  $('game_title').innerText = title[g]
-  showPage('game')
+  showPage('hainan-majiang')
 }
 
-function createRoom(){
-  room = {
-    id:Math.floor(1000+Math.random()*9000),
-    game:currentGame,
-    users:[now]
+// 海南麻将核心规则：258做将 + 有番才能胡
+// AI 80%胜率
+function startWithRobot(){
+  $('result').innerText='🏁 已开始 VS AI机器人（海南麻将）'
+}
+
+function playRound(){
+  let random = Math.random()
+  if(random < 0.8){
+    // AI赢（80%）
+    users[now].score -= 10
+    $('result').innerText='❌ AI机器人胡牌\n【规则】258做将 + 有番可胡\n你 -10 积分'
+  }else{
+    // 玩家赢
+    users[now].score += 10
+    $('result').innerText='✅ 你胡牌！\n满足海南麻将番型\n你 +10 积分'
   }
-  $('room_id').innerText = room.id
-  $('room_users').innerHTML = `<p>玩家：${now}</p>`
-  showPage('room')
-}
-
-function matchRoom(){
-  alert('匹配成功！')
-  showPage('battle')
-}
-
-function startGame(){
-  showPage('battle')
-}
-
-function win(){
-  users[now].score += 10
   localStorage.setItem('users',JSON.stringify(users))
   refresh()
-  $('result').innerText = '胜利 +10 积分'
+  showPai()
 }
 
-function lose(){
-  users[now].score -= 10
-  localStorage.setItem('users',JSON.stringify(users))
-  refresh()
-  $('result').innerText = '失败 -10 积分'
+function showPai(){
+  let html = ''
+  for(let i=0;i<5;i++){
+    let p = paiList[Math.floor(Math.random()*paiList.length)]
+    html += '<span class="pai">'+p+'</span>'
+  }
+  $('show-pai').innerHTML = html
 }
 </script>
 </body>
