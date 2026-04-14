@@ -3,27 +3,85 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大厅</title>
+    <title>游戏大厅</title>
     <style>
-        body{background:#27ae60;color:white;padding:1rem}
-        .item{background:rgba(255,255,255,.1);margin:1rem 0;padding:1rem;border-radius:12px}
-        button{width:100%;padding:1rem;background:white;color:#27ae60;border:none;border-radius:10px}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            min-height:100vh;
+            background:#27ae60;
+            color:white;
+            font-family:"微软雅黑",sans-serif;
+            padding:1rem;
+        }
+        h2{
+            text-align:center;
+            margin:1rem 0;
+            font-size:2rem;
+        }
+        #score{
+            text-align:center;
+            font-size:1.2rem;
+            margin-bottom:2rem;
+            opacity:0.9;
+        }
+        .item{
+            background:rgba(255,255,255,0.1);
+            margin:1rem 0;
+            padding:1.5rem;
+            border-radius:12px;
+            backdrop-filter:blur(10px);
+        }
+        .item h3{
+            font-size:1.5rem;
+            margin-bottom:0.5rem;
+        }
+        .item p{
+            opacity:0.8;
+            margin-bottom:1rem;
+        }
+        button{
+            width:100%;
+            padding:1rem;
+            background:white;
+            color:#27ae60;
+            border:none;
+            border-radius:10px;
+            font-size:1.1rem;
+            font-weight:bold;
+            cursor:pointer;
+            transition:transform 0.2s;
+        }
+        button:hover{
+            transform:translateY(-3px);
+        }
     </style>
 </head>
 <body>
-<h2>游戏大厅</h2>
-{% for rid, info in rooms.items() %}
-<div class="item">
-    <h3>{{info.name}}</h3>
-    <p>入场积分：{{info.cost}}</p>
-    <button onclick="go('{{rid}}')">进入房间</button>
-</div>
-{% endfor %}
+    <h2>🎲 麻将大厅</h2>
+    <div id="score"></div>
 
-<script>
-function go(rid){
-    location.href="/room/"+rid
-}
-</script>
+    {% for rid, info in rooms.items() %}
+    <div class="item">
+        <h3>{{info.name}}</h3>
+        <p>入场积分要求：{{info.cost}}</p>
+        <button onclick="enter('{{rid}}')">进入房间</button>
+    </div>
+    {% endfor %}
+
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const uid = localStorage.uid;
+        if(!uid)location.href="/";
+
+        socket.emit("login", {uid:uid});
+        socket.on("login_ok", d=>{
+            document.getElementById("score").innerText = "当前积分：" + d.score;
+        });
+
+        function enter(rid){
+            location.href = "/room/"+rid;
+        }
+    </script>
 </body>
 </html>
