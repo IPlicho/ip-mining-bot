@@ -6,41 +6,162 @@
     <title>房间 {{rid}}</title>
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <style>
-        body{background:#27ae60;color:white;padding:1rem}
-        .tile{width:44px;height:60px;background:white;color:black;display:inline-block;text-align:center;line-height:60px;margin:2px;border-radius:6px}
-        .hand{margin-top:20px}
-        button{width:100%;padding:1rem;background:white;color:#27ae60;border:none;border-radius:10px;margin-top:10px}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            min-height:100vh;
+            background:#27ae60;
+            color:white;
+            font-family:"微软雅黑",sans-serif;
+            padding:1rem;
+        }
+        .info{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:1rem;
+            padding:0.5rem;
+        }
+        .players{
+            display:flex;
+            flex-wrap:wrap;
+            gap:0.5rem;
+            margin-bottom:1rem;
+            padding:0.5rem;
+        }
+        .player{
+            background:rgba(255,255,255,0.1);
+            padding:0.5rem 1rem;
+            border-radius:8px;
+        }
+        .discards{
+            display:flex;
+            flex-wrap:wrap;
+            gap:0.3rem;
+            background:rgba(0,0,0,0.1);
+            padding:1rem;
+            border-radius:10px;
+            margin-bottom:1rem;
+            min-height:80px;
+        }
+        .tile{
+            width:42px;
+            height:58px;
+            background:white;
+            color:black;
+            border-radius:6px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:bold;
+            font-size:1rem;
+            box-shadow:0 2px 5px rgba(0,0,0,0.2);
+        }
+        .hand{
+            display:flex;
+            flex-wrap:wrap;
+            gap:0.4rem;
+            justify-content:center;
+            margin-top:1rem;
+            min-height:80px;
+        }
+        .hand .tile{
+            width:48px;
+            height:66px;
+            cursor:pointer;
+            transition:transform 0.2s;
+        }
+        .hand .tile:hover{
+            transform:translateY(-8px);
+        }
+        .btn{
+            background:white;
+            color:#27ae60;
+            padding:1rem;
+            border:none;
+            border-radius:12px;
+            width:100%;
+            margin-top:1rem;
+            font-weight:bold;
+            font-size:1.2rem;
+            cursor:pointer;
+        }
+        #msg{
+            text-align:center;
+            color:#ffeb3b;
+            margin:1rem 0;
+            font-size:1.1rem;
+        }
     </style>
 </head>
 <body>
-<h3>{{room.name}} 入场：{{room.cost}}积分</h3>
-<div id="discards"></div>
-<div class="hand" id="hand"></div>
-<button onclick="start()">开始游戏</button>
+    <div class="info">
+        <div>{{room.name}}</div>
+        <div>入场积分：{{room.cost}}</div>
+    </div>
 
-<script>
-const rid = "{{rid}}";
-const socket = io();
-socket.emit("login", {uid:localStorage.uid});
+    <div id="msg"></div>
+    <div class="players" id="players"></div>
 
-function start(){
-    socket.emit("enter", {rid:rid, uid:localStorage.uid});
-    socket.emit("start", rid);
-}
+    <h4>出牌区</h4>
+    <div class="discards" id="discards"></div>
 
-socket.on("hand", (hand)=>{
-    document.getElementById("hand").innerHTML = hand.map(t=>
-        `<div class='tile' onclick='discard("${t}")'>${t}</div>`
-    ).join("");
-})
+    <h4>你的手牌</h4>
+    <div class="hand" id="hand"></div>
 
-function discard(tile){
-    socket.emit("discard", {rid:rid, tile:tile});
-}
+    <button class="btn" id="startBtn" onclick="startGame()">开始游戏（需2人以上）</button>
 
-socket.on("show", (d)=>{
-    document.getElementById("discards").innerHTML += `<div class='tile'>${d.tile}</div>`;
-})
-</script>
+    <script>
+        const rid = "{{rid}}";
+        const uid = localStorage.uid;
+        const socket = io();
+        let myHand = [];
+
+        // 登录后进入房间
+        socket.emit("login", {uid:uid});
+        socket.on("login_ok", ()=>{
+            socket.emit("enter_room", {rid:rid, uid:uid});
+        });
+
+        // 房间玩家更新
+        socket.on("room_update", d=>{
+            document.getElementById("players").innerHTML =
+                d.players.map(n=>`<div class="player">${n}</div>`).join('');
+        });
+
+        // 开始游戏
+        function startGame(){
+            socket.emit("start_game", rid);
+        }
+
+        // 游戏开始通知
+        socket.on("game_start", d=>{
+            document.getElementById("msg").innerText = "游戏开始！当前出牌："+d.current;
+            document.getElementById("startBtn").style.display = "none";
+        });
+
+        // 接收自己的手牌
+        socket.on("your_hand", d=>{
+            myHand = d.hand;
+            document.getElementById("hand").innerHTML =
+                myHand.map(t=>`<div class="tile" onclick="doDiscard('${t}')">${t}</div>`).join('');
+        });
+
+        // 出牌
+        function doDiscard(tile){
+            socket.emit("discard", {rid:rid, tile:tile});
+        }
+
+        // 接收别人出牌
+        socket.on("discarded", d=>{
+            document.getElementById("msg").innerText = `${d.player} 打出 ${d.tile} | 下家：${d.next}`;
+            document.getElementById("discards").innerHTML =
+                d.discards.map(x=>`<div class="tile">${x.tile}</div>`).join('');
+        });
+
+        // 错误提示
+        socket.on("err", d=>{
+            alert(d.msg);
+        });
+    </script>
 </body>
 </html>
