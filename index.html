@@ -3,196 +3,235 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>好友棋牌 - 麻将·斗地主·跑得快</title>
+<title>好友棋牌大厅</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#0b1018;color:#fff;font-family:system-ui}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0c1222;color:#e6e9ef;font-family:sans-serif;padding-bottom:70px}
 .page{display:none;padding:16px}
 .show{display:block}
-input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none;background:#1e293b;color:#fff}
-button{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none;background:#10b981;color:#fff;font-weight:bold}
-.btn-red{background:#ef4444}
-.btn-blue{background:#3b82f6}
-.card{background:#1e293b;border-radius:14px;padding:16px;margin:10px 0}
-.title{font-size:20px;font-weight:bold;margin-bottom:12px}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#111827;display:flex;height:65px}
-.nav-item{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#9ca3af}
+
+/* 登录注册 */
+.auth-box{margin-top:60px;background:#131a2d;border-radius:16px;padding:24px}
+.input{width:100%;padding:14px;border-radius:12px;background:#1e293b;border:none;color:#fff;margin-bottom:12px}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:bold;margin-top:8px}
+.btn-green{background:#10b981;color:#fff}
+.btn-blue{background:#3b82f6;color:#fff}
+.btn-red{background:#ef4444;color:#fff}
+
+/* 顶部 */
+.top-bar{background:#131a2d;padding:14px;border-radius:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.user-info{font-size:14px;color:#94a3b8}
+.user-info span{color:#10b981;font-weight:bold}
+
+/* 游戏卡片 */
+.game-card{background:#131a2d;border-radius:16px;padding:20px;margin-bottom:14px}
+.game-title{font-size:18px;margin-bottom:8px}
+.game-desc{color:#94a3b8;font-size:14px;margin-bottom:16px}
+
+/* 个人中心 */
+.profile-card{background:#131a2d;border-radius:16px;padding:20px;margin-top:16px}
+.profile-item{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1e293b}
+
+/* 底部导航 */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#131a2d;height:65px;display:flex;border-top:1px solid #1e293b}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:12px}
 .nav-item.active{color:#10b981}
+.nav-icon{font-size:22px;margin-bottom:4px}
 </style>
 </head>
 <body>
 
 <!-- 登录 -->
 <div id="login" class="page show">
-  <div class="card" style="margin-top:60px">
-    <div class="title">登录</div>
-    <input id="user" placeholder="输入用户名">
-    <button onclick="login()">登录</button>
-    <button class="btn-blue" onclick="reg()">注册</button>
+  <div class="auth-box">
+    <h2 style="text-align:center;margin-bottom:20px">登录 / 注册</h2>
+    <input class="input" id="user" placeholder="用户名">
+    <button class="btn btn-green" onclick="login()">登录</button>
+    <button class="btn btn-blue" onclick="reg()">注册</button>
   </div>
 </div>
 
 <!-- 大厅 -->
 <div id="hall" class="page">
-  <div class="card">
-    <div>用户：<span id="uname"></span></div>
-    <div>积分：<span id="score" style="color:#10b981"></span></div>
+  <div class="top-bar">
+    <div>🎮 游戏大厅</div>
+    <div class="user-info">
+      <div id="hall_name"></div>
+      <div>积分: <span id="hall_score"></span></div>
+    </div>
   </div>
 
-  <div class="card" onclick="go('majiang')">
-    <h3>🀄 麻将</h3>
-    <p>好友房 / 随机拼桌</p>
-    <button class="btn-blue" style="margin-top:10px">进入游戏</button>
+  <div class="game-card" onclick="openGame('majiang')">
+    <div class="game-title">🀄 麻将</div>
+    <div class="game-desc">好友房 · 拼桌 · 实时对战</div>
+    <button class="btn btn-green">进入游戏</button>
   </div>
 
-  <div class="card" onclick="go('ddz')">
-    <h3>🃏 斗地主</h3>
-    <p>好友房 / 随机拼桌</p>
-    <button class="btn-blue" style="margin-top:10px">进入游戏</button>
+  <div class="game-card" onclick="openGame('ddz')">
+    <div class="game-title">🃏 斗地主</div>
+    <div class="game-desc">好友房 · 拼桌 · 实时对战</div>
+    <button class="btn btn-green">进入游戏</button>
   </div>
 
-  <div class="card" onclick="go('paodekuai')">
-    <h3>🏃‍♂️ 跑得快</h3>
-    <p>好友房 / 随机拼桌</p>
-    <button class="btn-blue" style="margin-top:10px">进入游戏</button>
-  </div>
-</div>
-
-<!-- 麻将 -->
-<div id="majiang" class="page">
-  <div class="title">🀄 麻将</div>
-  <div class="card">
-    <button onclick="createRoom('majiang')">创建房间（邀好友）</button>
-    <button class="btn-blue" onclick="matchTable('majiang')">随机拼桌</button>
-    <button onclick="go('hall')">返回大厅</button>
-  </div>
-</div>
-
-<!-- 斗地主 -->
-<div id="ddz" class="page">
-  <div class="title">🃏 斗地主</div>
-  <div class="card">
-    <button onclick="createRoom('ddz')">创建房间（邀好友）</button>
-    <button class="btn-blue" onclick="matchTable('ddz')">随机拼桌</button>
-    <button onclick="go('hall')">返回大厅</button>
-  </div>
-</div>
-
-<!-- 跑得快 -->
-<div id="paodekuai" class="page">
-  <div class="title">🏃‍♂️ 跑得快</div>
-  <div class="card">
-    <button onclick="createRoom('paodekuai')">创建房间（邀好友）</button>
-    <button class="btn-blue" onclick="matchTable('paodekuai')">随机拼桌</button>
-    <button onclick="go('hall')">返回大厅</button>
-  </div>
-</div>
-
-<!-- 房间 -->
-<div id="room" class="page">
-  <div class="title">房间号：<span id="roomid"></span></div>
-  <div class="card">
-    <div id="players"></div>
-    <button onclick="startGame()">开始游戏</button>
-    <button class="btn-red" onclick="go('hall')">退出房间</button>
+  <div class="game-card" onclick="openGame('paodekuai')">
+    <div class="game-title">🏃‍♂️ 跑得快</div>
+    <div class="game-desc">好友房 · 拼桌 · 实时对战</div>
+    <button class="btn btn-green">进入游戏</button>
   </div>
 </div>
 
 <!-- 游戏 -->
 <div id="game" class="page">
-  <div class="title">游戏中</div>
-  <div class="card">
-    <div id="result"></div>
-    <button onclick="win()">我赢了 +10 积分</button>
-    <button class="btn-red" onclick="lose()">我输了 -10 积分</button>
-    <button onclick="go('hall')">结束游戏</button>
+  <div class="top-bar">
+    <div id="game_title">游戏</div>
+    <button class="btn" style="background:#1e293b;color:#fff" onclick="showPage('hall')">返回</button>
   </div>
+  <div style="padding:16px">
+    <button class="btn btn-green" onclick="createRoom()">创建房间（邀好友）</button>
+    <button class="btn btn-blue" onclick="matchRoom()">随机拼桌</button>
+  </div>
+</div>
+
+<!-- 房间 -->
+<div id="room" class="page">
+  <div class="top-bar">
+    <div>房间号: <span id="room_id"></span></div>
+    <button class="btn btn-red" onclick="showPage('hall')">退出</button>
+  </div>
+  <div style="padding:16px;text-align:center">
+    <div id="room_users"></div>
+    <button class="btn btn-green" onclick="startGame()">开始游戏</button>
+  </div>
+</div>
+
+<!-- 对战 -->
+<div id="battle" class="page">
+  <div class="top-bar">
+    <div>游戏中</div>
+    <button class="btn btn-red" onclick="showPage('hall')">结束</button>
+  </div>
+  <div style="padding:30px;text-align:center">
+    <div id="result"></div>
+    <button class="btn btn-green" onclick="win()">胜利 +10 积分</button>
+    <button class="btn btn-red" onclick="lose()">失败 -10 积分</button>
+  </div>
+</div>
+
+<!-- 个人中心 -->
+<div id="profile" class="page">
+  <div class="top-bar">
+    <div>个人中心</div>
+  </div>
+  <div class="profile-card">
+    <div class="profile-item">
+      <div>用户名</div>
+      <div id="p_name"></div>
+    </div>
+    <div class="profile-item">
+      <div>当前积分</div>
+      <div id="p_score" style="color:#10b981"></div>
+    </div>
+  </div>
+  <button class="btn btn-red" onclick="logout()">退出登录</button>
 </div>
 
 <!-- 底部导航 -->
 <div class="bottom-nav">
-  <div class="nav-item active" onclick="go('hall')">
-    <div>🎮</div>
-    <div>大厅</div>
+  <div class="nav-item active" onclick="showPage('hall')">
+    <div class="nav-icon">🎮</div>
+    <div>游戏大厅</div>
   </div>
-  <div class="nav-item" onclick="showInfo()">
-    <div>👤</div>
-    <div>我的</div>
+  <div class="nav-item" onclick="showPage('profile')">
+    <div class="nav-icon">👤</div>
+    <div>个人中心</div>
   </div>
 </div>
 
 <script>
 let users = JSON.parse(localStorage.getItem('users')) || {}
 let now = null
+let currentGame = ''
 let room = null
 
-function show(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'))
-  document.getElementById(id).classList.add('show')
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
-  if(id==='hall')document.querySelector('.nav-item').classList.add('active')
-}
+function $(id){return document.getElementById(id)}
 
-function go(id){
-  if(!now && id!='login'){alert('请登录');return show('login')}
-  show(id)
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'))
+  $(id).classList.add('show')
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
+  if(id==='hall') document.querySelector('.nav-item:nth-child(1)').classList.add('active')
+  if(id==='profile') document.querySelector('.nav-item:nth-child(2)').classList.add('active')
 }
 
 function reg(){
-  let u = document.getElementById('user').value
-  if(!u || users[u])return alert('用户名已存在或为空')
-  users[u]={score:100}
+  let u = $('user').value.trim()
+  if(!u || users[u]) return alert('用户名已存在或为空')
+  users[u] = {score:100}
   localStorage.setItem('users',JSON.stringify(users))
   alert('注册成功')
 }
 
 function login(){
-  let u = document.getElementById('user').value
-  if(!users[u])return alert('用户不存在')
+  let u = $('user').value.trim()
+  if(!users[u]) return alert('用户不存在')
   now = u
   refresh()
-  go('hall')
+  showPage('hall')
+}
+
+function logout(){
+  now = null
+  showPage('login')
 }
 
 function refresh(){
-  if(!now)return
-  document.getElementById('uname').innerText=now
-  document.getElementById('score').innerText=users[now].score
+  if(!now) return
+  $('hall_name').innerText = now
+  $('hall_score').innerText = users[now].score
+  $('p_name').innerText = now
+  $('p_score').innerText = users[now].score
 }
 
-function createRoom(g){
-  room = {game:g,id:Math.floor(1000+Math.random()*9000),p:[now]}
-  document.getElementById('roomid').innerText=room.id
-  document.getElementById('players').innerHTML='<p>玩家：'+now+'</p>'
-  go('room')
+function openGame(g){
+  if(!now){alert('请登录');return showPage('login')}
+  currentGame = g
+  let title = {majiang:'🀄 麻将',ddz:'🃏 斗地主',paodekuai:'🏃‍♂️ 跑得快'}
+  $('game_title').innerText = title[g]
+  showPage('game')
 }
 
-function matchTable(g){
-  alert('匹配成功！进入游戏')
-  go('game')
+function createRoom(){
+  room = {
+    id:Math.floor(1000+Math.random()*9000),
+    game:currentGame,
+    users:[now]
+  }
+  $('room_id').innerText = room.id
+  $('room_users').innerHTML = `<p>玩家：${now}</p>`
+  showPage('room')
+}
+
+function matchRoom(){
+  alert('匹配成功！')
+  showPage('battle')
 }
 
 function startGame(){
-  alert('游戏开始！')
-  go('game')
+  showPage('battle')
 }
 
 function win(){
   users[now].score += 10
   localStorage.setItem('users',JSON.stringify(users))
   refresh()
-  document.getElementById('result').innerText='你赢了 +10 积分'
+  $('result').innerText = '胜利 +10 积分'
 }
 
 function lose(){
   users[now].score -= 10
   localStorage.setItem('users',JSON.stringify(users))
   refresh()
-  document.getElementById('result').innerText='你输了 -10 积分'
-}
-
-function showInfo(){
-  alert('用户：'+now+'\n积分：'+users[now].score)
+  $('result').innerText = '失败 -10 积分'
 }
 </script>
 </body>
