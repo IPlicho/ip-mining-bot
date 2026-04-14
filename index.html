@@ -1,173 +1,299 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>海盗老虎机 - 高仿版</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; overflow: hidden; font-family: 'Arial', sans-serif; }
-        #game-container { width: 100vw; height: 100vh; position: relative; }
-        /* 仿截图底部UI */
-        .ui-bottom { position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; z-index: 10; }
-        .btn { display: inline-block; width: 60px; height: 60px; border-radius: 50%; background: #ffcc00; margin: 0 15px; font-size: 24px; line-height: 60px; cursor: pointer; }
-        .bet-display { display: inline-block; background: #333; color: #fff; padding: 10px 30px; border-radius: 8px; font-size: 18px; margin: 0 10px; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PG电子游戏厅</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0c0c1a;--card:#141425;--br:#2a2a42;--gold:#ffb100;--pink:#ff3d71;--pur:#7057ff}
+body{background:var(--bg);color:#fff;font-family:system-ui,sans-serif;max-width:480px;margin:0 auto}
+.page{padding:16px}
+.box{background:var(--card);border-radius:14px;padding:20px;margin-top:20px;border:1px solid var(--br)}
+.title{font-size:18px;font-weight:700;margin-bottom:16px;text-align:center}
+input{width:100%;padding:14px;background:var(--br);border:none;border-radius:10px;color:#fff;margin-bottom:12px}
+.btn{width:100%;padding:14px;background:var(--pink);border:none;border-radius:10px;color:#fff;font-weight:700;margin-top:8px}
+.btn-outline{background:transparent;border:1px solid var(--br)}
+.header{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--card);border-radius:12px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.game{background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--br)}
+.cover{height:130px;display:grid;place-items:center;font-size:44px;background:#19192d}
+.info{padding:12px}
+.name{font-weight:600;margin-bottom:6px}
+.play{background:var(--pink);color:#fff;border:none;width:100%;padding:10px;border-radius:10px;margin-top:8px;font-weight:700}
+.profile{background:var(--card);border-radius:14px;padding:18px;margin-top:20px;border:1px solid var(--br)}
+.item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--br)}
+.item:last-child{border-bottom:none}
+.game-page{display:none;padding:12px}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--card);border-radius:12px;margin-bottom:12px}
+.back{width:36px;height:36px;border-radius:50%;background:var(--br);border:none;color:#fff}
+.slot{background:var(--card);border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--br)}
+.reels{display:flex;gap:8px;justify-content:center}
+.reel{width:70px;height:110px;background:#0f0f1d;border:2px solid var(--br);border-radius:10px;overflow:hidden}
+.strip{position:relative;top:0;transition:top 0.7s cubic-bezier(0.2,0.7,0.8,0.6)}
+.sym{height:110px;display:grid;place-items:center;font-size:34px}
+.ctrl{background:var(--card);border-radius:14px;padding:16px}
+.bet-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.bet-btn{width:36px;height:36px;border-radius:50%;background:var(--br);border:none;color:#fff}
+.bet-val{font-size:17px;font-weight:700;min-width:60px;text-align:center}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.action-btn{padding:12px 0;border-radius:10px;border:none;font-weight:700;background:var(--pink);color:#fff}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;color:#fff;padding:12px 20px;border-radius:8px;display:none;z-index:10}
+</style>
 </head>
 <body>
-<div id="game-container">
-    <!-- 底部UI -->
-    <div class="ui-bottom">
-        <div class="btn">⚡</div> <!-- 极速 -->
-        <div class="btn">-</div>  <!-- 减注 -->
-        <div class="bet-display" id="bet-info">¥0.80</div> <!-- 投注 -->
-        <div class="btn">+</div>  <!-- 加注 -->
-        <div class="btn">▶️</div> <!-- 自动 -->
-    </div>
+
+<!-- 登录 -->
+<div id="login-page" class="page">
+  <div class="header"><div style="font-weight:700">PG电子游戏厅</div></div>
+  <div class="box">
+    <div class="title">账号登录</div>
+    <input id="login-user" placeholder="用户名">
+    <input id="login-pwd" type="password" placeholder="密码">
+    <button class="btn" onclick="login()">登录</button>
+    <button class="btn btn-outline" onclick="showPage('reg-page')">去注册</button>
+  </div>
 </div>
 
+<!-- 注册 -->
+<div id="reg-page" class="page" style="display:none">
+  <div class="header"><div style="font-weight:700">PG电子游戏厅</div></div>
+  <div class="box">
+    <div class="title">注册账号</div>
+    <input id="reg-user" placeholder="用户名">
+    <input id="reg-pwd" type="password" placeholder="密码">
+    <button class="btn" onclick="reg()">注册</button>
+    <button class="btn btn-outline" onclick="showPage('login-page')">返回登录</button>
+  </div>
+</div>
+
+<!-- 大厅 -->
+<div id="hall-page" class="page" style="display:none">
+  <div class="header">
+    <div>游戏大厅</div>
+    <div id="uname" style="color:var(--gold)"></div>
+  </div>
+  <div class="grid">
+    <div class="game" onclick="openGame('queen')">
+      <div class="cover">👑</div>
+      <div class="info">
+        <div class="name">赏金女王</div>
+        <button class="play">开始游戏</button>
+      </div>
+    </div>
+    <div class="game" onclick="openGame('mahjong')">
+      <div class="cover">🀄</div>
+      <div class="info">
+        <div class="name">麻将胡了</div>
+        <button class="play">开始游戏</button>
+      </div>
+    </div>
+  </div>
+  <div class="profile">
+    <div class="item"><div>用户名</div><div id="u-user"></div></div>
+    <div class="item"><div>余额</div><div id="u-money" style="color:var(--gold)"></div></div>
+    <div class="item"><div>游戏次数</div><div id="u-times"></div></div>
+  </div>
+  <button class="btn" onclick="logout()">退出登录</button>
+</div>
+
+<!-- 赏金女王 -->
+<div id="queen-page" class="game-page">
+  <div class="bar">
+    <button class="back" onclick="backHall()">←</button>
+    <div>赏金女王</div>
+    <div id="q-money" style="color:var(--gold)"></div>
+  </div>
+  <div class="slot">
+    <div class="reels">
+      <div class="reel"><div class="strip" id="q1"></div></div>
+      <div class="reel"><div class="strip" id="q2"></div></div>
+      <div class="reel"><div class="strip" id="q3"></div></div>
+      <div class="reel"><div class="strip" id="q4"></div></div>
+      <div class="reel"><div class="strip" id="q5"></div></div>
+    </div>
+  </div>
+  <div class="ctrl">
+    <div class="bet-line">
+      <div>投注</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="bet-btn" onclick="setBet('q',-0.1)">-</button>
+        <div class="bet-val" id="q-bet">0.80</div>
+        <button class="bet-btn" onclick="setBet('q',0.1)">+</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="action-btn" style="background:var(--pur)">自动</button>
+      <button class="action-btn" onclick="playQueen()">开始</button>
+      <button class="action-btn" style="background:#ff7b42">极速</button>
+    </div>
+  </div>
+</div>
+
+<!-- 麻将胡了 -->
+<div id="mahjong-page" class="game-page">
+  <div class="bar">
+    <button class="back" onclick="backHall()">←</button>
+    <div>麻将胡了</div>
+    <div id="m-money" style="color:var(--gold)"></div>
+  </div>
+  <div class="slot">
+    <div class="reels">
+      <div class="reel"><div class="strip" id="m1"></div></div>
+      <div class="reel"><div class="strip" id="m2"></div></div>
+      <div class="reel"><div class="strip" id="m3"></div></div>
+      <div class="reel"><div class="strip" id="m4"></div></div>
+      <div class="reel"><div class="strip" id="m5"></div></div>
+    </div>
+  </div>
+  <div class="ctrl">
+    <div class="bet-line">
+      <div>投注</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="bet-btn" onclick="setBet('m',-0.1)">-</button>
+        <div class="bet-val" id="m-bet">0.80</div>
+        <button class="bet-btn" onclick="setBet('m',0.1)">+</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="action-btn" style="background:var(--pur)">自动</button>
+      <button class="action-btn" onclick="playMahjong()">开始</button>
+      <button class="action-btn" style="background:#ff7b42">极速</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-// 1. 配置游戏参数
-const config = {
-    type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    parent: 'game-container',
-    scene: {
-        preload: preload,
-        create: create,
-        update: update
-    },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }
-};
+let users = JSON.parse(localStorage.getItem('users')) || {}
+let nowUser = null
+let qBet = 0.8, mBet = 0.8
 
-// 2. 初始化游戏
-const game = new Phaser.Game(config);
-let bet = 0.8; // 初始投注
-let balance = 500.41; // 初始余额
-let reels = []; // 5x3 矩阵
-let spinButton;
-
-function preload() {
-    // 🔥 这里需要替换成你自己的海盗主题图片URL
-    // 建议图标的图：A, K, Q, 海盗头像, 藏宝图, 望远镜, 大炮
-    this.load.image('A', 'https://your-image-url.com/A.png');
-    this.load.image('K', 'https://your-image-url.com/K.png');
-    this.load.image('Q', 'https://your-image-url.com/Q.png');
-    this.load.image('pirate', 'https://your-image-url.com/pirate.png');
-    this.load.image('map', 'https://your-image-url.com/map.png');
-    this.load.image('telescope', 'https://your-image-url.com/telescope.png');
+const $ = id => document.getElementById(id)
+const toast = msg => {
+  const t = $('toast')
+  t.textContent = msg
+  t.style.display = 'block'
+  setTimeout(() => t.style.display = 'none', 1600)
+}
+const showPage = id => {
+  document.querySelectorAll('.page,.game-page').forEach(e => e.style.display = 'none')
+  $(id).style.display = 'block'
 }
 
-function create() {
-    // 背景
-    this.add.image(400, 300, 'background').setDisplaySize(800, 900);
+// 注册
+function reg() {
+  const user = $('reg-user').value.trim()
+  const pwd = $('reg-pwd').value.trim()
+  if (!user || !pwd) return toast('请填写完整')
+  if (users[user]) return toast('用户名已存在')
+  users[user] = { pwd, money: 1000, times: 0 }
+  localStorage.setItem('users', JSON.stringify(users))
+  toast('注册成功！请登录')
+  showPage('login-page')
+}
 
-    // 顶部倍率桶 (x1, x2, x3, x5)
-    this.add.text(150, 150, 'x1', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#ff0000');
-    this.add.text(250, 150, 'x2', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#333');
-    this.add.text(350, 150, 'x3', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#333');
-    this.add.text(450, 150, 'x5', { fontSize: '32px', fill: '#fff', fontWeight: 'bold' }).setBackgroundColor('#333');
+// 登录
+function login() {
+  const user = $('login-user').value.trim()
+  const pwd = $('login-pwd').value.trim()
+  if (!user || !pwd) return toast('请填写完整')
+  if (!users[user] || users[user].pwd !== pwd) return toast('账号或密码错误')
+  nowUser = user
+  showHall()
+}
 
-    // 3. 生成 5x3 老虎机矩阵 (核心布局)
-    const startX = 100;
-    const startY = 250;
-    const slotWidth = 120;
-    const slotHeight = 120;
+function showHall() {
+  showPage('hall-page')
+  const u = users[nowUser]
+  $('uname').textContent = nowUser
+  $('u-user').textContent = nowUser
+  $('u-money').textContent = u.money.toFixed(2)
+  $('u-times').textContent = u.times || 0
+}
 
-    for (let col = 0; col < 5; col++) { // 5列
-        reels[col] = [];
-        for (let row = 0; row < 3; row++) { // 3行
-            // 随机生成图标
-            const icons = ['A', 'K', 'Q', 'pirate', 'map', 'telescope'];
-            const randomIcon = icons[Math.floor(Math.random() * icons.length)];
-            
-            const slot = this.add.image(startX + col * slotWidth, startY + row * slotHeight, randomIcon)
-                                 .setDisplaySize(slotWidth, slotHeight);
-            reels[col][row] = { icon: randomIcon, sprite: slot };
-        }
+function logout() {
+  nowUser = null
+  showPage('login-page')
+}
+
+function backHall() { showHall() }
+function openGame(g) {
+  if (!nowUser) return toast('请先登录')
+  showPage(g + '-page')
+  refreshMoney()
+}
+
+function refreshMoney() {
+  if (!nowUser) return
+  const m = users[nowUser].money.toFixed(2)
+  $('q-money').textContent = m
+  $('m-money').textContent = m
+  $('u-money').textContent = m
+}
+
+function setBet(typ, v) {
+  if (typ === 'q') {
+    qBet = Math.max(0.2, Math.min(50, qBet + v))
+    $('q-bet').textContent = qBet.toFixed(2)
+  } else {
+    mBet = Math.max(0.2, Math.min(50, mBet + v))
+    $('m-bet').textContent = mBet.toFixed(2)
+  }
+}
+
+const queenSym = ['👑','💎','💰','♠','♥','♦','♣','7','⭐']
+const mjSym = ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡','🀁','🀂','🀃']
+
+function genStrip(el, list) {
+  let html = ''
+  for (let i = 0; i < 14; i++) {
+    const s = list[Math.floor(Math.random() * list.length)]
+    html += `<div class="sym">${s}</div>`
+  }
+  $(el).innerHTML = html
+}
+
+function playQueen() {
+  const u = users[nowUser]
+  if (u.money < qBet) return toast('余额不足')
+  u.money -= qBet
+  u.times = (u.times || 0) + 1
+  localStorage.setItem('users', JSON.stringify(users))
+  refreshMoney()
+
+  for (let i = 1; i <= 5; i++) genStrip('q' + i, queenSym)
+  setTimeout(() => {
+    const win = Math.random() < 0.32 ? qBet * 12 : 0
+    if (win > 0) {
+      u.money += win
+      localStorage.setItem('users', JSON.stringify(users))
+      refreshMoney()
+      toast('爆分 +' + win.toFixed(2))
     }
-
-    // 底部余额显示
-    this.add.text(50, 650, `¥${balance.toFixed(2)}`, { fontSize: '24px', fill: '#fff' });
-    this.add.text(300, 650, `¥${bet}`, { fontSize: '24px', fill: '#fff' }); // 投注金额
-
-    // 旋转按钮 (船舵)
-    spinButton = this.add.image(400, 750, 'spin').setDisplaySize(100, 100);
-    spinButton.setInteractive();
-    spinButton.on('pointerdown', spinReels, this);
+  }, 700)
 }
 
-// 4. 核心旋转逻辑
-function spinReels() {
-    if (balance < bet) {
-        alert('余额不足！');
-        return;
+function playMahjong() {
+  const u = users[nowUser]
+  if (u.money < mBet) return toast('余额不足')
+  u.money -= mBet
+  u.times = (u.times || 0) + 1
+  localStorage.setItem('users', JSON.stringify(users))
+  refreshMoney()
+
+  for (let i = 1; i <= 5; i++) genStrip('m' + i, mjSym)
+  setTimeout(() => {
+    const win = Math.random() < 0.35 ? mBet * 15 : 0
+    if (win > 0) {
+      u.money += win
+      localStorage.setItem('users', JSON.stringify(users))
+      refreshMoney()
+      toast('胡了 +' + win.toFixed(2))
     }
-
-    // 扣款
-    balance -= bet;
-    updateBalanceDisplay();
-
-    // 模拟转动动画
-    const spinDuration = 1000; // 1秒
-    const startTime = Date.now();
-
-    const spinInterval = setInterval(() => {
-        for (let col = 0; col < 5; col++) {
-            for (let row = 0; row < 3; row++) {
-                const icons = ['A', 'K', 'Q', 'pirate', 'map', 'telescope'];
-                reels[col][row].sprite.setTexture(icons[Math.floor(Math.random() * icons.length)]);
-            }
-        }
-
-        if (Date.now() - startTime > spinDuration) {
-            clearInterval(spinInterval);
-            // 停止后判断中奖
-            checkWin();
-        }
-    }, 50);
+  }, 700)
 }
-
-// 5. 中奖判断 (赢面逻辑)
-function checkWin() {
-    // 简单的连线中奖逻辑
-    const firstRow = [reels[0][0].icon, reels[1][0].icon, reels[2][0].icon, reels[3][0].icon, reels[4][0].icon];
-    const secondRow = [reels[0][1].icon, reels[1][1].icon, reels[2][1].icon, reels[3][1].icon, reels[4][1].icon];
-    const thirdRow = [reels[0][2].icon, reels[1][2].icon, reels[2][2].icon, reels[3][2].icon, reels[4][2].icon];
-
-    // 检测是否有三个相同的连成一条线 (这里简化检测第一行)
-    const winIcons = ['A', 'K', 'Q'];
-    let winAmount = 0;
-
-    winIcons.forEach(icon => {
-        // 检测中间列是否全是该图标 (模拟中奖线)
-        if (reels[2][0].icon === icon && reels[2][1].icon === icon && reels[2][2].icon === icon) {
-            winAmount = bet * 10; // 10倍赔付
-        }
-    });
-
-    if (winAmount > 0) {
-        balance += winAmount;
-        // 加金币飘移动画逻辑
-        this.add.text(400, 400, `+¥${winAmount}`, { fontSize: '32px', fill: '#ffcc00' }).setAlpha(1).setDepth(100);
-        this.tweens.add({
-            targets: this.add.text(400, 400, `+¥${winAmount}`),
-            y: 600,
-            alpha: 0,
-            duration: 1000
-        });
-    }
-    updateBalanceDisplay();
-}
-
-function updateBalanceDisplay() {
-    document.getElementById('bet-info').innerText = `¥${bet.toFixed(2)}`;
-    // 这里需要用Phaser更新文本...
-}
-
-function update() {}
 </script>
 </body>
 </html>
