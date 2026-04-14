@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大厅</title>
+    <style>
+        body{background:#27ae60;color:white;padding:1rem}
+        .item{background:rgba(255,255,255,.1);margin:1rem 0;padding:1rem;border-radius:12px}
+        button{width:100%;padding:1rem;background:white;color:#27ae60;border:none;border-radius:10px}
+    </style>
+</head>
+<body>
+<h2>游戏大厅</h2>
+{% for rid, info in rooms.items() %}
+<div class="item">
+    <h3>{{info.name}}</h3>
+    <p>入场积分：{{info.cost}}</p>
+    <button onclick="go('{{rid}}')">进入房间</button>
+</div>
+{% endfor %}
+
+<script>
+function go(rid){
+    location.href="/room/"+rid
+}
+</script>
+</body>
+</html>
