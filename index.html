@@ -3,292 +3,196 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>PG电子</title>
+<title>好友棋牌 - 麻将·斗地主·跑得快</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding-bottom:70px}
-  .page{display:none;padding:10px}
-  .active{display:block}
-  
-  /* 登录注册 */
-  .auth-form{margin-top:40px;padding:20px;background:#111;border-radius:14px}
-  input{width:100%;padding:14px;margin:10px 0;border-radius:10px;border:none;background:#222;color:#fff;font-size:16px}
-  button{width:100%;padding:14px;margin:10px 0;border-radius:10px;border:none;background:#ff3d71;color:#fff;font-weight:bold;font-size:16px}
-  .link{text-align:center;color:#999;margin-top:10px}
-
-  /* 顶部信息 */
-  .user-info{display:flex;justify-content:space-between;padding:12px;background:#111;border-radius:10px;margin-bottom:15px}
-  .balance{color:#ffb100;font-weight:bold}
-
-  /* 游戏列表 */
-  .game-item{background:#1a1a1a;padding:20px;border-radius:14px;margin-bottom:15px;border:1px solid #333}
-  .game-title{font-size:18px;font-weight:bold;margin-bottom:10px}
-
-  /* 个人中心 */
-  .profile-card{background:#111;padding:20px;border-radius:14px;margin-top:15px}
-  .profile-item{display:flex;justify-content:space-between;padding:15px 0;border-bottom:1px solid #333;font-size:16px}
-
-  /* 底部导航 */
-  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#111;height:60px;display:flex;border-top:1px solid #333}
-  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#999;font-size:12px}
-  .nav-btn.active{color:#ff3d71}
-  .nav-icon{font-size:22px;margin-bottom:5px}
-
-  /* 控制栏 */
-  .ctrl-bar{position:fixed;bottom:60px;left:0;right:0;background:#111;padding:10px;border-top:1px solid #333;display:flex;justify-content:space-around;align-items:center}
-  .ctrl-btn{width:50px;height:50px;border-radius:50%;background:#333;color:#fff;border:none;font-size:20px}
-  .ctrl-center{width:70px;height:70px;border-radius:50%;background:#ffb100;color:#000;border:none;font-size:26px;font-weight:bold}
-  .ctrl-bet{background:#333;color:#fff;padding:10px 16px;border-radius:8px;font-size:16px;font-weight:bold}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b1018;color:#fff;font-family:system-ui}
+.page{display:none;padding:16px}
+.show{display:block}
+input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none;background:#1e293b;color:#fff}
+button{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none;background:#10b981;color:#fff;font-weight:bold}
+.btn-red{background:#ef4444}
+.btn-blue{background:#3b82f6}
+.card{background:#1e293b;border-radius:14px;padding:16px;margin:10px 0}
+.title{font-size:20px;font-weight:bold;margin-bottom:12px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#111827;display:flex;height:65px}
+.nav-item{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#9ca3af}
+.nav-item.active{color:#10b981}
 </style>
 </head>
 <body>
 
-<!-- 1. 登录页 -->
-<div id="login-page" class="page active">
-  <div class="auth-form">
-    <h2 style="text-align:center;margin-bottom:20px">登录</h2>
-    <input id="login_user" placeholder="用户名">
-    <input id="login_pwd" type="password" placeholder="密码">
+<!-- 登录 -->
+<div id="login" class="page show">
+  <div class="card" style="margin-top:60px">
+    <div class="title">登录</div>
+    <input id="user" placeholder="输入用户名">
     <button onclick="login()">登录</button>
-    <div class="link" onclick="switchPage('reg-page')">没有账号？去注册</div>
+    <button class="btn-blue" onclick="reg()">注册</button>
   </div>
 </div>
 
-<!-- 2. 注册页 -->
-<div id="reg-page" class="page">
-  <div class="auth-form">
-    <h2 style="text-align:center;margin-bottom:20px">注册</h2>
-    <input id="reg_user" placeholder="用户名">
-    <input id="reg_pwd" type="password" placeholder="密码">
-    <button onclick="reg()">注册</button>
-    <div class="link" onclick="switchPage('login-page')">已有账号？去登录</div>
+<!-- 大厅 -->
+<div id="hall" class="page">
+  <div class="card">
+    <div>用户：<span id="uname"></span></div>
+    <div>积分：<span id="score" style="color:#10b981"></span></div>
+  </div>
+
+  <div class="card" onclick="go('majiang')">
+    <h3>🀄 麻将</h3>
+    <p>好友房 / 随机拼桌</p>
+    <button class="btn-blue" style="margin-top:10px">进入游戏</button>
+  </div>
+
+  <div class="card" onclick="go('ddz')">
+    <h3>🃏 斗地主</h3>
+    <p>好友房 / 随机拼桌</p>
+    <button class="btn-blue" style="margin-top:10px">进入游戏</button>
+  </div>
+
+  <div class="card" onclick="go('paodekuai')">
+    <h3>🏃‍♂️ 跑得快</h3>
+    <p>好友房 / 随机拼桌</p>
+    <button class="btn-blue" style="margin-top:10px">进入游戏</button>
   </div>
 </div>
 
-<!-- 3. 游戏大厅 -->
-<div id="hall-page" class="page">
-  <div class="user-info">
-    <div>欢迎: <span id="hall-uid"></span></div>
-    <div class="balance">余额: <span id="hall-money"></span></div>
-  </div>
-  
-  <div class="game-item" onclick="startGame('queen')">
-    <div class="game-title">赏金女王</div>
-    <button>开始游戏</button>
-  </div>
-
-  <div class="game-item" onclick="startGame('mahjong')">
-    <div class="game-title">麻将胡了</div>
-    <button>开始游戏</button>
+<!-- 麻将 -->
+<div id="majiang" class="page">
+  <div class="title">🀄 麻将</div>
+  <div class="card">
+    <button onclick="createRoom('majiang')">创建房间（邀好友）</button>
+    <button class="btn-blue" onclick="matchTable('majiang')">随机拼桌</button>
+    <button onclick="go('hall')">返回大厅</button>
   </div>
 </div>
 
-<!-- 4. 个人中心 -->
-<div id="profile-page" class="page">
-  <div class="profile-card">
-    <div class="profile-item">
-      <div>用户名</div>
-      <div id="p-uid"></div>
-    </div>
-    <div class="profile-item">
-      <div>余额</div>
-      <div class="balance" id="p-money"></div>
-    </div>
-    <div class="profile-item">
-      <div>游戏次数</div>
-      <div id="p-times"></div>
-    </div>
+<!-- 斗地主 -->
+<div id="ddz" class="page">
+  <div class="title">🃏 斗地主</div>
+  <div class="card">
+    <button onclick="createRoom('ddz')">创建房间（邀好友）</button>
+    <button class="btn-blue" onclick="matchTable('ddz')">随机拼桌</button>
+    <button onclick="go('hall')">返回大厅</button>
   </div>
-  <button onclick="logout()">退出登录</button>
 </div>
 
-<!-- 5. 赏金女王游戏页 -->
-<div id="queen-page" class="page">
-  <div style="text-align:center;padding:15px;font-size:20px;font-weight:bold">赏金女王</div>
-  
-  <div style="text-align:center;margin-bottom:10px">
-    <div>余额: <span id="q-money"></span></div>
+<!-- 跑得快 -->
+<div id="paodekuai" class="page">
+  <div class="title">🏃‍♂️ 跑得快</div>
+  <div class="card">
+    <button onclick="createRoom('paodekuai')">创建房间（邀好友）</button>
+    <button class="btn-blue" onclick="matchTable('paodekuai')">随机拼桌</button>
+    <button onclick="go('hall')">返回大厅</button>
   </div>
-
-  <!-- 简易矩阵 -->
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:15px">
-    <div style="background:#222;padding:10px;text-align:center">A</div>
-    <div style="background:#222;padding:10px;text-align:center">👑</div>
-    <div style="background:#222;padding:10px;text-align:center">💰</div>
-    <div style="background:#222;padding:10px;text-align:center">⭐</div>
-    <div style="background:#222;padding:10px;text-align:center">7</div>
-  </div>
-
-  <div class="ctrl-bar">
-    <button class="ctrl-btn" onclick="setBet('q',-0.1)">-</button>
-    <div class="ctrl-bet">0.80</div>
-    <button class="ctrl-btn" onclick="setBet('q',0.1)">+</button>
-    <button class="ctrl-btn">自动</button>
-    <button class="ctrl-center" onclick="spinQueen()">▶</button>
-  </div>
-  
-  <button onclick="switchPage('hall-page')" style="position:fixed;top:10px;left:10px;width:40px;height:40px;border-radius:50%;background:#333;color:#fff">←</button>
 </div>
 
-<!-- 6. 麻将胡了游戏页 -->
-<div id="mahjong-page" class="page">
-  <div style="text-align:center;padding:15px;font-size:20px;font-weight:bold">麻将胡了</div>
-  
-  <div style="text-align:center;margin-bottom:10px">
-    <div>余额: <span id="m-money"></span></div>
+<!-- 房间 -->
+<div id="room" class="page">
+  <div class="title">房间号：<span id="roomid"></span></div>
+  <div class="card">
+    <div id="players"></div>
+    <button onclick="startGame()">开始游戏</button>
+    <button class="btn-red" onclick="go('hall')">退出房间</button>
   </div>
+</div>
 
-  <!-- 简易矩阵 -->
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:15px">
-    <div style="background:#222;padding:10px;text-align:center">🀄</div>
-    <div style="background:#222;padding:10px;text-align:center">🀙</div>
-    <div style="background:#222;padding:10px;text-align:center">🀚</div>
-    <div style="background:#222;padding:10px;text-align:center">🀛</div>
-    <div style="background:#222;padding:10px;text-align:center">🀜</div>
+<!-- 游戏 -->
+<div id="game" class="page">
+  <div class="title">游戏中</div>
+  <div class="card">
+    <div id="result"></div>
+    <button onclick="win()">我赢了 +10 积分</button>
+    <button class="btn-red" onclick="lose()">我输了 -10 积分</button>
+    <button onclick="go('hall')">结束游戏</button>
   </div>
-
-  <div class="ctrl-bar">
-    <button class="ctrl-btn" onclick="setBet('m',-0.1)">-</button>
-    <div class="ctrl-bet">0.40</div>
-    <button class="ctrl-btn" onclick="setBet('m',0.1)">+</button>
-    <button class="ctrl-btn">自动</button>
-    <button class="ctrl-center" onclick="spinMahjong()">▶</button>
-  </div>
-  
-  <button onclick="switchPage('hall-page')" style="position:fixed;top:10px;left:10px;width:40px;height:40px;border-radius:50%;background:#333;color:#fff">←</button>
 </div>
 
 <!-- 底部导航 -->
 <div class="bottom-nav">
-  <div class="nav-btn active" onclick="switchPage('hall-page')">
-    <div class="nav-icon">🎮</div>
-    <div>游戏大厅</div>
+  <div class="nav-item active" onclick="go('hall')">
+    <div>🎮</div>
+    <div>大厅</div>
   </div>
-  <div class="nav-btn" onclick="switchPage('profile-page')">
-    <div class="nav-icon">👤</div>
-    <div>个人中心</div>
+  <div class="nav-item" onclick="showInfo()">
+    <div>👤</div>
+    <div>我的</div>
   </div>
 </div>
 
 <script>
-// 数据
-let users = JSON.parse(localStorage.getItem('users')) || {};
-let currentUser = null;
-let qBet = 0.8, mBet = 0.4;
+let users = JSON.parse(localStorage.getItem('users')) || {}
+let now = null
+let room = null
 
-// 工具
-const $ = id => document.getElementById(id);
-const showToast = msg => alert(msg);
-
-// 页面切换
-function switchPage(pageId){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  $(pageId).classList.add('active');
-  
-  // 更新导航状态
-  document.querySelectorAll('.nav-btn').forEach(btn=>btn.classList.remove('active'));
-  if(pageId==='hall-page') document.querySelector('.nav-btn:nth-child(1)').classList.add('active');
-  if(pageId==='profile-page') document.querySelector('.nav-btn:nth-child(2)').classList.add('active');
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'))
+  document.getElementById(id).classList.add('show')
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
+  if(id==='hall')document.querySelector('.nav-item').classList.add('active')
 }
 
-// 注册
+function go(id){
+  if(!now && id!='login'){alert('请登录');return show('login')}
+  show(id)
+}
+
 function reg(){
-  const user = $('reg_user').value.trim();
-  const pwd = $('reg_pwd').value.trim();
-  if(!user || !pwd) return showToast('请填写完整');
-  if(users[user]) return showToast('用户名已存在');
-  
-  users[user] = {pwd, money:1000, times:0};
-  localStorage.setItem('users', JSON.stringify(users));
-  showToast('注册成功');
-  switchPage('login-page');
+  let u = document.getElementById('user').value
+  if(!u || users[u])return alert('用户名已存在或为空')
+  users[u]={score:100}
+  localStorage.setItem('users',JSON.stringify(users))
+  alert('注册成功')
 }
 
-// 登录
 function login(){
-  const user = $('login_user').value.trim();
-  const pwd = $('login_pwd').value.trim();
-  
-  if(!users[user] || users[user].pwd !== pwd) return showToast('账号或密码错误');
-  
-  currentUser = user;
-  refreshUI();
-  switchPage('hall-page');
+  let u = document.getElementById('user').value
+  if(!users[u])return alert('用户不存在')
+  now = u
+  refresh()
+  go('hall')
 }
 
-// 退出
-function logout(){
-  currentUser = null;
-  switchPage('login-page');
+function refresh(){
+  if(!now)return
+  document.getElementById('uname').innerText=now
+  document.getElementById('score').innerText=users[now].score
 }
 
-// 刷新UI
-function refreshUI(){
-  if(!currentUser) return;
-  const u = users[currentUser];
-  $('hall-uid').innerText = currentUser;
-  $('hall-money').innerText = u.money.toFixed(2);
-  $('p-uid').innerText = currentUser;
-  $('p-money').innerText = u.money.toFixed(2);
-  $('p-times').innerText = u.times || 0;
-  $('q-money').innerText = u.money.toFixed(2);
-  $('m-money').innerText = u.money.toFixed(2);
+function createRoom(g){
+  room = {game:g,id:Math.floor(1000+Math.random()*9000),p:[now]}
+  document.getElementById('roomid').innerText=room.id
+  document.getElementById('players').innerHTML='<p>玩家：'+now+'</p>'
+  go('room')
 }
 
-// 投注
-function setBet(game, val){
-  if(game === 'q'){
-    qBet = Math.max(0.2, Math.min(50, qBet + val));
-  }else{
-    mBet = Math.max(0.2, Math.min(50, mBet + val));
-  }
+function matchTable(g){
+  alert('匹配成功！进入游戏')
+  go('game')
 }
 
-// 开始游戏
-function startGame(game){
-  if(!currentUser){
-    showToast('请先登录');
-    return switchPage('login-page');
-  }
-  switchPage(`${game}-page`);
+function startGame(){
+  alert('游戏开始！')
+  go('game')
 }
 
-// 赏金女王旋转
-function spinQueen(){
-  const u = users[currentUser];
-  if(u.money < qBet) return showToast('余额不足');
-  
-  u.money -= qBet;
-  u.times = (u.times || 0) + 1;
-  
-  // 简单中奖逻辑
-  if(Math.random() < 0.3){
-    const win = qBet * 10;
-    u.money += win;
-    showToast('爆分 +' + win.toFixed(2));
-  }
-  
-  localStorage.setItem('users', JSON.stringify(users));
-  refreshUI();
+function win(){
+  users[now].score += 10
+  localStorage.setItem('users',JSON.stringify(users))
+  refresh()
+  document.getElementById('result').innerText='你赢了 +10 积分'
 }
 
-// 麻将旋转
-function spinMahjong(){
-  const u = users[currentUser];
-  if(u.money < mBet) return showToast('余额不足');
-  
-  u.money -= mBet;
-  u.times = (u.times || 0) + 1;
-  
-  // 简单中奖逻辑
-  if(Math.random() < 0.25){
-    const win = mBet * 15;
-    u.money += win;
-    showToast('胡了 +' + win.toFixed(2));
-  }
-  
-  localStorage.setItem('users', JSON.stringify(users));
-  refreshUI();
+function lose(){
+  users[now].score -= 10
+  localStorage.setItem('users',JSON.stringify(users))
+  refresh()
+  document.getElementById('result').innerText='你输了 -10 积分'
+}
+
+function showInfo(){
+  alert('用户：'+now+'\n积分：'+users[now].score)
 }
 </script>
 </body>
