@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>海南麻将</title>
+<style>
+  body{background:#0d7a45;margin:0;padding:0;font-family:"Microsoft YaHei",Arial;color:#fff}
+  .top-bar{background:#0b5c36;padding:15px;display:flex;justify-content:space-between;align-items:center}
+  .container{max-width:900px;margin:0 auto;padding:15px;position:relative;height:calc(100vh - 120px)}
+  
+  /* 桌面布局 */
+  .table-area{position:relative;height:100%}
+  .seat{position:absolute;width:180px;height:100px;display:flex;flex-direction:column;align-items:center}
+  .seat.top{top:10px;left:50%;transform:translateX(-50%)}
+  .seat.right{top:50%;right:10px;transform:translateY(-50%)}
+  .seat.bottom{bottom:10px;left:50%;transform:translateX(-50%)}
+  .seat.left{top:50%;left:10px;transform:translateY(-50%)}
+  
+  .avatar{width:50px;height:50px;border-radius:50%;border:2px solid #ffd700;background:#fff}
+  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .username{margin-top:5px;font-size:14px}
+  
+  /* 牌墙 */
+  .wall{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:100px;height:70px;background:#1e5799;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;border:3px solid #d4af37
+  }
+
+  /* 手牌 */
+  .hand-area{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+  .pai{
+    width:44px;height:62px;background:#fff;color:#222;
+    text-align:center;line-height:62px;border-radius:6px;font-size:16px;
+    cursor:pointer;transition:transform 0.2s
+  }
+  .pai.selected{background:#ffd966;transform:translateY(-10px)}
+  .pai:hover{transform:translateY(-4px)}
+
+  /* 操作按钮 */
+  .action-area{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);display:flex;gap:10px}
+  .btn{padding:10px 18px;border:none;border-radius:6px;background:#1a73e8;color:#fff;cursor:pointer}
+  .btn:disabled{background:#666}
+
+  /* 下注区域 */
+  .bet-area{position:absolute;top:20px;left:20px;background:rgba(0,0,0,0.3);padding:15px;border-radius:8px}
+  input{padding:8px;border:none;border-radius:4px;margin-right:10px}
+  
+  /* 日志 */
+  .log-area{position:absolute;bottom:20px;left:20px;width:200px;height:100px;background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;overflow-y:auto}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div>海南麻将 - 四人8局五毛</div>
+  <div>ID:132885</div>
+</div>
+
+<div class="container">
+  <div class="bet-area">
+    <p>余额：<span id="money"></span></p>
+    <input type
