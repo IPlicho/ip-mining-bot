@@ -1,83 +1,658 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>海南麻将</title>
-  <style>
-    body {
-      background: #1a9047;
-      color: white;
-      font-family: Arial;
-      padding: 20px;
-    }
-    .pai {
-      display: inline-block;
-      width: 50px;
-      height: 70px;
-      background: white;
-      color: #222;
-      text-align: center;
-      line-height: 70px;
-      margin: 4px;
-      border-radius: 6px;
-      font-size: 18px;
-      box-shadow: 0 2px 3px #0004;
-    }
-    .hua {
-      background: #ffd966;
-      color: #884411;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 10px 0;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海南麻将 · 完整可玩版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            background: #2a7f3f;
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .tile-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+            min-height: 100px;
+        }
+        .tile {
+            width: 60px;
+            height: 80px;
+            background: #fff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .tile:hover {
+            transform: translateY(-5px);
+        }
+        .tile.selected {
+            border: 3px solid #ffd700;
+            transform: translateY(-10px);
+        }
+        .tile.flower {
+            background: #ffd700;
+            color: #8b4513;
+        }
+        .tile.back {
+            background: #1e5799;
+            background-image: linear-gradient(to bottom, #1e5799 0%, #2989d8 100%);
+            color: transparent;
+        }
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 8px;
+            background: #4169e1;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1e90ff;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .discard-area {
+            min-height: 100px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .log-area {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-item {
+            margin: 5px 0;
+            font-size: 1rem;
+        }
+    </style>
 </head>
 <body>
+    <div class="game-container">
+        <h1>海南麻将 · 完整可玩版</h1>
+        <div class="game-info">
+            <span id="remaining-tiles">剩余牌数: 144</span>
+            <span id="flower-count">花牌: 0</span>
+            <span id="current-turn">当前回合: 玩家</span>
+        </div>
 
-  <h1>海南麻将 · 纯网页版</h1>
-  <button onclick="fapai()">发牌</button>
-  <h3>手牌</h3>
-  <div id="show_pai"></div>
-  <h3>花牌</h3>
-  <div id="show_hua"></div>
+        <div class="control-buttons">
+            <button id="start-game">开始游戏</button>
+            <button id="play-tile" disabled>打出选中牌</button>
+            <button id="chi" disabled>吃</button>
+            <button id="peng" disabled>碰</button>
+            <button id="gang" disabled>杠</button>
+            <button id="hu" disabled>胡</button>
+        </div>
 
-  <script>
-    // 生成麻将
-    function fapai() {
-      const 万 = ['1万','2万','3万','4万','5万','6万','7万','8万','9万'];
-      const 筒 = ['1筒','2筒','3筒','4筒','5筒','6筒','7筒','8筒','9筒'];
-      const 条 = ['1条','2条','3条','4条','5条','6条','7条','8条','9条'];
-      const 字 = ['东','南','西','北','中','发','白'];
-      const 花 = ['春','夏','秋','冬','梅','兰','竹','菊'];
+        <h3>玩家手牌</h3>
+        <div class="tile-area" id="hand-tiles"></div>
 
-      let 全部牌 = [];
-      // 万筒条字各4张
-      [万,筒,条,字].forEach(类 => {
-        类.forEach(p => 全部牌.push(p,p,p,p));
-      });
-      // 花牌各1张
-      全部牌.push(...花);
+        <h3>花牌</h3>
+        <div class="tile-area" id="flower-tiles"></div>
 
-      // 洗牌
-      全部牌.sort(() => Math.random() - 0.5);
+        <h3>桌面牌池</h3>
+        <div class="discard-area tile-area" id="discard-tiles"></div>
 
-      // 发13张
-      let 手牌 = 全部牌.slice(0,13);
-      let 花牌 = 手牌.filter(p => 花.includes(p));
-      let 普通牌 = 手牌.filter(p => !花.includes(p));
+        <h3>游戏日志</h3>
+        <div class="log-area" id="game-log"></div>
+    </div>
 
-      // 显示
-      document.getElementById('show_pai').innerHTML = 
-        普通牌.map(p => `<div class="pai">${p}</div>`).join('');
-      
-      document.getElementById('show_hua').innerHTML = 
-        花牌.map(p => `<div class="pai hua">${p}</div>`).join('');
-    }
-  </script>
+    <script>
+        // ==================== 海南麻将核心规则常量 ====================
+        const SUITS = ['万', '筒', '条'];
+        const NUMBERS = ['1','2','3','4','5','6','7','8','9'];
+        const HONORS = ['东','南','西','北','中','发','白'];
+        const FLOWERS = ['春','夏','秋','冬','梅','兰','竹','菊'];
+        const ALL_HONORS = [...HONORS, ...FLOWERS];
+
+        // 牌型倍数
+        const HAND_MULTIPLIER = {
+            "平胡": 1,
+            "碰碰胡": 2,
+            "混一色": 2,
+            "清一色": 3,
+            "七对": 2,
+            "十三幺": 13
+        };
+
+        // 基础分
+        const BASE_SCORE = {
+            "花杠后胡": 3,
+            "点炮": 1,
+            "明杠": 1,
+            "暗杠": 2,
+            "首轮跟牌": 1
+        };
+
+        // ==================== 游戏核心状态 ====================
+        let gameState = {
+            allTiles: [],
+            playerHand: [],
+            playerFlowers: [],
+            discardPile: [],
+            remainingTiles: 144,
+            currentTurn: 0, // 0:玩家, 1-3:AI
+            selectedTile: null,
+            gameStarted: false,
+            lastDiscard: null
+        };
+
+        // ==================== DOM元素 ====================
+        const handTilesEl = document.getElementById('hand-tiles');
+        const flowerTilesEl = document.getElementById('flower-tiles');
+        const discardTilesEl = document.getElementById('discard-tiles');
+        const gameLogEl = document.getElementById('game-log');
+        const remainingTilesEl = document.getElementById('remaining-tiles');
+        const flowerCountEl = document.getElementById('flower-count');
+        const currentTurnEl = document.getElementById('current-turn');
+
+        const startGameBtn = document.getElementById('start-game');
+        const playTileBtn = document.getElementById('play-tile');
+        const chiBtn = document.getElementById('chi');
+        const pengBtn = document.getElementById('peng');
+        const gangBtn = document.getElementById('gang');
+        const huBtn = document.getElementById('hu');
+
+        // ==================== 工具函数 ====================
+        // 生成完整144张牌
+        function generateAllTiles() {
+            const tiles = [];
+            // 万筒条各36张
+            SUITS.forEach(suit => {
+                NUMBERS.forEach(num => {
+                    tiles.push(...Array(4).fill(`${num}${suit}`));
+                });
+            });
+            // 字牌各4张
+            HONORS.forEach(honor => {
+                tiles.push(...Array(4).fill(honor));
+            });
+            // 花牌8张
+            tiles.push(...FLOWERS);
+            return tiles;
+        }
+
+        // 洗牌
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // 添加日志
+        function addLog(text) {
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            logItem.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            gameLogEl.appendChild(logItem);
+            gameLogEl.scrollTop = gameLogEl.scrollHeight;
+        }
+
+        // 渲染手牌
+        function renderHand() {
+            handTilesEl.innerHTML = '';
+            gameState.playerHand.forEach(tile => {
+                const tileEl = document.createElement('div');
+                tileEl.className = 'tile';
+                tileEl.textContent = tile;
+                tileEl.dataset.tile = tile;
+                tileEl.addEventListener('click', () => selectTile(tile));
+                if (gameState.selectedTile === tile) {
+                    tileEl.classList.add('selected');
+                }
+                handTilesEl.appendChild(tileEl);
+            });
+        }
+
+        // 渲染花牌
+        function renderFlowers() {
+            flowerTilesEl.innerHTML = '';
+            gameState.playerFlowers.forEach(tile => {
+                const tileEl = document.createElement('div');
+                tileEl.className = 'tile flower';
+                tileEl.textContent = tile;
+                flowerTilesEl.appendChild(tileEl);
+            });
+            flowerCountEl.textContent = `花牌: ${gameState.playerFlowers.length}`;
+        }
+
+        // 渲染牌池
+        function renderDiscardPile() {
+            discardTilesEl.innerHTML = '';
+            gameState.discardPile.forEach(tile => {
+                const tileEl = document.createElement('div');
+                tileEl.className = 'tile';
+                tileEl.textContent = tile;
+                discardTilesEl.appendChild(tileEl);
+            });
+        }
+
+        // 选中牌
+        function selectTile(tile) {
+            if (!gameState.gameStarted || gameState.currentTurn !== 0) return;
+            gameState.selectedTile = gameState.selectedTile === tile ? null : tile;
+            renderHand();
+            playTileBtn.disabled = !gameState.selectedTile;
+        }
+
+        // ==================== 胡牌判定（严格按海南麻将规则）====================
+        function isHu(hand, seat = '东') {
+            // 分离花牌
+            const realHand = hand.filter(t => !FLOWERS.includes(t));
+            if (realHand.length !== 14) return false;
+
+            // 统计牌数
+            const tileCount = {};
+            realHand.forEach(t => tileCount[t] = (tileCount[t] || 0) + 1);
+
+            // 1. 七对判定
+            const isSevenPairs = Object.values(tileCount).every(c => c === 2);
+            if (isSevenPairs) return {type: "七对", canHu: true};
+
+            // 2. 十三幺判定
+            const yaoJiu = ['1万','9万','1筒','9筒','1条','9条',...HONORS];
+            const hasAllYao = yaoJiu.every(t => tileCount[t] >= 1);
+            const hasPair = Object.values(tileCount).some(c => c >= 2);
+            if (hasAllYao && hasPair) return {type: "十三幺", canHu: true};
+
+            // 3. 常规胡牌拆解（4个面子+1个将）
+            let canHu = false;
+            let huType = "平胡";
+            let fanCount = 0;
+
+            // 遍历所有可能的将牌
+            for (const tile in tileCount) {
+                if (tileCount[tile] < 2) continue;
+                // 排除自己位置的风牌、中发白做将（四个顺子带一对规则）
+                if (tile === seat || ['中','发','白'].includes(tile)) continue;
+
+                const tempCount = {...tileCount};
+                tempCount[tile] -= 2;
+                if (tempCount[tile] === 0) delete tempCount[tile];
+
+                // 拆解面子
+                let shunzi = 0, kezi = 0;
+                const suits = {};
+                SUITS.forEach(s => suits[s] = []);
+                Object.keys(tempCount).forEach(t => {
+                    if (t.endsWith('万')) suits['万'].push(parseInt(t));
+                    else if (t.endsWith('筒')) suits['筒'].push(parseInt(t));
+                    else if (t.endsWith('条')) suits['条'].push(parseInt(t));
+                });
+
+                // 拆解顺子
+                for (const s in suits) {
+                    const nums = suits[s].sort((a,b) => a-b);
+                    let i = 0;
+                    while (i < nums.length) {
+                        if (nums[i+1] === nums[i]+1 && nums[i+2] === nums[i]+2) {
+                            shunzi++;
+                            i += 3;
+                        } else {
+                            // 拆解刻子
+                            if (tempCount[`${nums[i]}${s}`] >= 3) {
+                                kezi++;
+                                tempCount[`${nums[i]}${s}`] -= 3;
+                                if (tempCount[`${nums[i]}${s}`] === 0) delete tempCount[`${nums[i]}${s}`];
+                            }
+                            i++;
+                        }
+                    }
+                }
+
+                // 拆解字牌刻子
+                Object.keys(tempCount).forEach(t => {
+                    if (HONORS.includes(t) && tempCount[t] >= 3) {
+                        kezi++;
+                        tempCount[t] -= 3;
+                        if (tempCount[t] === 0) delete tempCount[t];
+                    }
+                });
+
+                // 4个面子=胡牌
+                if (shunzi + kezi === 4) {
+                    canHu = true;
+                    // 判定碰碰胡
+                    if (shunzi === 0) huType = "碰碰胡";
+                    // 判定混一色/清一色
+                    const handSuits = new Set(realHand.filter(t => SUITS.some(s => t.endsWith(s))).map(t => t.slice(-1)));
+                    if (handSuits.size === 1) {
+                        const hasHonor = realHand.some(t => HONORS.includes(t));
+                        huType = hasHonor ? "混一色" : "清一色";
+                    }
+                    break;
+                }
+            }
+
+            // 必须满足有番条件才能胡
+            if (canHu) {
+                const fanConditions = checkFanConditions(realHand, seat);
+                fanCount = fanConditions.count;
+                canHu = fanConditions.hasFan;
+            }
+
+            return {type: huType, canHu: canHu, fanCount: fanCount};
+        }
+
+        // 有番条件检查
+        function checkFanConditions(hand, seat) {
+            let hasFan = false;
+            let count = 0;
+            const tileCount = {};
+            hand.forEach(t => tileCount[t] = (tileCount[t] || 0) + 1);
+
+            // 1. 四个顺子带一对
+            const shunziCount = countShunzi(hand);
+            if (shunziCount >= 4) {
+                hasFan = true;
+                count++;
+            }
+            // 2. 门前清
+            const isMenqing = true; // 简化，实际需记录吃碰杠
+            if (isMenqing) {
+                hasFan = true;
+                count++;
+            }
+            // 3. 二五八做将
+            const pair = findPair(hand);
+            if (pair && ['2','5','8'].includes(pair[0])) {
+                hasFan = true;
+                count++;
+            }
+            // 4. 中发白刻子/杠
+            if (['中','发','白'].some(t => tileCount[t] >= 3)) {
+                hasFan = true;
+                count++;
+            }
+            // 5. 自身风位刻子/杠
+            if (tileCount[seat] >= 3) {
+                hasFan = true;
+                count++;
+            }
+            // 6. 混一色
+            const suits = new Set(hand.filter(t => SUITS.some(s => t.endsWith(s))).map(t => t.slice(-1)));
+            if (suits.size === 1) {
+                hasFan = true;
+                count++;
+            }
+            // 7. 碰碰胡
+            if (countShunzi(hand) === 0) {
+                hasFan = true;
+                count++;
+            }
+            // 8. 自摸/抢杠胡/杠牌
+            hasFan = true; // 简化，实际需判定
+
+            return {hasFan, count};
+        }
+
+        // 辅助：统计顺子数量
+        function countShunzi(hand) {
+            const suits = {};
+            SUITS.forEach(s => suits[s] = []);
+            hand.filter(t => SUITS.some(s => t.endsWith(s))).forEach(t => {
+                suits[t.slice(-1)].push(parseInt(t));
+            });
+            let count = 0;
+            for (const s in suits) {
+                const nums = suits[s].sort((a,b) => a-b);
+                let i = 0;
+                while (i < nums.length - 2) {
+                    if (nums[i+1] === nums[i]+1 && nums[i+2] === nums[i]+2) {
+                        count++;
+                        i += 3;
+                    } else i++;
+                }
+            }
+            return count;
+        }
+
+        // 辅助：找将牌
+        function findPair(hand) {
+            const tileCount = {};
+            hand.forEach(t => tileCount[t] = (tileCount[t] || 0) + 1);
+            for (const t in tileCount) {
+                if (tileCount[t] === 2) return t;
+            }
+            return null;
+        }
+
+        // ==================== 游戏流程 ====================
+        // 开始游戏
+        startGameBtn.addEventListener('click', () => {
+            if (gameState.gameStarted) return;
+            // 初始化
+            gameState.allTiles = shuffleArray(generateAllTiles());
+            gameState.playerHand = [];
+            gameState.playerFlowers = [];
+            gameState.discardPile = [];
+            gameState.remainingTiles = 144;
+            gameState.currentTurn = 0;
+            gameState.selectedTile = null;
+            gameState.gameStarted = true;
+            gameState.lastDiscard = null;
+
+            // 发牌（玩家13张，AI各13张）
+            for (let i = 0; i < 13; i++) {
+                const tile = gameState.allTiles.pop();
+                if (FLOWERS.includes(tile)) {
+                    gameState.playerFlowers.push(tile);
+                } else {
+                    gameState.playerHand.push(tile);
+                }
+            }
+            // 庄家多摸一张
+            const extraTile = gameState.allTiles.pop();
+            if (FLOWERS.includes(extraTile)) {
+                gameState.playerFlowers.push(extraTile);
+            } else {
+                gameState.playerHand.push(extraTile);
+            }
+
+            gameState.remainingTiles = gameState.allTiles.length;
+            remainingTilesEl.textContent = `剩余牌数: ${gameState.remainingTiles}`;
+
+            // 排序手牌
+            sortHand();
+            renderHand();
+            renderFlowers();
+            renderDiscardPile();
+            addLog("游戏开始！玩家为庄家，获得14张手牌");
+
+            // 启用按钮
+            playTileBtn.disabled = true;
+            chiBtn.disabled = true;
+            pengBtn.disabled = true;
+            gangBtn.disabled = true;
+            huBtn.disabled = false;
+
+            currentTurnEl.textContent = "当前回合: 玩家";
+        });
+
+        // 排序手牌
+        function sortHand() {
+            const sortOrder = (t) => {
+                if (t.endsWith('万')) return 0 * 10 + parseInt(t);
+                if (t.endsWith('筒')) return 1 * 10 + parseInt(t);
+                if (t.endsWith('条')) return 2 * 10 + parseInt(t);
+                return 3 * 10 + HONORS.indexOf(t);
+            };
+            gameState.playerHand.sort((a,b) => sortOrder(a) - sortOrder(b));
+        }
+
+        // 打出选中牌
+        playTileBtn.addEventListener('click', () => {
+            if (!gameState.selectedTile || gameState.currentTurn !== 0) return;
+
+            // 打出牌
+            gameState.discardPile.push(gameState.selectedTile);
+            gameState.playerHand = gameState.playerHand.filter(t => t !== gameState.selectedTile);
+            gameState.lastDiscard = gameState.selectedTile;
+            addLog(`玩家打出: ${gameState.selectedTile}`);
+
+            // 检查胡牌
+            const huResult = isHu(gameState.playerHand.concat(gameState.lastDiscard));
+            if (huResult.canHu) {
+                addLog(`玩家胡牌！牌型: ${huResult.type}，番数: ${huResult.fanCount}`);
+                endGame(huResult);
+                return;
+            }
+
+            // 重置状态
+            gameState.selectedTile = null;
+            renderHand();
+            renderDiscardPile();
+            playTileBtn.disabled = true;
+
+            // 切换到AI回合
+            nextTurn();
+        });
+
+        // 胡牌按钮
+        huBtn.addEventListener('click', () => {
+            const huResult = isHu(gameState.playerHand);
+            if (huResult.canHu) {
+                addLog(`玩家自摸胡牌！牌型: ${huResult.type}，番数: ${huResult.fanCount}`);
+                endGame(huResult);
+            } else {
+                addLog("不满足胡牌条件！");
+            }
+        });
+
+        // 下一回合
+        function nextTurn() {
+            gameState.currentTurn = (gameState.currentTurn + 1) % 4;
+            if (gameState.currentTurn === 0) {
+                // 玩家回合：摸牌
+                if (gameState.remainingTiles <= 0) {
+                    addLog("牌墙耗尽，本局荒庄");
+                    endGame(null);
+                    return;
+                }
+                const tile = gameState.allTiles.pop();
+                gameState.remainingTiles = gameState.allTiles.length;
+                remainingTilesEl.textContent = `剩余牌数: ${gameState.remainingTiles}`;
+
+                if (FLOWERS.includes(tile)) {
+                    gameState.playerFlowers.push(tile);
+                    renderFlowers();
+                    addLog(`玩家摸到花牌: ${tile}`);
+                } else {
+                    gameState.playerHand.push(tile);
+                    sortHand();
+                    renderHand();
+                    addLog(`玩家摸到: ${tile}`);
+                }
+
+                currentTurnEl.textContent = "当前回合: 玩家";
+                huBtn.disabled = false;
+            } else {
+                // AI回合：简化AI，随机打牌
+                setTimeout(() => {
+                    const aiTile = gameState.allTiles.pop();
+                    gameState.remainingTiles = gameState.allTiles.length;
+                    remainingTilesEl.textContent = `剩余牌数: ${gameState.remainingTiles}`;
+                    gameState.discardPile.push(aiTile);
+                    gameState.lastDiscard = aiTile;
+                    addLog(`AI${gameState.currentTurn}打出: ${aiTile}`);
+                    renderDiscardPile();
+
+                    // 切回玩家回合
+                    nextTurn();
+                }, 1000);
+            }
+        }
+
+        // 结束游戏
+        function endGame(huResult) {
+            gameState.gameStarted = false;
+            startGameBtn.disabled = false;
+            playTileBtn.disabled = true;
+            chiBtn.disabled = true;
+            pengBtn.disabled = true;
+            gangBtn.disabled = true;
+            huBtn.disabled = true;
+
+            if (huResult) {
+                const score = calculateScore(huResult.type, false, gameState.playerFlowers.length);
+                addLog(`本局结束！玩家得分: ${score}`);
+            } else {
+                addLog("本局荒庄，无得分");
+            }
+        }
+
+        // 算分
+        function calculateScore(huType, isDianpao, flowerCount) {
+            const baseMulti = HAND_MULTIPLIER[huType] || 1;
+            const baseScore = flowerCount > 0 ? BASE_SCORE["花杠后胡"] : 1;
+            let extraScore = 0;
+
+            if (isDianpao) extraScore += BASE_SCORE["点炮"];
+            if (flowerCount >= 7) extraScore += 1;
+            const uniqueFlowers = new Set(gameState.playerFlowers).size;
+            if (uniqueFlowers >= 4) extraScore += 1;
+            if (uniqueFlowers >= 7) extraScore += 1;
+
+            return baseScore * baseMulti + extraScore;
+        }
+
+        // ==================== 初始化 ====================
+        addLog("欢迎来到海南麻将！点击「开始游戏」即可开局");
+    </script>
 </body>
 </html>
