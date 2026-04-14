@@ -1,203 +1,154 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<title>海南麻将 - 真正可玩版</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>悠乐游 - 大厅</title>
 <style>
-  body{background:#1a9047;color:#fff;font-family:Arial;padding:20px}
-  .table{max-width:900px;margin:0 auto}
-  .hand{display:flex;gap:6px;flex-wrap:wrap;margin:20px 0}
-  .discard{display:flex;gap:4px;flex-wrap:wrap;background:#0003;padding:10px;border-radius:8px}
-  .tile{width:46px;height:64px;background:#fff;color:#222;text-align:center;line-height:64px;border-radius:6px;font-size:16px;cursor:pointer}
-  .tile:hover{transform:translateY(-4px)}
-  .tile.selected{background:#ffd966}
-  .btn{padding:10px 16px;margin:5px;font-size:15px;border:none;border-radius:6px;cursor:pointer}
-  .btn-green{background:#2e8b57;color:#fff}
-  .btn-blue{background:#4169e1;color:#fff}
-  .btn:disabled{background:#666}
-  .log{background:#0003;padding:10px;border-radius:8px;height:120px;overflow-y:auto}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei",Arial}
+  body{background:#f5f5f5;margin:0;padding:0}
+  /* 顶部导航栏 */
+  .header{
+    background:url('https://picsum.photos/id/1076/1920/1080') no-repeat center bottom;
+    background-size:cover;height:180px;position:relative;color:#fff;padding:15px
+  }
+  .user-info{display:flex;align-items:center}
+  .avatar{
+    width:50px;height:50px;border-radius:50%;
+    border:2px solid #fff;background:#fff;margin-right:10px
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .user-id{font-size:14px}
+  .money{position:absolute;top:20px;right:15px;text-align:right}
+  .coin{color:#ffd700;font-weight:bold}
+  .diamond{color:#4169e1;font-weight:bold}
+
+  /* 中间功能区 */
+  .container{max-width:1000px;margin:-60px auto 20px;padding:0 15px}
+  .game-filters{
+    display:flex;gap:10px;background:#fff;padding:15px;border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1)
+  }
+  .filter-btn{
+    padding:8px 15px;border:none;border-radius:6px;
+    background:#eee;color:#333;cursor:pointer
+  }
+  .filter-btn.active{background:#1a73e8;color:#fff}
+
+  /* 房间列表 */
+  .room-list{margin-top:15px}
+  .room-card{
+    background:#fff;border-radius:10px;padding:15px;margin-bottom:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);display:flex;align-items:center
+  }
+  .room-info{flex:1}
+  .room-title{font-size:16px;font-weight:bold;color:#333}
+  .room-desc{font-size:12px;color:#666;margin-top:4px}
+  .room-users{display:flex;gap:10px;align-items:center;margin-top:8px}
+  .user-avatar{
+    width:30px;height:30px;border-radius:50%;border:1px solid #ddd;
+    background:#fff;overflow:hidden
+  }
+  .user-avatar img{width:100%;height:100%;object-fit:cover}
+  .empty{width:30px;height:30px;border-radius:50%;background:#eee;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px}
+  .join-btn{padding:10px 20px;border:none;background:#ff9800;color:#fff;border-radius:6px;cursor:pointer}
+
+  /* 底部导航 */
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;
+    display:flex;justify-content:space-around;padding:10px 0
+  }
+  .nav-item{display:flex;flex-direction:column;align-items:center;color:#666;font-size:12px}
+  .nav-item.active{color:#1a73e8}
+  .nav-icon{font-size:20px;margin-bottom:4px}
 </style>
 </head>
 <body>
-<div class="table">
-  <h2>海南麻将（可吃碰杠胡）</h2>
-  <div>
-    <button class="btn btn-green" onclick="startGame()">开始游戏</button>
-    <button class="btn" onclick="moPai()" id="moBtn" disabled>摸牌</button>
-    <button class="btn" onclick="chi()" id="chiBtn" disabled>吃</button>
-    <button class="btn" onclick="peng()" id="pengBtn" disabled>碰</button>
-    <button class="btn" onclick="gang()" id="gangBtn" disabled>杠</button>
-    <button class="btn" onclick="hu()" id="huBtn" disabled>胡</button>
+<div class="header">
+  <div class="user-info">
+    <div class="avatar"><img src="https://picsum.photos/200/200?random=1" alt="头像"></div>
+    <div>
+      <div>L</div>
+      <div class="user-id">ID:564511</div>
+    </div>
+  </div>
+  <div class="money">
+    <div>钻石: <span class="diamond">0</span> <span>+</span></div>
+    <div>金币: <span class="coin">0</span> <span>+</span></div>
+  </div>
+  <div style="text-align:center;margin-top:20px;font-size:24px;font-weight:bold">悠乐游</div>
+</div>
+
+<div class="container">
+  <div class="game-filters">
+    <button class="filter-btn active">全部</button>
+    <button class="filter-btn">临高麻将</button>
+    <button class="filter-btn">红中癞子</button>
+    <button class="filter-btn">大黑鬼</button>
+    <button class="filter-btn">海南十三张</button>
+    <button class="filter-btn">斗地主</button>
   </div>
 
-  <div>我的手牌</div>
-  <div class="hand" id="hand"></div>
+  <div class="room-list">
+    <div class="room-card">
+      <div class="room-info">
+        <div class="room-title">四人8局五毛</div>
+        <div class="room-desc">临高 无封顶 有番 可吃 可点炮 花胡</div>
+        <div class="room-users">
+          <div class="user-avatar"><img src="https://picsum.photos/200/200?random=2" alt="玩家"></div>
+          <div class="user-avatar"><img src="https://picsum.photos/200/200?random=3" alt="玩家"></div>
+          <div class="empty">空缺中</div>
+          <div class="empty">空缺中</div>
+        </div>
+      </div>
+      <button class="join-btn" onclick="enterRoom('四人8局五毛', 132885)">进入</button>
+    </div>
 
-  <div>桌面打出的牌</div>
-  <div class="discard" id="discard"></div>
+    <div class="room-card">
+      <div class="room-info">
+        <div class="room-title">四人8局一块</div>
+        <div class="room-desc">临高 无封顶 有番 可吃 可点炮 花胡</div>
+        <div class="room-users">
+          <div class="user-avatar"><img src="https://picsum.photos/200/200?random=4" alt="玩家"></div>
+          <div class="empty">空缺中</div>
+          <div class="empty">空缺中</div>
+          <div class="empty">空缺中</div>
+        </div>
+      </div>
+      <button class="join-btn" onclick="enterRoom('四人8局一块', 132886)">进入</button>
+    </div>
+  </div>
+</div>
 
-  <div class="log" id="log"></div>
+<div class="bottom-nav">
+  <div class="nav-item active">
+    <div class="nav-icon">🏠</div>
+    <span>大厅</span>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">👤</div>
+    <span>个人</span>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">🛍️</div>
+    <span>商城</span>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">💬</div>
+    <span>消息</span>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">📊</div>
+    <span>战绩</span>
+  </div>
 </div>
 
 <script>
-const WAN = '1万,2万,3万,4万,5万,6万,7万,8万,9万'.split(',')
-const TONG = '1筒,2筒,3筒,4筒,5筒,6筒,7筒,8筒,9筒'.split(',')
-const TIAO = '1条,2条,3条,4条,5条,6条,7条,8条,9条'.split(',')
-const ZI = '东,南,西,北,中,发,白'.split(',')
-const HUA = '春,夏,秋,冬,梅,兰,竹,菊'.split(',')
-
-let all = [], hand = [], discard = [], stack = []
-let canMo = false, last = null
-
-// 生成牌
-function gen(){
-  let arr = []
-  ;[WAN,TONG,TIAO,ZI].forEach(s=>{
-    s.forEach(p=>{for(let i=0;i<4;i++)arr.push(p)})
-  })
-  arr.push(...HUA)
-  return arr.sort(()=>Math.random()-0.5)
+function enterRoom(roomName, roomId){
+  // 进入房间逻辑，这里跳转真实游戏页面
+  alert('进入房间：'+roomName+' ('+roomId+')')
+  window.location.href = 'game.html?roomId='+roomId
 }
-
-// 开始
-function startGame(){
-  all = gen()
-  hand = []
-  discard = []
-  stack = []
-  log('游戏开始')
-  for(let i=0;i<14;i++)hand.push(all.pop())
-  render()
-  canMo = true
-  $('moBtn').disabled = false
-}
-
-// 渲染
-function render(){
-  $('hand').innerHTML = hand.map((p,i)=>`
-    <div class="tile ${last===p?'selected':''}" onclick="select(${i})">${p}</div>
-  `).join('')
-  $('discard').innerHTML = discard.map(p=>`<div class="tile">${p}</div>`).join('')
-}
-
-function select(i){
-  if(!canMo)return
-  const p = hand[i]
-  last = p
-  render()
-}
-
-// 摸牌
-function moPai(){
-  if(!canMo || all.length===0)return
-  const p = all.pop()
-  hand.push(p)
-  log('摸了：'+p)
-  canMo = false
-  render()
-  checkHu()
-}
-
-// 打出
-function play(){
-  if(!last)return
-  discard.push(last)
-  hand = hand.filter(x=>x!==last)
-  log('打出：'+last)
-  last = null
-  canMo = true
-  render()
-  aiPlay()
-}
-
-// AI随便打
-function aiPlay(){
-  setTimeout(()=>{
-    if(all.length===0)return
-    const p = all.pop()
-    discard.push(p)
-    log('AI打出：'+p)
-    render()
-    checkAction(p)
-  },800)
-}
-
-// 检查能不能吃碰杠胡
-function checkAction(p){
-  const cnt = {}
-  hand.forEach(x=>cnt[x]=(cnt[x]||0)+1)
-  const canPeng = cnt[p]>=2
-  const canGang = cnt[p]>=3
-  const canChi = checkChi(p)
-
-  $('pengBtn').disabled = !canPeng
-  $('gangBtn').disabled = !canGang
-  $('chiBtn').disabled = !canChi
-}
-
-function checkChi(p){
-  const s = p.slice(-1)
-  const n = parseInt(p)
-  if(isNaN(n))return false
-  const h = hand.filter(x=>x.endsWith(s)).map(x=>parseInt(x))
-  return h.includes(n-1)&&h.includes(n-2) ||
-         h.includes(n-1)&&h.includes(n+1) ||
-         h.includes(n+1)&&h.includes(n+2)
-}
-
-function peng(){
-  hand = hand.filter(x=>x!==last).filter(x=>x!==last)
-  stack.push([last,last,last])
-  log('碰')
-  disableBtn()
-  render()
-}
-
-function gang(){
-  hand = hand.filter(x=>x!==last).filter(x=>x!==last).filter(x=>x!==last)
-  stack.push([last,last,last,last])
-  log('杠')
-  disableBtn()
-  render()
-}
-
-function chi(){
-  log('吃')
-  disableBtn()
-}
-
-function checkHu(){
-  // 简化胡牌：凑够4面子+1对就胡（你要我可以给你海南真规则）
-  const cnt = {}
-  hand.forEach(x=>cnt[x]=(cnt[x]||0)+1)
-  const c = Object.values(cnt)
-  const pair = c.filter(x=>x>=2).length>=1
-  const min3 = c.filter(x=>x>=3).length
-  if(pair && min3>=1){
-    log('✅ 胡牌了！')
-    alert('胡牌！')
-    disableBtn()
-  }
-}
-
-function hu(){
-  alert('胡牌成功！')
-  disableBtn()
-}
-
-function disableBtn(){
-  $('chiBtn').disabled=true
-  $('pengBtn').disabled=true
-  $('gangBtn').disabled=true
-}
-
-function log(s){
-  const l = $('log')
-  l.innerHTML += s+'<br>'
-  l.scrollTop = l.scrollHeight
-}
-
-function $(id){return document.getElementById(id)}
 </script>
 </body>
 </html>
