@@ -2,366 +2,147 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>口红机闯关 · 3关通关领奖</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>口红机</title>
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Microsoft YaHei", Arial, sans-serif;
+*{margin:0;padding:0;box-sizing:border-box;font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif}
+body{background:#f9f9f9}
+.container{max-width:414px;margin:0 auto;background:#fff;height:100vh;position:relative;overflow:hidden}
+.header{padding:20px;display:flex;justify-content:space-between;align-items:center;background:#fff}
+.logo{font-size:20px;font-weight:bold;color:#ff4060}
+.user{font-size:14px;color:#666}
+.game-area{position:relative;width:320px;height:320px;margin:30px auto}
+.wheel{
+  width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle at center, #ffb6c1 0%, #ff8699 45%, #ff5977 45%, #ff4060 100%);
+  border:8px solid #fff;box-shadow:0 0 20px rgba(255,64,96,0.2);
+  position:relative;overflow:hidden
 }
-body {
-  background: #f5f5f5; /* 纯白背景，完全按图1的真实机器背景 */
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+.center-dot{
+  width:80px;height:80px;background:#fff;border-radius:50%;
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  box-shadow:0 0 10px rgba(0,0,0,0.1)
 }
-#game-container {
-  width: 100%;
-  max-width: 500px;
-  padding: 20px;
-  text-align: center;
+.lipstick{
+  position:absolute;width:16px;height:145px;background:#ff4060;
+  left:50%;top:0;transform-origin:bottom center;border-radius:8px 8px 4px 4px;
 }
-#game-title {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 15px;
-  color: #333;
+.shooter{
+  width:22px;height:90px;background:#ff4060;border-radius:11px;
+  position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);
+  box-shadow:0 4px 10px rgba(255,64,96,0.3)
 }
-#game-tip {
-  font-size: 20px;
-  color: #666;
-  margin-bottom: 30px;
-}
-#price-select {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.price-btn {
-  padding: 16px 32px;
-  border: none;
-  border-radius: 12px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.btn-18 {
-  background: #28a745;
-  color: #fff;
-}
-.btn-38 {
-  background: #fd7e14;
-  color: #fff;
-}
-.btn-68 {
-  background: #c44569;
-  color: #fff;
-}
-.price-btn:active {
-  transform: scale(0.95);
-}
-#top-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 0 20px;
-}
-#left-count {
-  font-size: 28px;
-  font-weight: bold;
-  color: #e63975;
-}
-#level-info {
-  font-size: 28px;
-  font-weight: bold;
-  color: #ffd700;
-}
-#wheel-wrap {
-  position: relative;
-  width: 400px;
-  height: 400px;
-  margin: 0 auto 40px;
-}
-#wheel {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ff6b6b 0%, #e55353 60%, #2d5016 60%, #1e3a12 100%);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-}
-.wheel-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 120px;
-  height: 120px;
-  background: #f9d71c;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
-  z-index: 10;
-  transform: translate(-50%, -50%) rotate(90deg);
-}
-.lipstick {
-  position: absolute;
-  width: 18px;
-  height: 160px;
-  background: linear-gradient(180deg, #e63975 0%, #c2185b 70%, #333 70%, #000 100%);
-  left: 50%;
-  top: 0;
-  transform-origin: bottom center;
-  border-radius: 9px 9px 4px 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  z-index: 5;
-}
-#launcher {
-  position: absolute;
-  bottom: -25px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 90px;
-  background: linear-gradient(180deg, #e63975 0%, #c2185b 70%, #333 70%, #000 100%);
-  border-radius: 12px 12px 6px 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  z-index: 5;
-}
-#result-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0,0,0,0.8);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-.result-box {
-  background: #fff;
-  color: #333;
-  padding: 40px;
-  border-radius: 16px;
-  text-align: center;
-  max-width: 350px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-  animation: pop 0.3s ease;
-}
-@keyframes pop {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-.result-box h2 {
-  font-size: 28px;
-  margin-bottom: 15px;
-}
-.result-box p {
-  font-size: 20px;
-  margin-bottom: 25px;
-  color: #666;
-}
-.result-btn {
-  padding: 14px 32px;
-  border: none;
-  border-radius: 10px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.btn-retry {
-  background: #28a745;
-  color: #fff;
-}
-.btn-close {
-  background: #6c757d;
-  color: #fff;
-  margin-left: 10px;
-}
-.result-btn:active {
-  transform: scale(0.95);
+.info-bar{display:flex;justify-content:space-between;padding:0 30px;margin-top:20px}
+.life{font-size:16px;color:#ff4060;font-weight:bold}
+.level{font-size:16px;color:#ff9f40;font-weight:bold}
+.mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center}
+.pop{background:#fff;border-radius:20px;padding:40px;text-align:center;width:280px}
+.pop h2{margin-bottom:10px;color:#ff4060}
+.pop p{margin-bottom:20px;color:#666}
+.pop button{
+  background:#ff4060;color:#fff;border:none;border-radius:12px;padding:14px 0;width:100%;
+  font-size:16px;font-weight:bold
 }
 </style>
 </head>
 <body>
-<div id="game-container">
-  <h1 id="game-title">口红机闯关 · 3关通关领奖</h1>
-  <p id="game-tip">点击发射口红 · 碰到即失败</p>
-  
-  <div id="price-select">
-    <button class="price-btn btn-18" onclick="startGame(18)">18元玩法(奖品100内)</button>
-    <button class="price-btn btn-38" onclick="startGame(38)">38元玩法(奖品200内)</button>
-    <button class="price-btn btn-68" onclick="startGame(68)">68元玩法(奖品200+)</button>
+<div class="container">
+  <div class="header">
+    <div class="logo">口红机</div>
+    <div class="user">ID:888888</div>
   </div>
-  
-  <div id="top-info">
-    <div id="left-count">剩余口红：12/12</div>
-    <div id="level-info">第1关</div>
+  <div class="info-bar">
+    <div class="life">剩余：<span id="left">12</span></div>
+    <div class="level">第<span id="lv">1</span>关</div>
   </div>
-  
-  <div id="wheel-wrap">
-    <div id="wheel">
-      <div class="wheel-center">口红机</div>
-      <div id="launcher"></div>
+  <div class="game-area">
+    <div class="wheel" id="wheel">
+      <div class="center-dot"></div>
+      <div class="shooter"></div>
     </div>
   </div>
 </div>
-
-<div id="result-modal">
-  <div class="result-box">
-    <h2 id="res-title"></h2>
-    <p id="res-msg"></p>
-    <div>
-      <button class="result-btn btn-retry" onclick="retryGame()">再玩一次</button>
-      <button class="result-btn btn-close" onclick="closeResult()">关闭</button>
-    </div>
+<div class="mask" id="mask">
+  <div class="pop">
+    <h2 id="title"></h2>
+    <p id="msg"></p>
+    <button onclick="restart()">再来一次</button>
   </div>
 </div>
-
 <script>
-let currentPrice = 0;
-let currentLevel = 1;
-let isSpinning = false;
-let canShoot = true;
-let lipstickAngles = [];
-let wheelRotation = 0;
-let totalLips = 12;
-let remainingLips = 12;
+const levels = [12,16,20]
+let curLv = 0
+let left = levels[curLv]
+let angles = []
+let rot = 0
+let spinning = true
+let canShoot = true
 
-const wheel = document.getElementById('wheel');
-const resultModal = document.getElementById('result-modal');
-const levelInfo = document.getElementById('level-info');
-const countInfo = document.getElementById('left-count');
-const priceSelect = document.getElementById('price-select');
+const wheel = document.getElementById('wheel')
+const leftEl = document.getElementById('left')
+const lvEl = document.getElementById('lv')
+const mask = document.getElementById('mask')
+const title = document.getElementById('title')
+const msg = document.getElementById('msg')
 
-// 启动游戏
-function startGame(price) {
-  currentPrice = price;
-  currentLevel = 1;
-  lipstickAngles = [];
-  canShoot = true;
-  isSpinning = true;
-  wheelRotation = 0;
-  totalLips = 12;
-  remainingLips = 12;
-  wheel.style.transform = `rotate(0deg)`;
-  // 清空所有口红
-  const existingLips = document.querySelectorAll('.lipstick');
-  existingLips.forEach(el => el.remove());
-  // 开始旋转
-  startWheelSpin();
-  // 更新关卡和计数
-  updateLevel();
-  updateCount();
-  // 隐藏价格选择
-  priceSelect.style.display = 'none';
-}
+setInterval(()=>{
+  if(!spinning) return
+  rot += 2.4 + curLv * 0.9
+  wheel.style.transform = `rotate(${rot}deg)`
+},20)
 
-// 转盘旋转（完全按真实机器转速）
-function startWheelSpin() {
-  const baseSpeed = 2.5;
-  const spinSpeed = baseSpeed + (currentLevel - 1) * 1.2;
-  setInterval(() => {
-    if (!isSpinning) return;
-    wheelRotation += spinSpeed;
-    wheel.style.transform = `rotate(${wheelRotation}deg)`;
-  }, 20);
-}
-
-// 点击发射口红（完全可交互，真实玩法）
-document.addEventListener('click', () => {
-  if (!canShoot || remainingLips <= 0) return;
-  // 获取当前转盘角度
-  const currentRot = wheelRotation % 360;
-  // 碰撞判定（完全按真实机器逻辑）
-  for (let angle of lipstickAngles) {
-    const diff = Math.abs((currentRot - angle + 360) % 360);
-    if (diff < 15) {
-      showResult("游戏失败", "口红碰到一起了！");
-      canShoot = false;
-      isSpinning = false;
-      return;
+document.addEventListener('click',()=>{
+  if(!canShoot || left <= 0) return
+  const now = rot % 360
+  for(let a of angles){
+    const d = Math.abs((now - a + 360) % 360)
+    if(d < 17){
+      show('游戏失败','口红碰到了')
+      spinning = false
+      canShoot = false
+      return
     }
   }
-  // 生成真实口红样式
-  lipstickAngles.push(currentRot);
-  const lip = document.createElement('div');
-  lip.className = 'lipstick';
-  lip.style.transform = `rotate(${currentRot}deg)`;
-  wheel.appendChild(lip);
-  // 更新剩余数量
-  remainingLips--;
-  updateCount();
-  // 检查关卡完成
-  if (remainingLips <= 0) {
-    if (currentLevel >= 3) {
-      showResult("恭喜通关！", `3关全部通过，可领取${currentPrice}元档位对应奖品！`);
-      canShoot = false;
-      isSpinning = false;
-    } else {
-      currentLevel++;
-      // 重置口红，进入下一关
-      lipstickAngles = [];
-      const existingLips = document.querySelectorAll('.lipstick');
-      existingLips.forEach(el => el.remove());
-      // 更新关卡参数（12→16→20）
-      if (currentLevel === 2) {
-        totalLips = 16;
-      } else if (currentLevel === 3) {
-        totalLips = 20;
-      }
-      remainingLips = totalLips;
-      updateLevel();
-      updateCount();
-      showResult(`第${currentLevel-1}关通关`, `进入第${currentLevel}关！`);
+  angles.push(now)
+  const el = document.createElement('div')
+  el.className = 'lipstick'
+  el.style.transform = `rotate(${now}deg)`
+  wheel.appendChild(el)
+  left--
+  leftEl.innerText = left
+  if(left <= 0){
+    if(curLv >= 2){
+      show('恭喜通关','获得奖品')
+      spinning = false
+      canShoot = false
+    }else{
+      curLv++
+      left = levels[curLv]
+      angles = []
+      document.querySelectorAll('.lipstick').forEach(e=>e.remove())
+      lvEl.innerText = curLv+1
+      leftEl.innerText = left
+      show('过关','进入下一关')
     }
   }
-});
+})
 
-// 更新关卡显示
-function updateLevel() {
-  levelInfo.innerText = `第${currentLevel}关`;
+function show(t,m){
+  title.innerText = t
+  msg.innerText = m
+  mask.style.display = 'flex'
 }
-
-// 更新剩余口红数
-function updateCount() {
-  countInfo.innerText = `剩余口红：${remainingLips}/${totalLips}`;
-}
-
-// 显示结果弹窗
-function showResult(title, msg) {
-  document.getElementById('res-title').innerText = title;
-  document.getElementById('res-msg').innerText = msg;
-  resultModal.style.display = 'flex';
-}
-
-// 关闭弹窗
-function closeResult() {
-  resultModal.style.display = 'none';
-  priceSelect.style.display = 'flex';
-}
-
-// 重试游戏
-function retryGame() {
-  closeResult();
-  startGame(currentPrice);
+function restart(){
+  mask.style.display = 'none'
+  curLv = 0
+  left = levels[curLv]
+  angles = []
+  rot = 0
+  spinning = true
+  canShoot = true
+  document.querySelectorAll('.lipstick').forEach(e=>e.remove())
+  lvEl.innerText = 1
+  leftEl.innerText = left
 }
 </script>
 </body>
