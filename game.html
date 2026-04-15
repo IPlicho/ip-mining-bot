@@ -5,145 +5,267 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>口红机</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif}
-body{background:#f9f9f9}
-.container{max-width:414px;margin:0 auto;background:#fff;height:100vh;position:relative;overflow:hidden}
-.header{padding:20px;display:flex;justify-content:space-between;align-items:center;background:#fff}
-.logo{font-size:20px;font-weight:bold;color:#ff4060}
-.user{font-size:14px;color:#666}
-.game-area{position:relative;width:320px;height:320px;margin:30px auto}
-.wheel{
-  width:320px;height:320px;border-radius:50%;
-  background:radial-gradient(circle at center, #ffb6c1 0%, #ff8699 45%, #ff5977 45%, #ff4060 100%);
-  border:8px solid #fff;box-shadow:0 0 20px rgba(255,64,96,0.2);
-  position:relative;overflow:hidden
-}
-.center-dot{
-  width:80px;height:80px;background:#fff;border-radius:50%;
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  box-shadow:0 0 10px rgba(0,0,0,0.1)
-}
-.lipstick{
-  position:absolute;width:16px;height:145px;background:#ff4060;
-  left:50%;top:0;transform-origin:bottom center;border-radius:8px 8px 4px 4px;
-}
-.shooter{
-  width:22px;height:90px;background:#ff4060;border-radius:11px;
-  position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);
-  box-shadow:0 4px 10px rgba(255,64,96,0.3)
-}
-.info-bar{display:flex;justify-content:space-between;padding:0 30px;margin-top:20px}
-.life{font-size:16px;color:#ff4060;font-weight:bold}
-.level{font-size:16px;color:#ff9f40;font-weight:bold}
-.mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center}
-.pop{background:#fff;border-radius:20px;padding:40px;text-align:center;width:280px}
-.pop h2{margin-bottom:10px;color:#ff4060}
-.pop p{margin-bottom:20px;color:#666}
-.pop button{
-  background:#ff4060;color:#fff;border:none;border-radius:12px;padding:14px 0;width:100%;
-  font-size:16px;font-weight:bold
-}
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  body {
+    background: #1a1a2e;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .game {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+  }
+  .info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  .left { color: #ff88a8; }
+  .level { color: #ffd700; }
+
+  /* 西瓜转盘 */
+  .wheel-box {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    margin: 0 auto 60px;
+  }
+  .wheel {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at center,
+      #ffd700 0%,
+      #ffd700 12%,
+      #ff6b6b 12%,
+      #ff6b6b 70%,
+      #448822 70%,
+      #336611 100%
+    );
+    border: 8px solid #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 插在圆盘上的口红 */
+  .lip-placed {
+    position: absolute;
+    width: 14px;
+    height: 130px;
+    background: linear-gradient(180deg, #e63975, #c2185b);
+    left: 50%;
+    top: 0;
+    transform-origin: bottom center;
+    border-radius: 7px;
+    z-index: 5;
+  }
+
+  /* 底部固定的口红（你能看见） */
+  .shooter-base {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 100px;
+    background: linear-gradient(180deg, #e63975, #a82255);
+    border-radius: 11px;
+    z-index: 20;
+  }
+
+  /* 飞出去的口红动画 */
+  .lip-fly {
+    position: fixed;
+    width: 16px;
+    height: 140px;
+    background: linear-gradient(180deg, #ff5588, #e63975);
+    border-radius: 8px;
+    z-index: 30;
+    transition: all 0.3s linear;
+    pointer-events: none;
+  }
+
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+  }
+  .box {
+    background: #fff;
+    color: #222;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+  }
+  .box button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #e63975;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <div class="logo">口红机</div>
-    <div class="user">ID:888888</div>
+
+<div class="game">
+  <div class="info">
+    <div class="left">剩余：<span id="left">12</span></div>
+    <div class="level">关卡：<span id="level">1</span></div>
   </div>
-  <div class="info-bar">
-    <div class="life">剩余：<span id="left">12</span></div>
-    <div class="level">第<span id="lv">1</span>关</div>
-  </div>
-  <div class="game-area">
+
+  <div class="wheel-box">
     <div class="wheel" id="wheel">
-      <div class="center-dot"></div>
-      <div class="shooter"></div>
+      <!-- 底部固定看得见的口红 -->
+      <div class="shooter-base"></div>
     </div>
   </div>
 </div>
-<div class="mask" id="mask">
-  <div class="pop">
+
+<div class="modal" id="modal">
+  <div class="box">
     <h2 id="title"></h2>
     <p id="msg"></p>
-    <button onclick="restart()">再来一次</button>
+    <button onclick="restart()">重新开始</button>
   </div>
 </div>
+
 <script>
-const levels = [12,16,20]
-let curLv = 0
-let left = levels[curLv]
-let angles = []
-let rot = 0
-let spinning = true
-let canShoot = true
+  const levelNeed = [12, 16, 20];
+  let curLevel = 0;
+  let left = levelNeed[curLevel];
+  let angles = [];
+  let rot = 0;
+  let spinning = true;
+  let canShoot = true;
 
-const wheel = document.getElementById('wheel')
-const leftEl = document.getElementById('left')
-const lvEl = document.getElementById('lv')
-const mask = document.getElementById('mask')
-const title = document.getElementById('title')
-const msg = document.getElementById('msg')
+  const wheel = document.getElementById('wheel');
+  const leftEl = document.getElementById('left');
+  const levelEl = document.getElementById('level');
+  const modal = document.getElementById('modal');
 
-setInterval(()=>{
-  if(!spinning) return
-  rot += 2.4 + curLv * 0.9
-  wheel.style.transform = `rotate(${rot}deg)`
-},20)
+  // 转盘旋转
+  setInterval(() => {
+    if (!spinning) return;
+    rot += 2.2 + curLevel * 0.8;
+    wheel.style.transform = `rotate(${rot}deg)`;
+  }, 20);
 
-document.addEventListener('click',()=>{
-  if(!canShoot || left <= 0) return
-  const now = rot % 360
-  for(let a of angles){
-    const d = Math.abs((now - a + 360) % 360)
-    if(d < 17){
-      show('游戏失败','口红碰到了')
-      spinning = false
-      canShoot = false
-      return
+  // 点击发射：从底部飞出去
+  document.addEventListener('click', () => {
+    if (!canShoot || left <= 0) return;
+
+    const currentAngle = rot % 360;
+
+    // 碰撞判断
+    for (let a of angles) {
+      const d = Math.abs((currentAngle - a + 360) % 360);
+      if (d < 17) {
+        showMsg("游戏结束", "口红碰到了！");
+        canShoot = false;
+        spinning = false;
+        return;
+      }
     }
-  }
-  angles.push(now)
-  const el = document.createElement('div')
-  el.className = 'lipstick'
-  el.style.transform = `rotate(${now}deg)`
-  wheel.appendChild(el)
-  left--
-  leftEl.innerText = left
-  if(left <= 0){
-    if(curLv >= 2){
-      show('恭喜通关','获得奖品')
-      spinning = false
-      canShoot = false
-    }else{
-      curLv++
-      left = levels[curLv]
-      angles = []
-      document.querySelectorAll('.lipstick').forEach(e=>e.remove())
-      lvEl.innerText = curLv+1
-      leftEl.innerText = left
-      show('过关','进入下一关')
-    }
-  }
-})
 
-function show(t,m){
-  title.innerText = t
-  msg.innerText = m
-  mask.style.display = 'flex'
-}
-function restart(){
-  mask.style.display = 'none'
-  curLv = 0
-  left = levels[curLv]
-  angles = []
-  rot = 0
-  spinning = true
-  canShoot = true
-  document.querySelectorAll('.lipstick').forEach(e=>e.remove())
-  lvEl.innerText = 1
-  leftEl.innerText = left
-}
+    // 飞出口红动画
+    shootLipstick(currentAngle);
+
+    // 插入口红
+    angles.push(currentAngle);
+    const lip = document.createElement('div');
+    lip.className = 'lip-placed';
+    lip.style.transform = `rotate(${currentAngle}deg)`;
+    wheel.appendChild(lip);
+
+    left--;
+    leftEl.textContent = left;
+
+    // 过关
+    if (left <= 0) {
+      if (curLevel >= 2) {
+        showMsg("恭喜通关", "3关全部完成！");
+        canShoot = false;
+        spinning = false;
+      } else {
+        curLevel++;
+        left = levelNeed[curLevel];
+        angles = [];
+        document.querySelectorAll('.lip-placed').forEach(e => e.remove());
+        levelEl.textContent = curLevel + 1;
+        leftEl.textContent = left;
+        showMsg("过关", "进入下一关！");
+      }
+    }
+  });
+
+  // 口红从底部飞出去
+  function shootLipstick(angle) {
+    const fly = document.createElement('div');
+    fly.className = 'lip-fly';
+
+    const centerX = window.innerWidth / 2;
+    const centerY = wheel.getBoundingClientRect().top + wheel.offsetHeight / 2;
+
+    // 起点：底部口红位置
+    fly.style.left = centerX - 8 + 'px';
+    fly.style.top = (wheel.getBoundingClientRect().bottom + 20) + 'px';
+
+    document.body.appendChild(fly);
+
+    // 飞到圆盘上
+    setTimeout(() => {
+      const rad = (angle - 90) * Math.PI / 180;
+      const r = wheel.offsetWidth / 2 - 10;
+      const tx = centerX + r * Math.cos(rad);
+      const ty = centerY + r * Math.sin(rad);
+
+      fly.style.left = tx - 8 + 'px';
+      fly.style.top = ty - 70 + 'px';
+      fly.style.transform = `rotate(${angle}deg)`;
+    }, 20);
+
+    setTimeout(() => fly.remove(), 300);
+  }
+
+  function showMsg(t, m) {
+    document.getElementById('title').textContent = t;
+    document.getElementById('msg').textContent = m;
+    modal.style.display = 'flex';
+  }
+
+  function restart() {
+    modal.style.display = 'none';
+    curLevel = 0;
+    left = levelNeed[curLevel];
+    angles = [];
+    rot = 0;
+    spinning = true;
+    canShoot = true;
+    document.querySelectorAll('.lip-placed').forEach(e => e.remove());
+    levelEl.textContent = 1;
+    leftEl.textContent = left;
+  }
 </script>
 </body>
 </html>
