@@ -12,57 +12,57 @@
   font-family: "Microsoft YaHei", Arial, sans-serif;
 }
 body {
-  background: #1a1a2e; /* 纯深紫背景，完全按你的图 */
+  background: #f5f5f5; /* 纯白背景，完全按图1的真实机器背景 */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #fff;
   overflow: hidden;
 }
 #game-container {
   width: 100%;
-  max-width: 420px;
+  max-width: 500px;
   padding: 20px;
   text-align: center;
 }
 #game-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: bold;
   margin-bottom: 15px;
-  color: #fff;
+  color: #333;
 }
 #game-tip {
-  font-size: 18px;
-  color: #ccc;
-  margin-bottom: 25px;
+  font-size: 20px;
+  color: #666;
+  margin-bottom: 30px;
 }
 #price-select {
   display: flex;
   gap: 15px;
   margin-bottom: 30px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 .price-btn {
-  padding: 14px 28px;
+  padding: 16px 32px;
   border: none;
   border-radius: 12px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 .btn-18 {
-  background: #28a745; /* 绿色按钮，按你的图 */
+  background: #28a745;
   color: #fff;
 }
 .btn-38 {
-  background: #fd7e14; /* 橙色按钮，按你的图 */
+  background: #fd7e14;
   color: #fff;
 }
 .btn-68 {
-  background: #c44569; /* 玫红按钮，对应68元 */
+  background: #c44569;
   color: #fff;
 }
 .price-btn:active {
@@ -73,54 +73,32 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 0 10px;
+  padding: 0 20px;
 }
 #left-count {
   font-size: 28px;
   font-weight: bold;
-  color: #ff6b9d; /* 粉色，按你的图 */
+  color: #e63975;
 }
 #level-info {
   font-size: 28px;
   font-weight: bold;
-  color: #ffd700; /* 黄色，按你的图 */
+  color: #ffd700;
 }
 #wheel-wrap {
   position: relative;
-  width: 360px;
-  height: 360px;
-  margin: 0 auto 30px;
+  width: 400px;
+  height: 400px;
+  margin: 0 auto 40px;
 }
 #wheel {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #fff; /* 白色外圈，按你的图 */
+  background: radial-gradient(circle, #ff6b6b 0%, #e55353 60%, #2d5016 60%, #1e3a12 100%);
   position: relative;
   overflow: hidden;
-  border: 8px solid #fff;
-}
-.wheel-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 340px;
-  height: 340px;
-  border-radius: 50%;
-  background: #2d5016; /* 绿色瓜皮环，按你的图 */
-  z-index: 2;
-}
-.wheel-flesh {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  background: #e55353; /* 红色瓜瓤，按你的图 */
-  z-index: 3;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
 }
 .wheel-center {
   position: absolute;
@@ -129,7 +107,7 @@ body {
   transform: translate(-50%, -50%);
   width: 120px;
   height: 120px;
-  background: #f9d71c; /* 黄色中心圆，按你的图 */
+  background: #f9d71c;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -138,28 +116,30 @@ body {
   font-weight: bold;
   color: #333;
   z-index: 10;
-  transform: translate(-50%, -50%) rotate(90deg); /* 文字竖排，按你的图 */
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 .lipstick {
   position: absolute;
-  width: 16px;
-  height: 140px;
-  background: #e63975; /* 纯粉色口红，按你的图 */
+  width: 18px;
+  height: 160px;
+  background: linear-gradient(180deg, #e63975 0%, #c2185b 70%, #333 70%, #000 100%);
   left: 50%;
   top: 0;
   transform-origin: bottom center;
-  border-radius: 8px;
+  border-radius: 9px 9px 4px 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   z-index: 5;
 }
 #launcher {
   position: absolute;
-  bottom: -15px;
+  bottom: -25px;
   left: 50%;
   transform: translateX(-50%);
-  width: 20px;
-  height: 80px;
-  background: #e63975; /* 纯粉色发射口红，按你的图 */
-  border-radius: 10px;
+  width: 24px;
+  height: 90px;
+  background: linear-gradient(180deg, #e63975 0%, #c2185b 70%, #333 70%, #000 100%);
+  border-radius: 12px 12px 6px 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   z-index: 5;
 }
 #result-modal {
@@ -177,10 +157,11 @@ body {
 .result-box {
   background: #fff;
   color: #333;
-  padding: 35px;
+  padding: 40px;
   border-radius: 16px;
   text-align: center;
-  max-width: 320px;
+  max-width: 350px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   animation: pop 0.3s ease;
 }
 @keyframes pop {
@@ -188,19 +169,19 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 .result-box h2 {
-  font-size: 26px;
+  font-size: 28px;
   margin-bottom: 15px;
 }
 .result-box p {
-  font-size: 18px;
+  font-size: 20px;
   margin-bottom: 25px;
   color: #666;
 }
 .result-btn {
-  padding: 12px 30px;
+  padding: 14px 32px;
   border: none;
   border-radius: 10px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -237,8 +218,6 @@ body {
   
   <div id="wheel-wrap">
     <div id="wheel">
-      <div class="wheel-ring"></div>
-      <div class="wheel-flesh"></div>
       <div class="wheel-center">口红机</div>
       <div id="launcher"></div>
     </div>
@@ -246,4 +225,144 @@ body {
 </div>
 
 <div id="result-modal">
-  <div class="result-box">...
+  <div class="result-box">
+    <h2 id="res-title"></h2>
+    <p id="res-msg"></p>
+    <div>
+      <button class="result-btn btn-retry" onclick="retryGame()">再玩一次</button>
+      <button class="result-btn btn-close" onclick="closeResult()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentPrice = 0;
+let currentLevel = 1;
+let isSpinning = false;
+let canShoot = true;
+let lipstickAngles = [];
+let wheelRotation = 0;
+let totalLips = 12;
+let remainingLips = 12;
+
+const wheel = document.getElementById('wheel');
+const resultModal = document.getElementById('result-modal');
+const levelInfo = document.getElementById('level-info');
+const countInfo = document.getElementById('left-count');
+const priceSelect = document.getElementById('price-select');
+
+// 启动游戏
+function startGame(price) {
+  currentPrice = price;
+  currentLevel = 1;
+  lipstickAngles = [];
+  canShoot = true;
+  isSpinning = true;
+  wheelRotation = 0;
+  totalLips = 12;
+  remainingLips = 12;
+  wheel.style.transform = `rotate(0deg)`;
+  // 清空所有口红
+  const existingLips = document.querySelectorAll('.lipstick');
+  existingLips.forEach(el => el.remove());
+  // 开始旋转
+  startWheelSpin();
+  // 更新关卡和计数
+  updateLevel();
+  updateCount();
+  // 隐藏价格选择
+  priceSelect.style.display = 'none';
+}
+
+// 转盘旋转（完全按真实机器转速）
+function startWheelSpin() {
+  const baseSpeed = 2.5;
+  const spinSpeed = baseSpeed + (currentLevel - 1) * 1.2;
+  setInterval(() => {
+    if (!isSpinning) return;
+    wheelRotation += spinSpeed;
+    wheel.style.transform = `rotate(${wheelRotation}deg)`;
+  }, 20);
+}
+
+// 点击发射口红（完全可交互，真实玩法）
+document.addEventListener('click', () => {
+  if (!canShoot || remainingLips <= 0) return;
+  // 获取当前转盘角度
+  const currentRot = wheelRotation % 360;
+  // 碰撞判定（完全按真实机器逻辑）
+  for (let angle of lipstickAngles) {
+    const diff = Math.abs((currentRot - angle + 360) % 360);
+    if (diff < 15) {
+      showResult("游戏失败", "口红碰到一起了！");
+      canShoot = false;
+      isSpinning = false;
+      return;
+    }
+  }
+  // 生成真实口红样式
+  lipstickAngles.push(currentRot);
+  const lip = document.createElement('div');
+  lip.className = 'lipstick';
+  lip.style.transform = `rotate(${currentRot}deg)`;
+  wheel.appendChild(lip);
+  // 更新剩余数量
+  remainingLips--;
+  updateCount();
+  // 检查关卡完成
+  if (remainingLips <= 0) {
+    if (currentLevel >= 3) {
+      showResult("恭喜通关！", `3关全部通过，可领取${currentPrice}元档位对应奖品！`);
+      canShoot = false;
+      isSpinning = false;
+    } else {
+      currentLevel++;
+      // 重置口红，进入下一关
+      lipstickAngles = [];
+      const existingLips = document.querySelectorAll('.lipstick');
+      existingLips.forEach(el => el.remove());
+      // 更新关卡参数（12→16→20）
+      if (currentLevel === 2) {
+        totalLips = 16;
+      } else if (currentLevel === 3) {
+        totalLips = 20;
+      }
+      remainingLips = totalLips;
+      updateLevel();
+      updateCount();
+      showResult(`第${currentLevel-1}关通关`, `进入第${currentLevel}关！`);
+    }
+  }
+});
+
+// 更新关卡显示
+function updateLevel() {
+  levelInfo.innerText = `第${currentLevel}关`;
+}
+
+// 更新剩余口红数
+function updateCount() {
+  countInfo.innerText = `剩余口红：${remainingLips}/${totalLips}`;
+}
+
+// 显示结果弹窗
+function showResult(title, msg) {
+  document.getElementById('res-title').innerText = title;
+  document.getElementById('res-msg').innerText = msg;
+  resultModal.style.display = 'flex';
+}
+
+// 关闭弹窗
+function closeResult() {
+  resultModal.style.display = 'none';
+  priceSelect.style.display = 'flex';
+}
+
+// 重试游戏
+function retryGame() {
+  closeResult();
+  startGame(currentPrice);
+}
+</script>
+</body>
+</html>
