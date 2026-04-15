@@ -3,112 +3,247 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>口红机闯关</title>
+<title>口红机闯关 · 3关通关领奖</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,"Microsoft YaHei"}
-body{background:#1a1a2e;color:#fff;overflow:hidden}
-#game{width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify:center}
-#title{font-size:22px;margin-bottom:10px}
-#tip{font-size:14px;color:#ccc;margin-bottom:20px}
-#price-box{display:flex;gap:15px;margin-bottom:20px}
-.price-btn{padding:12px 24px;border-radius:8px;border:none;font-size:16px;font-weight:bold}
-.btn-8{background:#28a745;color:#fff}
-.btn-18{background:#ff7700;color:#fff}
-#wheel-box{position:relative;width:280px;height:280px;margin:20px 0}
-#wheel{width:280px;height:280px;border-radius:50%;background:#fff;position:relative;transition:transform 0.05s linear}
-.center{position:absolute;top:50%;left:50%;width:80px;height:80px;background:#ffeb3b;border-radius:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify:center;color:#333;font-weight:bold}
-.lipstick{position:absolute;width:6px;height:85px;background:#e63975;left:50%;top:0;transform-origin:bottom center;border-radius:3px}
-#launcher{width:12px;height:60px;background:#e63975;position:absolute;bottom:20px;left:50%;transform:translateX(-50%);border-radius:6px}
-#result{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);display:none;align-items:center;justify:center}
-.result-box{background:#fff;color:#333;padding:30px;border-radius:12px;text-align:center}
-.result-box h2{margin-bottom:10px}
-.result-box .btn{margin-top:20px;padding:10px 20px;background:#28a745;color:#fff;border:none;border-radius:8px}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+}
+body {
+  background: #1a1a2e; /* 纯深紫背景，完全按你的图 */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  overflow: hidden;
+}
+#game-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  text-align: center;
+}
+#game-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #fff;
+}
+#game-tip {
+  font-size: 18px;
+  color: #ccc;
+  margin-bottom: 25px;
+}
+#price-select {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  justify-content: center;
+}
+.price-btn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-18 {
+  background: #28a745; /* 绿色按钮，按你的图 */
+  color: #fff;
+}
+.btn-38 {
+  background: #fd7e14; /* 橙色按钮，按你的图 */
+  color: #fff;
+}
+.btn-68 {
+  background: #c44569; /* 玫红按钮，对应68元 */
+  color: #fff;
+}
+.price-btn:active {
+  transform: scale(0.95);
+}
+#top-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+#left-count {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ff6b9d; /* 粉色，按你的图 */
+}
+#level-info {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffd700; /* 黄色，按你的图 */
+}
+#wheel-wrap {
+  position: relative;
+  width: 360px;
+  height: 360px;
+  margin: 0 auto 30px;
+}
+#wheel {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #fff; /* 白色外圈，按你的图 */
+  position: relative;
+  overflow: hidden;
+  border: 8px solid #fff;
+}
+.wheel-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: #2d5016; /* 绿色瓜皮环，按你的图 */
+  z-index: 2;
+}
+.wheel-flesh {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: #e55353; /* 红色瓜瓤，按你的图 */
+  z-index: 3;
+}
+.wheel-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  background: #f9d71c; /* 黄色中心圆，按你的图 */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  z-index: 10;
+  transform: translate(-50%, -50%) rotate(90deg); /* 文字竖排，按你的图 */
+}
+.lipstick {
+  position: absolute;
+  width: 16px;
+  height: 140px;
+  background: #e63975; /* 纯粉色口红，按你的图 */
+  left: 50%;
+  top: 0;
+  transform-origin: bottom center;
+  border-radius: 8px;
+  z-index: 5;
+}
+#launcher {
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 80px;
+  background: #e63975; /* 纯粉色发射口红，按你的图 */
+  border-radius: 10px;
+  z-index: 5;
+}
+#result-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.result-box {
+  background: #fff;
+  color: #333;
+  padding: 35px;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 320px;
+  animation: pop 0.3s ease;
+}
+@keyframes pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.result-box h2 {
+  font-size: 26px;
+  margin-bottom: 15px;
+}
+.result-box p {
+  font-size: 18px;
+  margin-bottom: 25px;
+  color: #666;
+}
+.result-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-retry {
+  background: #28a745;
+  color: #fff;
+}
+.btn-close {
+  background: #6c757d;
+  color: #fff;
+  margin-left: 10px;
+}
+.result-btn:active {
+  transform: scale(0.95);
+}
 </style>
 </head>
 <body>
-<div id="game">
-  <div id="title">口红机闯关 · 3关通关领奖</div>
-  <div id="tip">点击发射口红 · 碰到即失败</div>
-  <div id="price-box">
-    <button class="price-btn btn-8" onclick="start(8)">8元玩法(奖品100内)</button>
-    <button class="price-btn btn-18" onclick="start(18)">18元玩法(奖品200内)</button>
+<div id="game-container">
+  <h1 id="game-title">口红机闯关 · 3关通关领奖</h1>
+  <p id="game-tip">点击发射口红 · 碰到即失败</p>
+  
+  <div id="price-select">
+    <button class="price-btn btn-18" onclick="startGame(18)">18元玩法(奖品100内)</button>
+    <button class="price-btn btn-38" onclick="startGame(38)">38元玩法(奖品200内)</button>
+    <button class="price-btn btn-68" onclick="startGame(68)">68元玩法(奖品200+)</button>
   </div>
-  <div id="wheel-box">
+  
+  <div id="top-info">
+    <div id="left-count">剩余口红：12/12</div>
+    <div id="level-info">第1关</div>
+  </div>
+  
+  <div id="wheel-wrap">
     <div id="wheel">
-      <div class="center">口红机</div>
+      <div class="wheel-ring"></div>
+      <div class="wheel-flesh"></div>
+      <div class="wheel-center">口红机</div>
+      <div id="launcher"></div>
     </div>
-    <div id="launcher"></div>
   </div>
 </div>
-<div id="result">
-  <div class="result-box">
-    <h2 id="res-title"></h2>
-    <p id="res-msg"></p>
-    <button class="btn" onclick="closeResult()">确定</button>
-  </div>
-</div>
-<script>
-let price = 0;
-let level = 1;
-let spinning = false;
-let canShoot = false;
-let lipAngles = [];
-let wheel = document.getElementById('wheel');
-let res = document.getElementById('result');
-let rot = 0;
 
-function start(p){
-  price = p;
-  level = 1;
-  lipAngles = [];
-  canShoot = true;
-  spinning = true;
-  runWheel();
-}
-
-function runWheel(){
-  setInterval(()=>{
-    if(!spinning) return;
-    rot += 2 + level*0.8;
-    wheel.style.transform = `rotate(${rot}deg)`;
-  },20)
-}
-
-document.addEventListener('click',()=>{
-  if(!canShoot) return;
-  let now = rot % 360;
-  for(let a of lipAngles){
-    if(Math.abs((now-a+360)%360) < 18){
-      showResult("游戏失败","口红碰到一起了！");
-      canShoot = false;
-      return;
-    }
-  }
-  lipAngles.push(now);
-  let el = document.createElement('div');
-  el.className = 'lipstick';
-  el.style.transform = `rotate(${now}deg)`;
-  wheel.appendChild(el);
-  if(lipAngles.length >= 12 + level*2){
-    if(level >=3){
-      showResult("恭喜通关","可以挑选奖品！");
-      canShoot = false;
-    }else{
-      level++;
-      lipAngles = [];
-      showResult("第"+(level-1)+"关通关","进入第"+level+"关！");
-    }
-  }
-})
-
-function showResult(t,m){
-  document.getElementById('res-title').innerText = t;
-  document.getElementById('res-msg').innerText = m;
-  res.style.display = 'flex';
-}
-function closeResult(){
-  res.style.display = 'none';
-}
-</script>
-</body>
-</html>
+<div id="result-modal">
+  <div class="result-box">...
